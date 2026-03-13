@@ -1,9 +1,11 @@
 import { ethers } from "ethers";
-import { CONTRACT_ADDRESS, RPC_URL } from "./config";
+import { CONTRACT_ADDRESS, SKILLS_REGISTRY_ADDRESS, RPC_URL } from "./config";
 import ABI from "./contract-abi.json";
+import SKILLS_ABI from "./skills-abi.json";
 
 let _provider = null;
 let _contract = null;
+let _skillsContract = null;
 
 export function getProvider() {
   if (!_provider) {
@@ -17,6 +19,13 @@ export function getContract() {
     _contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, getProvider());
   }
   return _contract;
+}
+
+export function getSkillsContract() {
+  if (!_skillsContract) {
+    _skillsContract = new ethers.Contract(SKILLS_REGISTRY_ADDRESS, SKILLS_ABI, getProvider());
+  }
+  return _skillsContract;
 }
 
 export async function getAgentCount() {
@@ -92,4 +101,36 @@ export async function getAllAgents() {
   }
   
   return agents;
+}
+
+// --- Skills Registry ---
+
+export async function getSkillCount(address) {
+  const contract = getSkillsContract();
+  const count = await contract.getSkillCount(address);
+  return Number(count);
+}
+
+export async function getSkills(address) {
+  const contract = getSkillsContract();
+  const [skills] = await contract.getAllSkills(address);
+  return skills.map((s) => ({
+    name: s.name,
+    content: s.content,
+    version: Number(s.version),
+    updatedAt: Number(s.updatedAt),
+  }));
+}
+
+// --- Endorsement Details ---
+
+export async function getEndorsement(endorser, endorsed) {
+  const contract = getContract();
+  const e = await contract.getEndorsement(endorser, endorsed);
+  return {
+    endorser: e.endorser,
+    endorsed: e.endorsed,
+    timestamp: Number(e.timestamp),
+    reason: e.reason,
+  };
 }

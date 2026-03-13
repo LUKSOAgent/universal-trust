@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { ethers } from "ethers";
 import { verifyAgent } from "../useContract";
 import { EXPLORER_URL } from "../config";
 import TrustBadge from "../components/TrustBadge";
@@ -14,7 +13,9 @@ export default function Verify() {
   async function handleVerify(e) {
     e.preventDefault();
     
-    if (!ethers.isAddress(address)) {
+    // Basic address validation without importing ethers
+    const isAddr = /^0x[0-9a-fA-F]{40}$/.test(address);
+    if (!isAddr) {
       setError("Invalid Ethereum/LUKSO address.");
       setResult(null);
       return;
