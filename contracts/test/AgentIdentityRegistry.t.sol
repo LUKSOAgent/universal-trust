@@ -361,4 +361,370 @@ contract AgentIdentityRegistryTest is Test {
         vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.AgentNotActive.selector, agentA));
         registry.endorse(agentB, "nope");
     }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Extended Edge Case Tests
+    // ═════════════════════════════════════════════════════════════════════════
+
+    // ─── Endorse inactive endorsed agent ─────────────────────────────────────
+
+    function test_endorse_revert_inactiveEndorsed() public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "");
+        vm.prank(agentB);
+        registry.register("Agent Beta", "desc", "");
+
+        // Deactivate the endorsed agent
+        vm.prank(agentB);
+        registry.deactivate();
+
+        // Try to endorse a deactivated agent
+        vm.prank(agentA);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.AgentNotActive.selector, agentB));
+        registry.endorse(agentB, "nope");
+    }
+
+    // ─── updateProfile with empty name on already registered ─────────────────
+
+    function test_updateProfile_revert_emptyName() public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "");
+
+        vm.prank(agentA);
+        vm.expectRevert(AgentIdentityRegistry.EmptyName.selector);
+        registry.updateProfile("", "new desc", "ipfs://new");
+    }
+
+    // ─── getAgentsByPage with limit=0 ────────────────────────────────────────
+
+    function test_getAgentsByPage_limitZero() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        address[] memory page = registry.getAgentsByPage(0, 0);
+        assertEq(page.length, 0);
+    }
+
+    // ─── Swap-and-pop with 3+ endorsers ──────────────────────────────────────
+
+    function test_removeEndorsement_swapAndPop_threeEndorsers() public {
+        // Register 4 agents
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+        vm.prank(agentB);
+        registry.register("B", "desc", "");
+        vm.prank(agentC);
+        registry.register("C", "desc", "");
+
+        address agentD = address(0xD);
+        vm.prank(agentD);
+        registry.register("D", "desc", "");
+
+        // A, B, C all endorse D (endorsers array: [A, B, C])
+        vm.prank(agentA);
+        registry.endorse(agentD, "");
+        vm.prank(agentB);
+        registry.endorse(agentD, "");
+        vm.prank(agentC);
+        registry.endorse(agentD, "");
+
+        assertEq(registry.getEndorsementCount(agentD), 3);
+
+        // Remove A's endorsement (first element) → triggers swap with C (last)
+        vm.prank(agentA);
+        registry.removeEndorsement(agentD);
+
+        assertEq(registry.getEndorsementCount(agentD), 2);
+        assertFalse(registry.hasEndorsed(agentA, agentD));
+        assertTrue(registry.hasEndorsed(agentB, agentD));
+        assertTrue(registry.hasEndorsed(agentC, agentD));
+
+        // Verify endorsers array integrity
+        address[] memory endorsers = registry.getEndorsers(agentD);
+        assertEq(endorsers.length, 2);
+
+        // Remove B's endorsement (middle-ish)
+        vm.prank(agentB);
+        registry.removeEndorsement(agentD);
+
+        assertEq(registry.getEndorsementCount(agentD), 1);
+        assertTrue(registry.hasEndorsed(agentC, agentD));
+        assertFalse(registry.hasEndorsed(agentB, agentD));
+
+        // Remove last endorsement
+        vm.prank(agentC);
+        registry.removeEndorsement(agentD);
+
+        assertEq(registry.getEndorsementCount(agentD), 0);
+        address[] memory empty = registry.getEndorsers(agentD);
+        assertEq(empty.length, 0);
+    }
+
+    // ─── verify() for deactivated agent ──────────────────────────────────────
+
+    function test_verify_deactivated() public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "");
+
+        vm.prank(agentA);
+        registry.deactivate();
+
+        (
+            bool registered,
+            bool active,
+            ,
+            uint256 reputation,
+            uint256 endorsements,
+            uint256 trustScore,
+            string memory name
+        ) = registry.verify(agentA);
+
+        assertTrue(registered);
+        assertFalse(active); // Key: registered but NOT active
+        assertEq(reputation, 100);
+        assertEq(endorsements, 0);
+        assertEq(trustScore, 100);
+        assertEq(name, "Agent Alpha");
+    }
+
+    // ─── lastActiveAt updates correctly ──────────────────────────────────────
+
+    function test_lastActiveAt_updates() public {
+        // Register at timestamp 1000
+        vm.warp(1000);
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "");
+
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
+        assertEq(agent.lastActiveAt, 1000);
+        assertEq(agent.registeredAt, 1000);
+
+        // Update profile at timestamp 2000
+        vm.warp(2000);
+        vm.prank(agentA);
+        registry.updateProfile("Alpha v2", "new", "");
+
+        agent = registry.getAgent(agentA);
+        assertEq(agent.lastActiveAt, 2000);
+
+        // Register agentB for endorsement
+        vm.prank(agentB);
+        registry.register("Beta", "desc", "");
+
+        // Endorse at timestamp 3000
+        vm.warp(3000);
+        vm.prank(agentA);
+        registry.endorse(agentB, "good");
+
+        agent = registry.getAgent(agentA);
+        assertEq(agent.lastActiveAt, 3000);
+
+        // Check endorsed agent's lastActiveAt also updated
+        AgentIdentityRegistry.AgentIdentity memory endorsed = registry.getAgent(agentB);
+        assertEq(endorsed.lastActiveAt, 3000);
+
+        // Reputation update at timestamp 4000
+        vm.warp(4000);
+        vm.prank(deployer);
+        registry.updateReputation(agentA, 10, "bonus");
+
+        agent = registry.getAgent(agentA);
+        assertEq(agent.lastActiveAt, 4000);
+
+        // Reactivate at timestamp 5000
+        vm.prank(agentA);
+        registry.deactivate();
+
+        vm.warp(5000);
+        vm.prank(agentA);
+        registry.reactivate();
+
+        agent = registry.getAgent(agentA);
+        assertEq(agent.lastActiveAt, 5000);
+    }
+
+    // ─── Fuzz: reputation clamping ───────────────────────────────────────────
+
+    function testFuzz_reputationClamping(int256 delta) public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "");
+
+        // type(int256).min cannot be negated (overflow), so the contract
+        // will revert with arithmetic overflow. This is expected behavior.
+        if (delta == type(int256).min) {
+            vm.prank(deployer);
+            vm.expectRevert(); // arithmetic overflow on uint256(-delta)
+            registry.updateReputation(agentA, delta, "fuzz");
+            return;
+        }
+
+        vm.prank(deployer);
+        registry.updateReputation(agentA, delta, "fuzz");
+
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
+
+        // Reputation must always be in [0, MAX_REPUTATION]
+        assertLe(agent.reputation, 10000);
+
+        // Verify exact expected value
+        if (delta > 0) {
+            uint256 increase = uint256(delta);
+            uint256 expected = 100 + increase > 10000 ? 10000 : 100 + increase;
+            assertEq(agent.reputation, expected);
+        } else if (delta < 0) {
+            uint256 decrease = uint256(-delta);
+            uint256 expected = decrease >= 100 ? 0 : 100 - decrease;
+            assertEq(agent.reputation, expected);
+        } else {
+            assertEq(agent.reputation, 100);
+        }
+    }
+
+    // ─── Gas snapshots ───────────────────────────────────────────────────────
+
+    function test_gas_register() public {
+        vm.prank(agentA);
+        uint256 gasBefore = gasleft();
+        registry.register("Agent Alpha", "A code review agent", "ipfs://QmTest");
+        uint256 gasUsed = gasBefore - gasleft();
+        emit log_named_uint("Gas: register", gasUsed);
+        // Sanity check: registration should cost < 300k gas
+        assertLt(gasUsed, 300000);
+    }
+
+    function test_gas_verify() public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "");
+
+        uint256 gasBefore = gasleft();
+        registry.verify(agentA);
+        uint256 gasUsed = gasBefore - gasleft();
+        emit log_named_uint("Gas: verify", gasUsed);
+        // verify() is a view, should be very cheap
+        assertLt(gasUsed, 50000);
+    }
+
+    function test_gas_endorse() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+        vm.prank(agentB);
+        registry.register("B", "desc", "");
+
+        vm.prank(agentA);
+        uint256 gasBefore = gasleft();
+        registry.endorse(agentB, "Good agent");
+        uint256 gasUsed = gasBefore - gasleft();
+        emit log_named_uint("Gas: endorse", gasUsed);
+        assertLt(gasUsed, 200000);
+    }
+
+    // ─── removeEndorsement on non-existent endorsement ───────────────────────
+
+    function test_removeEndorsement_revert_notEndorsed() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+        vm.prank(agentB);
+        registry.register("B", "desc", "");
+
+        vm.prank(agentA);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotEndorsed.selector, agentA, agentB));
+        registry.removeEndorsement(agentB);
+    }
+
+    // ─── Unregistered agent cannot update profile ────────────────────────────
+
+    function test_updateProfile_revert_notRegistered() public {
+        vm.prank(agentA);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotRegistered.selector, agentA));
+        registry.updateProfile("name", "desc", "");
+    }
+
+    // ─── Unregistered agent cannot deactivate ────────────────────────────────
+
+    function test_deactivate_revert_notRegistered() public {
+        vm.prank(agentA);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotRegistered.selector, agentA));
+        registry.deactivate();
+    }
+
+    // ─── Unregistered agents cannot endorse ──────────────────────────────────
+
+    function test_endorse_revert_unregisteredEndorser() public {
+        vm.prank(agentB);
+        registry.register("B", "desc", "");
+
+        vm.prank(agentA); // not registered
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotRegistered.selector, agentA));
+        registry.endorse(agentB, "");
+    }
+
+    function test_endorse_revert_unregisteredEndorsed() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        vm.prank(agentA);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotRegistered.selector, agentB));
+        registry.endorse(agentB, "");
+    }
+
+    // ─── Reputation update on unregistered agent ─────────────────────────────
+
+    function test_updateReputation_revert_notRegistered() public {
+        vm.prank(deployer);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotRegistered.selector, agentA));
+        registry.updateReputation(agentA, 10, "nope");
+    }
+
+    // ─── getTrustScore revert on unregistered ────────────────────────────────
+
+    function test_getTrustScore_revert_notRegistered() public {
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotRegistered.selector, agentA));
+        registry.getTrustScore(agentA);
+    }
+
+    // ─── getAgent revert on unregistered ─────────────────────────────────────
+
+    function test_getAgent_revert_notRegistered() public {
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotRegistered.selector, agentA));
+        registry.getAgent(agentA);
+    }
+
+    // ─── setReputationUpdater then revoke ────────────────────────────────────
+
+    function test_revokeReputationUpdater() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        // Grant then revoke
+        vm.prank(deployer);
+        registry.setReputationUpdater(agentB, true);
+
+        vm.prank(deployer);
+        registry.setReputationUpdater(agentB, false);
+
+        // Now agentB should not be able to update
+        vm.prank(agentB);
+        vm.expectRevert(AgentIdentityRegistry.NotAuthorized.selector);
+        registry.updateReputation(agentA, 10, "nope");
+    }
+
+    // ─── Zero delta reputation update ────────────────────────────────────────
+
+    function test_updateReputation_zeroDelta() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        vm.prank(deployer);
+        registry.updateReputation(agentA, 0, "no change");
+
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
+        assertEq(agent.reputation, 100);
+    }
+
+    // ─── isReputationUpdater check ───────────────────────────────────────────
+
+    function test_isReputationUpdater() public view {
+        assertTrue(registry.isReputationUpdater(deployer));
+        assertFalse(registry.isReputationUpdater(agentA));
+    }
 }
