@@ -28,6 +28,27 @@ const IDENTITY_REGISTRY_ABI = [
     ],
   },
   {
+    name: 'endorse',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'endorsed', type: 'address' },
+      { name: 'reason', type: 'string' },
+    ],
+    outputs: [],
+  },
+  {
+    name: 'register',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'name', type: 'string' },
+      { name: 'description', type: 'string' },
+      { name: 'metadataURI', type: 'string' },
+    ],
+    outputs: [],
+  },
+  {
     name: 'getAgent',
     type: 'function',
     stateMutability: 'view',
@@ -178,11 +199,14 @@ const SKILLS_REGISTRY_ABI = [
 export interface AgentTrustConfig {
   /** LUKSO RPC URL. Default: https://rpc.mainnet.lukso.network */
   rpcUrl?: string;
-  /** AgentIdentityRegistry address. Set after deployment. */
-  identityRegistryAddress: string;
+  /** AgentIdentityRegistry address. Default: deployed LUKSO mainnet address. */
+  identityRegistryAddress?: string;
   /** AgentSkillsRegistry address. Default: deployed mainnet address. */
   skillsRegistryAddress?: string;
 }
+
+/** Default deployed AgentIdentityRegistry on LUKSO mainnet */
+const DEFAULT_IDENTITY_REGISTRY = '0x1581BA9Fb480b72df3e54f51f851a644483c6ec7';
 
 export interface VerifyResult {
   /** Whether the agent is registered in the identity registry */
@@ -230,8 +254,10 @@ const DEFAULT_SKILLS_REGISTRY = '0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6';
 
 export class AgentTrust {
   private web3: Web3;
-  private identityContract: ReturnType<Web3['eth']['Contract']>;
-  private skillsContract: ReturnType<Web3['eth']['Contract']>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private identityContract: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private skillsContract: any;
 
   constructor(config: AgentTrustConfig) {
     this.web3 = new Web3(config.rpcUrl || DEFAULT_RPC);
@@ -239,7 +265,7 @@ export class AgentTrust {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.identityContract = new this.web3.eth.Contract(
       IDENTITY_REGISTRY_ABI as any,
-      config.identityRegistryAddress,
+      config.identityRegistryAddress || DEFAULT_IDENTITY_REGISTRY,
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -399,6 +425,72 @@ export class AgentTrust {
       name: skill.name,
       content: skill.content,
       version: Number(skill.version),
+    };
+  }
+
+  /**
+   * Endorse another agent. Requires a private key to sign the transaction.
+   * Both the endorser and endorsed must be registered and active.
+   *
+   * Usage:
+   *   await trust.endorse('0xEndorsedAddress', privateKey, 'Great agent!');
+   *
+   * @param endorsed - Address of the agent to endorse
+   * @param privateKey - Private key of the endorsing agent (NEVER hardcode)
+   * @param reason - Optional reason for the endorsement
+   * @returns Transaction receipt
+   */
+  async endorse(endorsed: string, privateKey: string, reason: string = ''): Promise<{ transactionHash: string }> {
+    const account = this.web3.eth.accounts.privateKeyToAccount(privateKey);
+    this.web3.eth.accounts.wallet.add(account);
+
+    const tx = this.identityContract.methods.endorse(endorsed, reason);
+    const gas = await tx.estimateGas({ from: account.address });
+
+    const receipt = await tx.send({
+      from: account.address,
+      gas: gas.toString(),
+    });
+
+    // Clean up wallet
+    this.web3.eth.accounts.wallet.remove(account.address);
+
+    return { transactionHash: receipt.transactionHash as string };
+  }
+
+  /**
+   * Register a new agent. Requires a private key to sign the transaction.
+   * The signer's address becomes the agent identity.
+   *
+   * @param name - Human-readable agent name
+   * @param description - What this agent does
+   * @param privateKey - Private key of the agent (NEVER hardcode)
+   * @param metadataURI - Optional IPFS/HTTP URI for extended metadata
+   * @returns Transaction receipt with the agent's address
+   */
+  async register(
+    name: string,
+    description: string,
+    privateKey: string,
+    metadataURI: string = '',
+  ): Promise<{ transactionHash: string; agentAddress: string }> {
+    const account = this.web3.eth.accounts.privateKeyToAccount(privateKey);
+    this.web3.eth.accounts.wallet.add(account);
+
+    const tx = this.identityContract.methods.register(name, description, metadataURI);
+    const gas = await tx.estimateGas({ from: account.address });
+
+    const receipt = await tx.send({
+      from: account.address,
+      gas: gas.toString(),
+    });
+
+    // Clean up wallet
+    this.web3.eth.accounts.wallet.remove(account.address);
+
+    return {
+      transactionHash: receipt.transactionHash as string,
+      agentAddress: account.address,
     };
   }
 }
