@@ -1,14 +1,21 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import TrustBadge from "./TrustBadge";
+import { getSkillCount } from "../useContract";
 
 export default function AgentCard({ agent }) {
+  const [skillCount, setSkillCount] = useState(null);
   const trustScore = agent.reputation + (agent.endorsementCount * 10);
   const registeredDate = new Date(agent.registeredAt * 1000).toLocaleDateString();
+
+  useEffect(() => {
+    getSkillCount(agent.address).then(setSkillCount).catch(() => setSkillCount(0));
+  }, [agent.address]);
   
   return (
     <Link
       to={`/agent/${agent.address}`}
-      className="block bg-lukso-card border border-lukso-border rounded-xl p-5 hover:border-lukso-pink/50 hover:glow-pink transition-all duration-200 group"
+      className="block bg-lukso-card border border-lukso-border rounded-xl p-5 hover:border-lukso-pink/50 hover:glow-pink transition-all duration-300 group hover:-translate-y-0.5"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -31,12 +38,15 @@ export default function AgentCard({ agent }) {
             {agent.description || "No description provided."}
           </p>
           
-          <div className="flex items-center gap-4 text-xs text-gray-500">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
             <span className="font-mono">
               {agent.address.slice(0, 6)}...{agent.address.slice(-4)}
             </span>
             <span>Rep: {agent.reputation}</span>
             <span>Endorsements: {agent.endorsementCount}</span>
+            {skillCount !== null && skillCount > 0 && (
+              <span className="text-lukso-purple">Skills: {skillCount}</span>
+            )}
             <span>Joined: {registeredDate}</span>
           </div>
         </div>

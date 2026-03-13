@@ -1,10 +1,21 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import Directory from "./pages/Directory";
-import AgentProfile from "./pages/AgentProfile";
-import Register from "./pages/Register";
-import Verify from "./pages/Verify";
+
+const Directory = lazy(() => import("./pages/Directory"));
+const AgentProfile = lazy(() => import("./pages/AgentProfile"));
+const Register = lazy(() => import("./pages/Register"));
+const Verify = lazy(() => import("./pages/Verify"));
+
+function PageLoader() {
+  return (
+    <div className="flex flex-col items-center justify-center py-32">
+      <div className="w-10 h-10 border-4 border-lukso-border border-t-lukso-pink rounded-full animate-spin mb-3" />
+      <p className="text-gray-500 text-sm">Loading…</p>
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -12,12 +23,14 @@ function App() {
       <div className="min-h-screen flex flex-col bg-lukso-darker">
         <Navbar />
         <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<Directory />} />
-            <Route path="/agent/:address" element={<AgentProfile />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/verify" element={<Verify />} />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Directory />} />
+              <Route path="/agent/:address" element={<AgentProfile />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/verify" element={<Verify />} />
+            </Routes>
+          </Suspense>
         </main>
         <Footer />
       </div>
