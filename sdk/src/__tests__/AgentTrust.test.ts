@@ -1,0 +1,257 @@
+/**
+ * AgentTrust SDK tests — runs against live LUKSO mainnet.
+ *
+ * These are integration tests that verify the SDK works correctly
+ * against the deployed AgentIdentityRegistry contract.
+ */
+import { describe, it, expect } from 'vitest';
+import { AgentTrust, AgentTrustError, AgentTrustErrorCode } from '../index';
+
+// Deployed contract on LUKSO mainnet
+const REGISTRY_ADDRESS = '0x1581BA9Fb480b72df3e54f51f851a644483c6ec7';
+const DEPLOYER_ADDRESS = '0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b';
+const UP_ADDRESS = '0x293E96ebbf264ed7715cff2b67850517De70232a';
+
+// Increase timeout for RPC calls
+const TEST_TIMEOUT = 30_000;
+
+describe('AgentTrust SDK', () => {
+  const trust = new AgentTrust({
+    rpcUrl: 'https://rpc.mainnet.lukso.network',
+    identityRegistryAddress: REGISTRY_ADDRESS,
+    maxRetries: 2,
+    retryDelayMs: 500,
+  });
+
+  // ─── verify() ─────────────────────────────────────────────────────────
+
+  describe('verify()', () => {
+    it(
+      'should return registered=true for the deployer',
+      async () => {
+        const result = await trust.verify(DEPLOYER_ADDRESS);
+        expect(result.registered).toBe(true);
+        expect(result.active).toBe(true);
+        expect(result.reputation).toBeGreaterThanOrEqual(100);
+        expect(result.trustScore).toBeGreaterThanOrEqual(100);
+        expect(result.name).toBe('LUKSO Agent');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should return registered=true for the UP agent',
+      async () => {
+        const result = await trust.verify(UP_ADDRESS);
+        expect(result.registered).toBe(true);
+        expect(result.active).toBe(true);
+        expect(result.name).toBe('LUKSO Agent');
+        expect(result.endorsements).toBeGreaterThanOrEqual(1);
+        expect(result.trustScore).toBeGreaterThanOrEqual(110);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should return registered=false for a random address',
+      async () => {
+        const result = await trust.verify('0x0000000000000000000000000000000000000001');
+        expect(result.registered).toBe(false);
+        expect(result.active).toBe(false);
+        expect(result.reputation).toBe(0);
+        expect(result.trustScore).toBe(0);
+        expect(result.name).toBe('');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it('should throw on invalid address', async () => {
+      await expect(trust.verify('not-an-address')).rejects.toThrow(AgentTrustError);
+      await expect(trust.verify('not-an-address')).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_ADDRESS,
+      });
+    });
+
+    it('should throw on empty address', async () => {
+      await expect(trust.verify('')).rejects.toThrow(AgentTrustError);
+    });
+  });
+
+  // ─── isRegistered() ───────────────────────────────────────────────────
+
+  describe('isRegistered()', () => {
+    it(
+      'should return true for the deployer',
+      async () => {
+        const result = await trust.isRegistered(DEPLOYER_ADDRESS);
+        expect(result).toBe(true);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should return true for the UP agent',
+      async () => {
+        const result = await trust.isRegistered(UP_ADDRESS);
+        expect(result).toBe(true);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should return false for unregistered address',
+      async () => {
+        const result = await trust.isRegistered('0x0000000000000000000000000000000000000001');
+        expect(result).toBe(false);
+      },
+      TEST_TIMEOUT,
+    );
+  });
+
+  // ─── getAgentCount() ──────────────────────────────────────────────────
+
+  describe('getAgentCount()', () => {
+    it(
+      'should return at least 2 (deployer + UP)',
+      async () => {
+        const count = await trust.getAgentCount();
+        expect(count).toBeGreaterThanOrEqual(2);
+        expect(typeof count).toBe('number');
+      },
+      TEST_TIMEOUT,
+    );
+  });
+
+  // ─── getAgentsByPage() ────────────────────────────────────────────────
+
+  describe('getAgentsByPage()', () => {
+    it(
+      'should return agents for page 0',
+      async () => {
+        const agents = await trust.getAgentsByPage(0, 10);
+        expect(agents.length).toBeGreaterThanOrEqual(2);
+        // First agent should be the deployer
+        expect(agents[0].toLowerCase()).toBe(DEPLOYER_ADDRESS.toLowerCase());
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should return empty array for out-of-bounds offset',
+      async () => {
+        const agents = await trust.getAgentsByPage(1000, 10);
+        expect(agents.length).toBe(0);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it('should throw on negative offset', async () => {
+      await expect(trust.getAgentsByPage(-1, 10)).rejects.toThrow(AgentTrustError);
+    });
+  });
+
+  // ─── verifyBatch() ────────────────────────────────────────────────────
+
+  describe('verifyBatch()', () => {
+    it(
+      'should verify multiple addresses at once',
+      async () => {
+        const results = await trust.verifyBatch([
+          DEPLOYER_ADDRESS,
+          UP_ADDRESS,
+          '0x0000000000000000000000000000000000000001',
+        ]);
+
+        expect(results.size).toBe(3);
+
+        const deployer = results.get(DEPLOYER_ADDRESS);
+        expect(deployer?.registered).toBe(true);
+        expect(deployer?.name).toBe('LUKSO Agent');
+
+        const up = results.get(UP_ADDRESS);
+        expect(up?.registered).toBe(true);
+
+        const random = results.get('0x0000000000000000000000000000000000000001');
+        expect(random?.registered).toBe(false);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it('should throw on empty array', async () => {
+      await expect(trust.verifyBatch([])).rejects.toThrow(AgentTrustError);
+    });
+
+    it('should throw on invalid addresses', async () => {
+      await expect(trust.verifyBatch(['not-valid'])).rejects.toThrow(AgentTrustError);
+    });
+  });
+
+  // ─── hasEndorsed() ────────────────────────────────────────────────────
+
+  describe('hasEndorsed()', () => {
+    it(
+      'should return true for deployer → UP endorsement',
+      async () => {
+        const result = await trust.hasEndorsed(DEPLOYER_ADDRESS, UP_ADDRESS);
+        expect(result).toBe(true);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should return false for non-existent endorsement',
+      async () => {
+        const result = await trust.hasEndorsed(
+          '0x0000000000000000000000000000000000000001',
+          DEPLOYER_ADDRESS,
+        );
+        expect(result).toBe(false);
+      },
+      TEST_TIMEOUT,
+    );
+  });
+
+  // ─── getEndorsers() ───────────────────────────────────────────────────
+
+  describe('getEndorsers()', () => {
+    it(
+      'should return the deployer as endorser of UP',
+      async () => {
+        const endorsers = await trust.getEndorsers(UP_ADDRESS);
+        expect(endorsers.length).toBeGreaterThanOrEqual(1);
+        expect(endorsers.map((e: string) => e.toLowerCase())).toContain(
+          DEPLOYER_ADDRESS.toLowerCase(),
+        );
+      },
+      TEST_TIMEOUT,
+    );
+  });
+
+  // ─── Input validation ─────────────────────────────────────────────────
+
+  describe('input validation', () => {
+    it('should reject invalid address in verify', async () => {
+      await expect(trust.verify('0xinvalid')).rejects.toThrow(AgentTrustError);
+    });
+
+    it('should reject invalid address in isRegistered', async () => {
+      await expect(trust.isRegistered('bad')).rejects.toThrow(AgentTrustError);
+    });
+
+    it('should reject invalid address in getTrustScore', async () => {
+      await expect(trust.getTrustScore('0x123')).rejects.toThrow(AgentTrustError);
+    });
+
+    it('should reject invalid endorser address', async () => {
+      await expect(trust.hasEndorsed('bad', DEPLOYER_ADDRESS)).rejects.toThrow(
+        AgentTrustError,
+      );
+    });
+
+    it('should reject invalid endorsed address', async () => {
+      await expect(trust.hasEndorsed(DEPLOYER_ADDRESS, 'bad')).rejects.toThrow(
+        AgentTrustError,
+      );
+    });
+  });
+});
