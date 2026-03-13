@@ -194,6 +194,34 @@ const SKILLS_REGISTRY_ABI = [
   },
 ] as const;
 
+// ─── Typed Errors ───────────────────────────────────────────────────────────
+
+export class AgentTrustError extends Error {
+  constructor(
+    message: string,
+    public readonly code: AgentTrustErrorCode,
+    public readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = 'AgentTrustError';
+  }
+}
+
+export enum AgentTrustErrorCode {
+  /** Invalid Ethereum address format */
+  INVALID_ADDRESS = 'INVALID_ADDRESS',
+  /** RPC call failed after all retries */
+  RPC_ERROR = 'RPC_ERROR',
+  /** Transaction failed on-chain */
+  TRANSACTION_FAILED = 'TRANSACTION_FAILED',
+  /** Agent not registered in the registry */
+  NOT_REGISTERED = 'NOT_REGISTERED',
+  /** Invalid input parameter */
+  INVALID_INPUT = 'INVALID_INPUT',
+  /** Contract call reverted */
+  CONTRACT_REVERT = 'CONTRACT_REVERT',
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface AgentTrustConfig {
@@ -203,6 +231,10 @@ export interface AgentTrustConfig {
   identityRegistryAddress?: string;
   /** AgentSkillsRegistry address. Default: deployed mainnet address. */
   skillsRegistryAddress?: string;
+  /** Number of retry attempts for RPC calls. Default: 3 */
+  maxRetries?: number;
+  /** Base delay in ms between retries (exponential backoff). Default: 1000 */
+  retryDelayMs?: number;
 }
 
 /** Default deployed AgentIdentityRegistry on LUKSO mainnet */
@@ -247,10 +279,62 @@ export interface SkillInfo {
   updatedAt: number;
 }
 
+// ─── Contract Return Type Helpers ───────────────────────────────────────────
+
+/** Shape of the verify() return from the contract */
+interface VerifyContractResult {
+  registered: boolean;
+  active: boolean;
+  isUP: boolean;
+  reputation: bigint | string;
+  endorsements: bigint | string;
+  trustScore: bigint | string;
+  name: string;
+}
+
+/** Shape of the getAgent() return from the contract */
+interface AgentContractResult {
+  name: string;
+  description: string;
+  metadataURI: string;
+  reputation: bigint | string;
+  endorsementCount: bigint | string;
+  registeredAt: bigint | string;
+  lastActiveAt: bigint | string;
+  isActive: boolean;
+}
+
+/** Shape of a skill from the contract */
+interface SkillContractResult {
+  name: string;
+  content: string;
+  version: bigint | string;
+  updatedAt: bigint | string;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+const ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
+
+function validateAddress(address: string, paramName: string = 'address'): void {
+  if (!address || !ADDRESS_REGEX.test(address)) {
+    throw new AgentTrustError(
+      `Invalid Ethereum address for ${paramName}: "${address}"`,
+      AgentTrustErrorCode.INVALID_ADDRESS,
+    );
+  }
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // ─── SDK Class ──────────────────────────────────────────────────────────────
 
 const DEFAULT_RPC = 'https://rpc.mainnet.lukso.network';
 const DEFAULT_SKILLS_REGISTRY = '0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6';
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_RETRY_DELAY_MS = 1000;
 
 export class AgentTrust {
   private web3: Web3;
@@ -258,9 +342,13 @@ export class AgentTrust {
   private identityContract: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private skillsContract: any;
+  private maxRetries: number;
+  private retryDelayMs: number;
 
-  constructor(config: AgentTrustConfig) {
+  constructor(config: AgentTrustConfig = {}) {
     this.web3 = new Web3(config.rpcUrl || DEFAULT_RPC);
+    this.maxRetries = config.maxRetries ?? DEFAULT_MAX_RETRIES;
+    this.retryDelayMs = config.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.identityContract = new this.web3.eth.Contract(
@@ -276,6 +364,49 @@ export class AgentTrust {
   }
 
   /**
+   * Retry wrapper for RPC calls with exponential backoff.
+   * Retries on network/timeout errors, not on contract reverts.
+   */
+  private async withRetry<T>(fn: () => Promise<T>, operation: string): Promise<T> {
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error: unknown) {
+        lastError = error;
+
+        // Don't retry on contract reverts (those are deterministic)
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (
+          errMsg.includes('revert') ||
+          errMsg.includes('execution reverted') ||
+          errMsg.includes('INVALID_ADDRESS')
+        ) {
+          throw new AgentTrustError(
+            `Contract call reverted during ${operation}: ${errMsg}`,
+            AgentTrustErrorCode.CONTRACT_REVERT,
+            error,
+          );
+        }
+
+        // Last attempt — don't sleep, just throw
+        if (attempt === this.maxRetries) break;
+
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = this.retryDelayMs * Math.pow(2, attempt);
+        await sleep(delay);
+      }
+    }
+
+    throw new AgentTrustError(
+      `RPC call failed after ${this.maxRetries + 1} attempts during ${operation}`,
+      AgentTrustErrorCode.RPC_ERROR,
+      lastError,
+    );
+  }
+
+  /**
    * Core verification function.
    * Returns trust summary for an agent address.
    *
@@ -284,7 +415,12 @@ export class AgentTrust {
    *   if (result.registered && result.trustScore > 100) { ... }
    */
   async verify(address: string): Promise<VerifyResult> {
-    const result = await this.identityContract.methods.verify(address).call();
+    validateAddress(address);
+
+    const result = await this.withRetry(
+      () => this.identityContract.methods.verify(address).call() as Promise<VerifyContractResult>,
+      'verify',
+    );
 
     return {
       registered: result.registered,
@@ -298,20 +434,84 @@ export class AgentTrust {
   }
 
   /**
+   * Batch verify multiple agent addresses at once.
+   * Returns a map of address → VerifyResult.
+   * Runs all calls concurrently for efficiency.
+   *
+   * Usage:
+   *   const results = await trust.verifyBatch(['0xA...', '0xB...']);
+   *   for (const [addr, result] of results) { ... }
+   */
+  async verifyBatch(addresses: string[]): Promise<Map<string, VerifyResult>> {
+    if (!Array.isArray(addresses) || addresses.length === 0) {
+      throw new AgentTrustError(
+        'verifyBatch requires a non-empty array of addresses',
+        AgentTrustErrorCode.INVALID_INPUT,
+      );
+    }
+
+    // Validate all addresses up front
+    for (const addr of addresses) {
+      validateAddress(addr, 'verifyBatch address');
+    }
+
+    // Run all verify calls concurrently
+    const results = await Promise.allSettled(
+      addresses.map((addr) => this.verify(addr)),
+    );
+
+    const map = new Map<string, VerifyResult>();
+    for (let i = 0; i < addresses.length; i++) {
+      const result = results[i];
+      if (result.status === 'fulfilled') {
+        map.set(addresses[i], result.value);
+      } else {
+        // For failed lookups, return a default unregistered result
+        map.set(addresses[i], {
+          registered: false,
+          active: false,
+          isUniversalProfile: false,
+          reputation: 0,
+          endorsements: 0,
+          trustScore: 0,
+          name: '',
+        });
+      }
+    }
+
+    return map;
+  }
+
+  /**
    * Get full agent profile including skills and endorsers.
    */
   async getProfile(address: string): Promise<AgentProfile> {
-    const [agentData, endorsers, skillKeys] = await Promise.all([
-      this.identityContract.methods.getAgent(address).call(),
-      this.identityContract.methods.getEndorsers(address).call() as Promise<string[]>,
-      this.skillsContract.methods.getSkillKeys(address).call().catch(() => [] as string[]),
-    ]);
+    validateAddress(address);
+
+    const [agentData, endorsers, skillKeys] = await this.withRetry(
+      () =>
+        Promise.all([
+          this.identityContract.methods.getAgent(address).call() as Promise<AgentContractResult>,
+          this.identityContract.methods.getEndorsers(address).call() as Promise<string[]>,
+          this.skillsContract.methods
+            .getSkillKeys(address)
+            .call()
+            .catch(() => [] as string[]) as Promise<string[]>,
+        ]),
+      'getProfile',
+    );
 
     // Fetch skill names (but not full content, to save bandwidth)
     const skills: SkillInfo[] = [];
     for (const key of skillKeys) {
       try {
-        const skill = await this.skillsContract.methods.getSkill(address, key).call();
+        const skill = (await this.withRetry(
+          () =>
+            this.skillsContract.methods
+              .getSkill(address, key)
+              .call() as Promise<SkillContractResult>,
+          'getSkill',
+        )) as SkillContractResult;
         skills.push({
           key: key as string,
           name: skill.name,
@@ -326,7 +526,13 @@ export class AgentTrust {
     // Check if it's a UP
     let isUP = false;
     try {
-      const verifyResult = await this.identityContract.methods.verify(address).call();
+      const verifyResult = (await this.withRetry(
+        () =>
+          this.identityContract.methods
+            .verify(address)
+            .call() as Promise<VerifyContractResult>,
+        'verify (for UP check)',
+      )) as VerifyContractResult;
       isUP = verifyResult.isUP;
     } catch {
       // ignore
@@ -352,14 +558,22 @@ export class AgentTrust {
    * Check if an agent is registered.
    */
   async isRegistered(address: string): Promise<boolean> {
-    return this.identityContract.methods.isRegistered(address).call();
+    validateAddress(address);
+    return this.withRetry(
+      () => this.identityContract.methods.isRegistered(address).call() as Promise<boolean>,
+      'isRegistered',
+    );
   }
 
   /**
    * Get the trust score for an agent.
    */
   async getTrustScore(address: string): Promise<number> {
-    const score = await this.identityContract.methods.getTrustScore(address).call();
+    validateAddress(address);
+    const score = await this.withRetry(
+      () => this.identityContract.methods.getTrustScore(address).call() as Promise<bigint>,
+      'getTrustScore',
+    );
     return Number(score);
   }
 
@@ -367,21 +581,33 @@ export class AgentTrust {
    * Check if one agent has endorsed another.
    */
   async hasEndorsed(endorser: string, endorsed: string): Promise<boolean> {
-    return this.identityContract.methods.hasEndorsed(endorser, endorsed).call();
+    validateAddress(endorser, 'endorser');
+    validateAddress(endorsed, 'endorsed');
+    return this.withRetry(
+      () => this.identityContract.methods.hasEndorsed(endorser, endorsed).call() as Promise<boolean>,
+      'hasEndorsed',
+    );
   }
 
   /**
    * Get all endorsers of an agent.
    */
   async getEndorsers(address: string): Promise<string[]> {
-    return this.identityContract.methods.getEndorsers(address).call() as Promise<string[]>;
+    validateAddress(address);
+    return this.withRetry<string[]>(
+      () => this.identityContract.methods.getEndorsers(address).call() as Promise<string[]>,
+      'getEndorsers',
+    );
   }
 
   /**
    * Get total number of registered agents.
    */
   async getAgentCount(): Promise<number> {
-    const count = await this.identityContract.methods.getAgentCount().call();
+    const count = await this.withRetry(
+      () => this.identityContract.methods.getAgentCount().call() as Promise<bigint>,
+      'getAgentCount',
+    );
     return Number(count);
   }
 
@@ -389,19 +615,41 @@ export class AgentTrust {
    * Get a page of agent addresses.
    */
   async getAgentsByPage(offset: number, limit: number): Promise<string[]> {
-    return this.identityContract.methods.getAgentsByPage(offset, limit).call() as Promise<string[]>;
+    if (offset < 0 || limit < 0) {
+      throw new AgentTrustError(
+        'offset and limit must be non-negative',
+        AgentTrustErrorCode.INVALID_INPUT,
+      );
+    }
+    return this.withRetry(
+      () =>
+        this.identityContract.methods
+          .getAgentsByPage(offset, limit)
+          .call() as Promise<string[]>,
+      'getAgentsByPage',
+    );
   }
 
   /**
    * Get skills for an agent from the AgentSkillsRegistry.
    */
   async getSkills(address: string): Promise<SkillInfo[]> {
-    const keys = await this.skillsContract.methods.getSkillKeys(address).call() as string[];
+    validateAddress(address);
+    const keys = await this.withRetry(
+      () => this.skillsContract.methods.getSkillKeys(address).call() as Promise<string[]>,
+      'getSkillKeys',
+    );
     const skills: SkillInfo[] = [];
 
     for (const key of keys) {
       try {
-        const skill = await this.skillsContract.methods.getSkill(address, key).call();
+        const skill = await this.withRetry(
+          () =>
+            this.skillsContract.methods
+              .getSkill(address, key)
+              .call() as Promise<SkillContractResult>,
+          'getSkill',
+        );
         skills.push({
           key,
           name: skill.name,
@@ -419,8 +667,18 @@ export class AgentTrust {
   /**
    * Get the full content of a specific skill.
    */
-  async getSkillContent(address: string, skillKey: string): Promise<{ name: string; content: string; version: number }> {
-    const skill = await this.skillsContract.methods.getSkill(address, skillKey).call();
+  async getSkillContent(
+    address: string,
+    skillKey: string,
+  ): Promise<{ name: string; content: string; version: number }> {
+    validateAddress(address);
+    const skill = await this.withRetry(
+      () =>
+        this.skillsContract.methods
+          .getSkill(address, skillKey)
+          .call() as Promise<SkillContractResult>,
+      'getSkillContent',
+    );
     return {
       name: skill.name,
       content: skill.content,
@@ -440,22 +698,49 @@ export class AgentTrust {
    * @param reason - Optional reason for the endorsement
    * @returns Transaction receipt
    */
-  async endorse(endorsed: string, privateKey: string, reason: string = ''): Promise<{ transactionHash: string }> {
+  async endorse(
+    endorsed: string,
+    privateKey: string,
+    reason: string = '',
+  ): Promise<{ transactionHash: string }> {
+    validateAddress(endorsed, 'endorsed');
+    if (!privateKey || typeof privateKey !== 'string') {
+      throw new AgentTrustError(
+        'Private key is required for endorse()',
+        AgentTrustErrorCode.INVALID_INPUT,
+      );
+    }
+
     const account = this.web3.eth.accounts.privateKeyToAccount(privateKey);
     this.web3.eth.accounts.wallet.add(account);
 
-    const tx = this.identityContract.methods.endorse(endorsed, reason);
-    const gas = await tx.estimateGas({ from: account.address });
+    try {
+      const tx = this.identityContract.methods.endorse(endorsed, reason);
+      const gas = await this.withRetry(
+        () => tx.estimateGas({ from: account.address }) as Promise<bigint>,
+        'endorse.estimateGas',
+      );
 
-    const receipt = await tx.send({
-      from: account.address,
-      gas: gas.toString(),
-    });
+      const receipt = await this.withRetry(
+        () =>
+          tx.send({
+            from: account.address,
+            gas: gas.toString(),
+          }) as Promise<{ transactionHash: string }>,
+        'endorse.send',
+      );
 
-    // Clean up wallet
-    this.web3.eth.accounts.wallet.remove(account.address);
-
-    return { transactionHash: receipt.transactionHash as string };
+      return { transactionHash: receipt.transactionHash };
+    } catch (error) {
+      if (error instanceof AgentTrustError) throw error;
+      throw new AgentTrustError(
+        `Endorse transaction failed: ${error instanceof Error ? error.message : String(error)}`,
+        AgentTrustErrorCode.TRANSACTION_FAILED,
+        error,
+      );
+    } finally {
+      this.web3.eth.accounts.wallet.remove(account.address);
+    }
   }
 
   /**
@@ -474,23 +759,51 @@ export class AgentTrust {
     privateKey: string,
     metadataURI: string = '',
   ): Promise<{ transactionHash: string; agentAddress: string }> {
+    if (!name || name.trim().length === 0) {
+      throw new AgentTrustError(
+        'Agent name cannot be empty',
+        AgentTrustErrorCode.INVALID_INPUT,
+      );
+    }
+    if (!privateKey || typeof privateKey !== 'string') {
+      throw new AgentTrustError(
+        'Private key is required for register()',
+        AgentTrustErrorCode.INVALID_INPUT,
+      );
+    }
+
     const account = this.web3.eth.accounts.privateKeyToAccount(privateKey);
     this.web3.eth.accounts.wallet.add(account);
 
-    const tx = this.identityContract.methods.register(name, description, metadataURI);
-    const gas = await tx.estimateGas({ from: account.address });
+    try {
+      const tx = this.identityContract.methods.register(name, description, metadataURI);
+      const gas = await this.withRetry(
+        () => tx.estimateGas({ from: account.address }) as Promise<bigint>,
+        'register.estimateGas',
+      );
 
-    const receipt = await tx.send({
-      from: account.address,
-      gas: gas.toString(),
-    });
+      const receipt = await this.withRetry(
+        () =>
+          tx.send({
+            from: account.address,
+            gas: gas.toString(),
+          }) as Promise<{ transactionHash: string }>,
+        'register.send',
+      );
 
-    // Clean up wallet
-    this.web3.eth.accounts.wallet.remove(account.address);
-
-    return {
-      transactionHash: receipt.transactionHash as string,
-      agentAddress: account.address,
-    };
+      return {
+        transactionHash: receipt.transactionHash,
+        agentAddress: account.address,
+      };
+    } catch (error) {
+      if (error instanceof AgentTrustError) throw error;
+      throw new AgentTrustError(
+        `Register transaction failed: ${error instanceof Error ? error.message : String(error)}`,
+        AgentTrustErrorCode.TRANSACTION_FAILED,
+        error,
+      );
+    } finally {
+      this.web3.eth.accounts.wallet.remove(account.address);
+    }
   }
 }
