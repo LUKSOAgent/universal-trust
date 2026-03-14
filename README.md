@@ -260,7 +260,7 @@ universal-trust/
 ## Tests
 
 ```
-Foundry (Solidity):  70/70 passing
+Foundry (Solidity):  80/80 passing
 SDK (TypeScript):    50/50 passing
 Security audit:      No issues found (see AUDIT.md)
 ```
