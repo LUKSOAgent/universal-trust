@@ -6,6 +6,11 @@ import { verifyAgent, getEndorsers, getEndorsement, getAgent, isRegistered } fro
 export default function Endorse() {
   const [searchParams] = useSearchParams();
   const [targetAddress, setTargetAddress] = useState(searchParams.get("address") || "");
+
+  useEffect(() => {
+    document.title = "Endorse Agent — Universal Trust";
+    return () => { document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO"; };
+  }, []);
   const [reason, setReason] = useState("");
   const [status, setStatus] = useState(null);
   const [txHash, setTxHash] = useState(null);

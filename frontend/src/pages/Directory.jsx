@@ -11,6 +11,11 @@ export default function Directory() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("trust"); // trust | name | recent | endorsements
 
+  useEffect(() => {
+    document.title = "Agent Directory — Universal Trust";
+    return () => { document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO"; };
+  }, []);
+
   async function load() {
     try {
       setLoading(true);

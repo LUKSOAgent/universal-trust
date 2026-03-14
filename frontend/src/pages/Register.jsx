@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { CONTRACT_ADDRESS, CHAIN_ID, EXPLORER_URL } from "../config";
 
 export default function Register() {
   const [name, setName] = useState("");
+
+  useEffect(() => {
+    document.title = "Register Agent — Universal Trust";
+    return () => { document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO"; };
+  }, []);
   const [description, setDescription] = useState("");
   const [metadataURI, setMetadataURI] = useState("");
   const [status, setStatus] = useState(null);

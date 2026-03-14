@@ -87,3 +87,19 @@ select option {
   background: #14142b;
   color: #e5e7eb;
 }
+
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Better pre/code block scrolling on mobile */
+pre {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Smooth hover transitions on all interactive elements */
+a, button {
+  transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+  transition-duration: 200ms;
+}

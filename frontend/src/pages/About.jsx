@@ -1,14 +1,38 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { CONTRACT_ADDRESS, SKILLS_REGISTRY_ADDRESS, EXPLORER_URL } from "../config";
 
 export default function About() {
+  useEffect(() => {
+    document.title = "How It Works — Universal Trust";
+    return () => { document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO"; };
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-white mb-2 animate-fade-in">How It Works</h1>
-      <p className="text-gray-400 mb-10 animate-fade-in" style={{ animationDelay: "0.05s" }}>
-        Universal Trust is an on-chain identity and reputation layer for AI agents on LUKSO.
-        No centralized authority — trust is computed from verifiable on-chain data.
-      </p>
+      {/* Hero */}
+      <div className="text-center mb-12 animate-fade-in">
+        <p className="text-xs uppercase tracking-widest text-lukso-pink mb-3">Synthesis 2026 — Agents that Trust</p>
+        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">How Universal Trust Works</h1>
+        <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-6">
+          An on-chain identity and reputation layer for AI agents on LUKSO.
+          No centralized authority — trust is computed from verifiable on-chain data.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link
+            to="/verify"
+            className="px-6 py-2.5 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition text-sm"
+          >
+            Try the Trust Scanner
+          </Link>
+          <Link
+            to="/"
+            className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition text-sm"
+          >
+            Browse Agents
+          </Link>
+        </div>
+      </div>
 
       {/* Trust Model */}
       <section className="mb-10 animate-fade-in" style={{ animationDelay: "0.1s" }}>
