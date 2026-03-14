@@ -808,4 +808,337 @@ contract AgentIdentityRegistryTest is Test {
         assertTrue(registry.isReputationUpdater(deployer));
         assertFalse(registry.isReputationUpdater(agentA));
     }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Audit-Driven Tests — Reentrancy, Permissions, Boundaries, Fuzz
+    // ═════════════════════════════════════════════════════════════════════════
+
+    // ─── Reentrancy guard: mock attacker contract ────────────────────────
+
+    function test_reentrancy_endorse_noExternalCalls() public {
+        // The contract makes no external calls during endorse(), so reentrancy
+        // is impossible. This test verifies the invariant that endorsement
+        // state is consistent after rapid sequential operations.
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+        vm.prank(agentB);
+        registry.register("B", "desc", "");
+        vm.prank(agentC);
+        registry.register("C", "desc", "");
+
+        // Rapid sequential endorsements (if reentrancy were possible, counts would be off)
+        vm.prank(agentA);
+        registry.endorse(agentB, "");
+        vm.prank(agentA);
+        registry.endorse(agentC, "");
+        vm.prank(agentB);
+        registry.endorse(agentC, "");
+
+        // Verify counts are exactly right (reentrancy would inflate these)
+        assertEq(registry.getEndorsementCount(agentB), 1);
+        assertEq(registry.getEndorsementCount(agentC), 2);
+        assertEq(registry.getEndorsementCount(agentA), 0);
+    }
+
+    // ─── Permission escalation: non-owner cannot set reputation updater ──
+
+    function test_setReputationUpdater_revert_nonOwner() public {
+        vm.prank(agentA);
+        vm.expectRevert(AgentIdentityRegistry.NotAuthorized.selector);
+        registry.setReputationUpdater(agentA, true);
+    }
+
+    function test_setReputationUpdater_revert_updaterCannotGrantOthers() public {
+        // Grant agentA as updater
+        vm.prank(deployer);
+        registry.setReputationUpdater(agentA, true);
+
+        // agentA (updater, NOT owner) cannot grant others
+        vm.prank(agentA);
+        vm.expectRevert(AgentIdentityRegistry.NotAuthorized.selector);
+        registry.setReputationUpdater(agentB, true);
+    }
+
+    // ─── transferOwnership to zero address (bricking) ─────────────────────
+
+    function test_transferOwnership_toZeroAddress() public {
+        // The contract allows transferring to address(0) — this is a one-way
+        // door that permanently removes owner capabilities. Not a bug, but
+        // this test documents the behavior.
+        vm.prank(deployer);
+        registry.transferOwnership(address(0));
+
+        assertEq(registry.owner(), address(0));
+
+        // Nobody can now call owner functions
+        vm.prank(deployer);
+        vm.expectRevert(AgentIdentityRegistry.NotAuthorized.selector);
+        registry.setReputationUpdater(agentA, true);
+    }
+
+    // ─── Boundary: zero address cannot register (edge case) ──────────────
+
+    function test_register_fromZeroAddress() public {
+        // vm.prank(address(0)) — can address(0) register?
+        // This is valid in EVM tests. Verifies no special-casing for zero address.
+        vm.prank(address(0));
+        registry.register("Zero Agent", "I am zero", "");
+
+        assertTrue(registry.isRegistered(address(0)));
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(address(0));
+        assertEq(agent.name, "Zero Agent");
+    }
+
+    // ─── Boundary: very long name and description ────────────────────────
+
+    function test_register_longStrings() public {
+        // 1024 char name and description — should work (no on-chain length limit)
+        string memory longName = _repeat("A", 1024);
+        string memory longDesc = _repeat("B", 2048);
+        string memory longURI = _repeat("C", 4096);
+
+        vm.prank(agentA);
+        registry.register(longName, longDesc, longURI);
+
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
+        assertEq(bytes(agent.name).length, 1024);
+        assertEq(bytes(agent.description).length, 2048);
+        assertEq(bytes(agent.metadataURI).length, 4096);
+    }
+
+    // ─── Boundary: empty description and metadataURI are valid ───────────
+
+    function test_register_emptyOptionalFields() public {
+        vm.prank(agentA);
+        registry.register("Agent", "", "");
+
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
+        assertEq(agent.name, "Agent");
+        assertEq(agent.description, "");
+        assertEq(agent.metadataURI, "");
+    }
+
+    // ─── Boundary: trust score cap with max reputation + endorsements ────
+
+    function test_trustScore_capped_maxReputationPlusEndorsements() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+        vm.prank(agentB);
+        registry.register("B", "", "");
+        vm.prank(agentC);
+        registry.register("C", "", "");
+
+        // Max out reputation
+        vm.prank(deployer);
+        registry.updateReputation(agentA, 9900, "max it out"); // 100 + 9900 = 10000
+
+        // Add endorsements on top of max reputation
+        vm.prank(agentB);
+        registry.endorse(agentA, "");
+        vm.prank(agentC);
+        registry.endorse(agentA, "");
+
+        // Trust = 10000 + (2 * 10) = 10020, should be capped at 10000
+        assertEq(registry.getTrustScore(agentA), 10000);
+
+        // verify() should also cap
+        (,,,,, uint256 trustScore,) = registry.verify(agentA);
+        assertEq(trustScore, 10000);
+    }
+
+    // ─── Fuzz: registration with arbitrary name ──────────────────────────
+
+    function testFuzz_register_arbitraryName(string calldata name) public {
+        vm.assume(bytes(name).length > 0); // EmptyName check
+        vm.assume(bytes(name).length < 256); // Practical limit for gas
+
+        vm.prank(agentA);
+        registry.register(name, "desc", "");
+
+        assertTrue(registry.isRegistered(agentA));
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
+        assertEq(agent.name, name);
+        assertEq(agent.reputation, 100);
+    }
+
+    // ─── Fuzz: endorsement with arbitrary reason ─────────────────────────
+
+    function testFuzz_endorse_arbitraryReason(string calldata reason) public {
+        vm.assume(bytes(reason).length < 512); // Practical gas limit
+
+        vm.prank(agentA);
+        registry.register("A", "", "");
+        vm.prank(agentB);
+        registry.register("B", "", "");
+
+        vm.prank(agentA);
+        registry.endorse(agentB, reason);
+
+        AgentIdentityRegistry.Endorsement memory e = registry.getEndorsement(agentA, agentB);
+        assertEq(e.reason, reason);
+    }
+
+    // ─── Fuzz: pagination never reverts ──────────────────────────────────
+
+    function testFuzz_getAgentsByPage_neverReverts(uint256 offset, uint256 limit) public {
+        // Register a few agents
+        vm.prank(agentA);
+        registry.register("A", "", "");
+        vm.prank(agentB);
+        registry.register("B", "", "");
+
+        // Should never revert regardless of offset/limit values
+        address[] memory result = registry.getAgentsByPage(offset, limit);
+
+        // Result length should never exceed actual agent count
+        assertLe(result.length, registry.getAgentCount());
+    }
+
+    // ─── Gas: updateReputation under gas limit ───────────────────────────
+
+    function test_gas_updateReputation() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+
+        vm.prank(deployer);
+        uint256 gasBefore = gasleft();
+        registry.updateReputation(agentA, 50, "Performance bonus for completing 10 tasks");
+        uint256 gasUsed = gasBefore - gasleft();
+        emit log_named_uint("Gas: updateReputation", gasUsed);
+        assertLt(gasUsed, 100000);
+    }
+
+    // ─── Gas: removeEndorsement under gas limit ──────────────────────────
+
+    function test_gas_removeEndorsement() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+        vm.prank(agentB);
+        registry.register("B", "", "");
+        vm.prank(agentA);
+        registry.endorse(agentB, "");
+
+        vm.prank(agentA);
+        uint256 gasBefore = gasleft();
+        registry.removeEndorsement(agentB);
+        uint256 gasUsed = gasBefore - gasleft();
+        emit log_named_uint("Gas: removeEndorsement", gasUsed);
+        assertLt(gasUsed, 100000);
+    }
+
+    // ─── Event emission: verify all events emit correctly ────────────────
+
+    function test_events_register() public {
+        vm.prank(agentA);
+        vm.expectEmit(true, false, false, true);
+        emit AgentIdentityRegistry.AgentRegistered(agentA, "A", "desc", uint64(block.timestamp));
+        registry.register("A", "desc", "");
+    }
+
+    function test_events_endorse() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+        vm.prank(agentB);
+        registry.register("B", "", "");
+
+        vm.prank(agentA);
+        vm.expectEmit(true, true, false, true);
+        emit AgentIdentityRegistry.EndorsementAdded(agentA, agentB, "trust", uint64(block.timestamp));
+        registry.endorse(agentB, "trust");
+    }
+
+    function test_events_reputationUpdate() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+
+        vm.prank(deployer);
+        vm.expectEmit(true, false, false, true);
+        emit AgentIdentityRegistry.ReputationUpdated(agentA, 100, 150, 50, "bonus");
+        registry.updateReputation(agentA, 50, "bonus");
+    }
+
+    function test_events_deactivateReactivate() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+
+        vm.prank(agentA);
+        vm.expectEmit(true, false, false, true);
+        emit AgentIdentityRegistry.AgentDeactivated(agentA, uint64(block.timestamp));
+        registry.deactivate();
+
+        vm.prank(agentA);
+        vm.expectEmit(true, false, false, true);
+        emit AgentIdentityRegistry.AgentReactivated(agentA, uint64(block.timestamp));
+        registry.reactivate();
+    }
+
+    // ─── Multiple reputation updates: cumulative effects ─────────────────
+
+    function test_reputation_multipleUpdates_cumulative() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+
+        // +50, -30, +100, -200 → 100+50-30+100-200 = 20
+        vm.startPrank(deployer);
+        registry.updateReputation(agentA, 50, "step1");
+        registry.updateReputation(agentA, -30, "step2");
+        registry.updateReputation(agentA, 100, "step3");
+        registry.updateReputation(agentA, -200, "step4");
+        vm.stopPrank();
+
+        assertEq(registry.getAgent(agentA).reputation, 20);
+    }
+
+    // ─── isUniversalProfile: returns false for EOA ───────────────────────
+
+    function test_isUniversalProfile_eoa() public view {
+        assertFalse(registry.isUniversalProfile(agentA));
+    }
+
+    function test_isUniversalProfile_contractWithoutERC165() public view {
+        // The registry itself doesn't support ERC165 / LSP0
+        assertFalse(registry.isUniversalProfile(address(registry)));
+    }
+
+    // ─── Large-scale: register many agents, paginate ─────────────────────
+
+    function test_pagination_manyAgents() public {
+        // Register 20 agents
+        for (uint256 i = 1; i <= 20; i++) {
+            address agent = address(uint160(i + 100));
+            vm.prank(agent);
+            registry.register(string(abi.encodePacked("Agent_", vm.toString(i))), "", "");
+        }
+
+        assertEq(registry.getAgentCount(), 20);
+
+        // Page through 5 at a time
+        address[] memory p1 = registry.getAgentsByPage(0, 5);
+        assertEq(p1.length, 5);
+
+        address[] memory p2 = registry.getAgentsByPage(5, 5);
+        assertEq(p2.length, 5);
+
+        address[] memory p3 = registry.getAgentsByPage(15, 5);
+        assertEq(p3.length, 5);
+
+        // Past end
+        address[] memory p4 = registry.getAgentsByPage(20, 5);
+        assertEq(p4.length, 0);
+
+        // Overlapping last page
+        address[] memory p5 = registry.getAgentsByPage(18, 5);
+        assertEq(p5.length, 2);
+    }
+
+    // ─── Helper: repeat a character ──────────────────────────────────────
+
+    function _repeat(string memory char, uint256 count) internal pure returns (string memory) {
+        bytes memory result = new bytes(count);
+        bytes1 c = bytes(char)[0];
+        for (uint256 i = 0; i < count; i++) {
+            result[i] = c;
+        }
+        return string(result);
+    }
 }

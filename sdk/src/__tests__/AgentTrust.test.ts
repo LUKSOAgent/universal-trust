@@ -339,4 +339,170 @@ describe('AgentTrust SDK', () => {
       );
     });
   });
+
+  // ─── Negative tests — invalid inputs ────────────────────────────────
+
+  describe('negative tests', () => {
+    it('should throw INVALID_ADDRESS with correct error code for short address', async () => {
+      try {
+        await trust.verify('0x123');
+        expect.unreachable('should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(AgentTrustError);
+        expect((err as AgentTrustError).code).toBe(AgentTrustErrorCode.INVALID_ADDRESS);
+        expect((err as AgentTrustError).message).toContain('0x123');
+      }
+    });
+
+    it('should throw INVALID_ADDRESS for address with wrong checksum length', async () => {
+      await expect(trust.verify('0xZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ')).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_ADDRESS,
+      });
+    });
+
+    it('should throw INVALID_INPUT for verifyBatch with empty array', async () => {
+      await expect(trust.verifyBatch([])).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_INPUT,
+      });
+    });
+
+    it('should throw INVALID_INPUT for getAgentsByPage with negative offset', async () => {
+      await expect(trust.getAgentsByPage(-1, 10)).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_INPUT,
+      });
+    });
+
+    it('should throw INVALID_INPUT for getAgentsByPage with negative limit', async () => {
+      await expect(trust.getAgentsByPage(0, -5)).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_INPUT,
+      });
+    });
+
+    it('should throw INVALID_ADDRESS for getEndorsers with bad address', async () => {
+      await expect(trust.getEndorsers('not-an-address')).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_ADDRESS,
+      });
+    });
+
+    it('should throw INVALID_ADDRESS for getEndorsementCount with bad address', async () => {
+      await expect(trust.getEndorsementCount('nope')).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_ADDRESS,
+      });
+    });
+
+    it('should throw INVALID_ADDRESS for isReputationUpdater with bad address', async () => {
+      await expect(trust.isReputationUpdater('bad')).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_ADDRESS,
+      });
+    });
+
+    it('should throw INVALID_INPUT for register with empty name', async () => {
+      await expect(trust.register('', 'desc', '0xabc123')).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_INPUT,
+      });
+    });
+
+    it('should throw INVALID_INPUT for endorse without private key', async () => {
+      await expect(trust.endorse(DEPLOYER_ADDRESS, '')).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_INPUT,
+      });
+    });
+
+    it('should throw INVALID_ADDRESS for endorse with bad endorsed address', async () => {
+      await expect(trust.endorse('bad-addr', 'somekey', 'reason')).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_ADDRESS,
+      });
+    });
+  });
+
+  // ─── getAgentsByReputation ─────────────────────────────────────────
+
+  describe('getAgentsByReputation()', () => {
+    it(
+      'should return agents with reputation >= 100',
+      async () => {
+        const agents = await trust.getAgentsByReputation(100);
+        expect(agents.length).toBeGreaterThanOrEqual(2);
+        // All returned agents should meet the threshold
+        for (const agent of agents) {
+          expect(agent.reputation).toBeGreaterThanOrEqual(100);
+        }
+        // Should be sorted by reputation descending
+        for (let i = 1; i < agents.length; i++) {
+          expect(agents[i - 1].reputation).toBeGreaterThanOrEqual(agents[i].reputation);
+        }
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should return empty array for impossibly high threshold',
+      async () => {
+        const agents = await trust.getAgentsByReputation(99999);
+        expect(agents.length).toBe(0);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it('should throw INVALID_INPUT for negative minReputation', async () => {
+      await expect(trust.getAgentsByReputation(-1)).rejects.toMatchObject({
+        code: AgentTrustErrorCode.INVALID_INPUT,
+      });
+    });
+  });
+
+  // ─── Error code paths — RPC error handling ─────────────────────────
+
+  describe('error handling with bad RPC', () => {
+    const badTrust = new AgentTrust({
+      rpcUrl: 'http://localhost:1',  // unreachable
+      maxRetries: 0,  // no retries for fast failure
+      retryDelayMs: 10,
+    });
+
+    it('should throw RPC_ERROR for unreachable RPC on verify', async () => {
+      await expect(badTrust.verify(DEPLOYER_ADDRESS)).rejects.toMatchObject({
+        code: AgentTrustErrorCode.RPC_ERROR,
+      });
+    }, TEST_TIMEOUT);
+
+    it('should throw RPC_ERROR for unreachable RPC on getAgentCount', async () => {
+      await expect(badTrust.getAgentCount()).rejects.toMatchObject({
+        code: AgentTrustErrorCode.RPC_ERROR,
+      });
+    }, TEST_TIMEOUT);
+
+    it('should throw RPC_ERROR for unreachable RPC on isRegistered', async () => {
+      await expect(badTrust.isRegistered(DEPLOYER_ADDRESS)).rejects.toMatchObject({
+        code: AgentTrustErrorCode.RPC_ERROR,
+      });
+    }, TEST_TIMEOUT);
+  });
+
+  // ─── getTrustScore ─────────────────────────────────────────────────
+
+  describe('getTrustScore()', () => {
+    it(
+      'should return a trust score for registered agent',
+      async () => {
+        const score = await trust.getTrustScore(DEPLOYER_ADDRESS);
+        expect(score).toBeGreaterThanOrEqual(100);
+        expect(typeof score).toBe('number');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should throw AgentTrustError for unregistered agent',
+      async () => {
+        // On-chain getTrustScore reverts for unregistered agents.
+        // The error may surface as CONTRACT_REVERT or RPC_ERROR depending
+        // on how the RPC node wraps the revert reason.
+        await expect(
+          trust.getTrustScore('0x0000000000000000000000000000000000000001'),
+        ).rejects.toBeInstanceOf(AgentTrustError);
+      },
+      TEST_TIMEOUT,
+    );
+  });
 });
