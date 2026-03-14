@@ -13,6 +13,11 @@ export default function Verify() {
   const [validationError, setValidationError] = useState(null);
   const [scanPhase, setScanPhase] = useState(null);
 
+  useEffect(() => {
+    document.title = "Trust Scanner — Universal Trust";
+    return () => { document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO"; };
+  }, []);
+
   // Auto-verify if address provided via URL
   useEffect(() => {
     const urlAddr = searchParams.get("address");
@@ -145,6 +150,22 @@ export default function Verify() {
         {validationError && (
           <p className="mt-2 text-sm text-red-400">{validationError}</p>
         )}
+        {!result && !loading && !address && (
+          <p className="mt-3 text-xs text-gray-600">
+            Try it:{" "}
+            <button
+              type="button"
+              onClick={() => {
+                setAddress("0x293E96ebbf264ed7715cff2b67850517De70232a");
+                setValidationError(null);
+              }}
+              className="text-lukso-purple hover:text-lukso-pink transition font-mono"
+            >
+              0x293E...0232a
+            </button>
+            {" "}(registered agent)
+          </p>
+        )}
       </form>
 
       {/* Scanning Animation */}
@@ -160,8 +181,8 @@ export default function Verify() {
               </svg>
             </div>
           </div>
-          <p className="text-gray-400 text-sm">Querying LUKSO mainnet smart contract...</p>
-          <p className="text-gray-600 text-xs mt-1 font-mono">{address}</p>
+          <ScanPhaseText />
+          <p className="text-gray-600 text-xs mt-2 font-mono">{address}</p>
         </div>
       )}
 
@@ -334,27 +355,59 @@ export default function Verify() {
 
       {/* SDK Code Example */}
       <div className="mt-8 bg-lukso-card border border-lukso-border rounded-xl p-6 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-        <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-          <svg className="w-5 h-5 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-          </svg>
-          Integrate in Your Agent
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <svg className="w-5 h-5 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            Integrate in Your Agent
+          </h3>
+          <span className="text-xs text-gray-600 bg-lukso-darker px-2 py-1 rounded">ethers.js v6</span>
+        </div>
         <pre className="bg-lukso-darker rounded-lg p-4 text-sm text-gray-300 overflow-x-auto">
-{`import { ethers } from "ethers";
-
-const provider = new ethers.JsonRpcProvider(
-  "https://rpc.mainnet.lukso.network", 42
-);
-const contract = new ethers.Contract(
-  "${CONTRACT_ADDRESS}", ABI, provider
-);
-
-const result = await contract.verify("${address || "0x..."}");
-// { registered, active, isUP, reputation,
-//   endorsements, trustScore, name }`}
+{`const result = await contract.verify("${address || "0x..."}");
+// → { registered, active, isUP, reputation,
+//      endorsements, trustScore, name }`}
         </pre>
+        <p className="text-xs text-gray-500 mt-3">
+          Full SDK and integration docs on{" "}
+          <a
+            href="https://github.com/LUKSOAgent/universal-trust"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-lukso-purple hover:text-lukso-pink transition"
+          >
+            GitHub →
+          </a>
+        </p>
       </div>
+    </div>
+  );
+}
+
+function ScanPhaseText() {
+  const [phase, setPhase] = useState(0);
+  const phases = [
+    "Connecting to LUKSO mainnet...",
+    "Querying AgentIdentityRegistry...",
+    "Reading on-chain trust data...",
+  ];
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setPhase(1), 400),
+      setTimeout(() => setPhase(2), 900),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  return (
+    <div className="space-y-1">
+      {phases.slice(0, phase + 1).map((text, i) => (
+        <p key={i} className={`text-sm transition-all duration-300 ${i === phase ? "text-gray-300" : "text-gray-600"}`}>
+          {i < phase ? "✓ " : ""}{text}
+        </p>
+      ))}
     </div>
   );
 }

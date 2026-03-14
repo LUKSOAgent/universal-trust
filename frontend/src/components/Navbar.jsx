@@ -24,7 +24,7 @@ export default function Navbar() {
           <NavLink to="/" active={isActive("/")}>Agents</NavLink>
           <NavLink to="/register" active={isActive("/register")}>Register</NavLink>
           <NavLink to="/endorse" active={isActive("/endorse")}>Endorse</NavLink>
-          <NavLink to="/verify" active={isActive("/verify")}>Verify</NavLink>
+          <NavLink to="/verify" active={isActive("/verify")} highlight>Verify</NavLink>
           <NavLink to="/about" active={isActive("/about")}>About</NavLink>
         </div>
 
@@ -58,13 +58,15 @@ export default function Navbar() {
   );
 }
 
-function NavLink({ to, active, children }) {
+function NavLink({ to, active, highlight, children }) {
   return (
     <Link
       to={to}
       className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
         active
           ? "bg-lukso-card text-lukso-pink border border-lukso-pink/30"
+          : highlight
+          ? "text-lukso-pink hover:text-white hover:bg-lukso-card/50"
           : "text-gray-400 hover:text-white hover:bg-lukso-card/50"
       }`}
     >

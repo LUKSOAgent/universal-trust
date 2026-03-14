@@ -8,6 +8,16 @@ export default function AgentProfile() {
   const { address } = useParams();
   const [agent, setAgent] = useState(null);
   const [verification, setVerification] = useState(null);
+
+  // Set page title when agent data loads
+  useEffect(() => {
+    if (verification?.name) {
+      document.title = `${verification.name} — Universal Trust`;
+    } else {
+      document.title = "Agent Profile — Universal Trust";
+    }
+    return () => { document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO"; };
+  }, [verification?.name]);
   const [endorsers, setEndorsers] = useState([]);
   const [endorsementDetails, setEndorsementDetails] = useState({});
   const [skills, setSkills] = useState([]);
@@ -222,6 +232,23 @@ export default function AgentProfile() {
                 <CopyButton text={address} />
               </div>
             </div>
+            {agent?.metadataURI && (
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-gray-500 text-sm">Metadata:</span>
+                <a
+                  href={agent.metadataURI.startsWith("ipfs://")
+                    ? `https://api.universalprofile.cloud/ipfs/${agent.metadataURI.slice(7)}`
+                    : agent.metadataURI}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs text-lukso-purple hover:text-lukso-pink transition truncate max-w-xs"
+                >
+                  {agent.metadataURI.length > 50
+                    ? agent.metadataURI.slice(0, 30) + "..." + agent.metadataURI.slice(-15)
+                    : agent.metadataURI}
+                </a>
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-3 mt-3">
               <Link
                 to={`/endorse?address=${address}`}
