@@ -1,6 +1,12 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 export default function NotFound() {
+  useEffect(() => {
+    document.title = "404 — Universal Trust";
+    return () => { document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO"; };
+  }, []);
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-20 text-center">
       <div className="bg-lukso-card border border-lukso-border rounded-xl p-12">
