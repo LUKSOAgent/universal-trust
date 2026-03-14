@@ -245,10 +245,23 @@ export default function Endorse() {
             type="text"
             value={targetAddress}
             onChange={(e) => setTargetAddress(e.target.value.trim())}
-            placeholder="0x..."
+            placeholder="0x... agent address"
             className="w-full bg-lukso-card border border-lukso-border rounded-lg px-4 py-3 text-white placeholder-gray-600 font-mono text-sm focus:border-lukso-pink focus:outline-none focus:ring-1 focus:ring-lukso-pink/50 transition"
             required
           />
+          {!targetAddress && (
+            <p className="mt-2 text-xs text-gray-600">
+              Try it:{" "}
+              <button
+                type="button"
+                onClick={() => setTargetAddress("0x293E96ebbf264ed7715cff2b67850517De70232a")}
+                className="text-lukso-purple hover:text-lukso-pink transition font-mono"
+              >
+                0x293E...0232a
+              </button>
+              {" "}(registered agent)
+            </p>
+          )}
           {targetAddress && /^0x[0-9a-fA-F]{40}$/.test(targetAddress) && (
             <p className="mt-2 text-xs text-gray-500">
               <Link to={`/agent/${targetAddress}`} className="text-lukso-purple hover:text-lukso-pink transition">
