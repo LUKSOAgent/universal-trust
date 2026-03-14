@@ -105,6 +105,7 @@ export default function Verify() {
                 validateAddress(e.target.value);
               }}
               placeholder="0x... agent or Universal Profile address"
+              aria-label="Agent address to verify"
               className={`w-full bg-lukso-card border rounded-lg px-4 py-3 text-white placeholder-gray-600 font-mono text-sm focus:outline-none focus:ring-1 transition ${
                 validationError
                   ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/50"
@@ -121,6 +122,7 @@ export default function Verify() {
                   setValidationError(null);
                   setScanPhase(null);
                 }}
+                aria-label="Clear address"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
