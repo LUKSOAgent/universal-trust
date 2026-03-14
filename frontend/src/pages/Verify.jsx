@@ -71,7 +71,11 @@ export default function Verify() {
         <div className="bg-lukso-card border border-lukso-border rounded-xl p-6">
           {!result.registered ? (
             <div className="text-center py-8">
-              <div className="text-5xl mb-4">❌</div>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+                <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
               <h2 className="text-xl font-bold text-red-400 mb-2">Not Registered</h2>
               <p className="text-gray-400">
                 This address is not registered in the AgentIdentityRegistry.
@@ -84,7 +88,11 @@ export default function Verify() {
                 <div>
                   <div className="flex items-center gap-3 mb-1">
                     <h2 className="text-2xl font-bold text-white">{result.name}</h2>
-                    <span className="text-2xl">✅</span>
+                    <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
                   </div>
                   <a
                     href={`${EXPLORER_URL}/address/${address}`}
