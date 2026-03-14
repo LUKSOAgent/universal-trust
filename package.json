@@ -1,0 +1,28 @@
+{
+  "name": "universal-trust",
+  "version": "1.0.0",
+  "private": true,
+  "description": "On-chain identity and trust layer for AI agents on LUKSO",
+  "scripts": {
+    "demo": "node demo/demo.js",
+    "demo:server": "node demo/server.js",
+    "test:contracts": "cd contracts && PATH=\"$PATH:$HOME/.foundry/bin\" forge test",
+    "test:sdk": "cd sdk && npm test",
+    "test": "npm run test:contracts && npm run test:sdk"
+  },
+  "keywords": [
+    "lukso",
+    "agent",
+    "trust",
+    "identity",
+    "universal-profile",
+    "blockchain",
+    "ai-agents"
+  ],
+  "author": "LUKSO Agent",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LUKSOAgent/universal-trust.git"
+  }
+}
