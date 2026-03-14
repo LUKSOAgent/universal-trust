@@ -7,6 +7,8 @@ const Directory = lazy(() => import("./pages/Directory"));
 const AgentProfile = lazy(() => import("./pages/AgentProfile"));
 const Register = lazy(() => import("./pages/Register"));
 const Verify = lazy(() => import("./pages/Verify"));
+const Endorse = lazy(() => import("./pages/Endorse"));
+const About = lazy(() => import("./pages/About"));
 
 function PageLoader() {
   return (
@@ -29,6 +31,8 @@ function App() {
               <Route path="/agent/:address" element={<AgentProfile />} />
               <Route path="/register" element={<Register />} />
               <Route path="/verify" element={<Verify />} />
+              <Route path="/endorse" element={<Endorse />} />
+              <Route path="/about" element={<About />} />
             </Routes>
           </Suspense>
         </main>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { verifyAgent, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered } from "../useContract";
 import { EXPLORER_URL } from "../config";
-import TrustBadge from "../components/TrustBadge";
+import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
 
 export default function AgentProfile() {
   const { address } = useParams();
@@ -138,27 +138,45 @@ export default function AgentProfile() {
               {agent?.description || "No description provided."}
             </p>
             
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500 text-sm">Address:</span>
-              <a
-                href={`${EXPLORER_URL}/address/${address}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-sm text-lukso-purple hover:text-lukso-pink transition break-all"
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 text-sm">Address:</span>
+                <a
+                  href={`${EXPLORER_URL}/address/${address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-sm text-lukso-purple hover:text-lukso-pink transition break-all"
+                >
+                  {address}
+                </a>
+              </div>
+              <Link
+                to={`/endorse?address=${address}`}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition shrink-0"
               >
-                {address}
-              </a>
+                + Endorse
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
         <StatCard label="Reputation" value={verification.reputation} />
         <StatCard label="Endorsements" value={verification.endorsements} />
         <StatCard label="Trust Score" value={verification.trustScore} />
         <StatCard label="Skills" value={skills.length} />
+      </div>
+
+      {/* Trust Score Visualization */}
+      <div className="bg-lukso-card border border-lukso-border rounded-xl p-5 mb-6 animate-fade-in" style={{ animationDelay: "0.12s" }}>
+        <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Trust Score Breakdown</p>
+        <TrustScoreBar
+          reputation={verification.reputation}
+          endorsements={verification.endorsements}
+          trustScore={verification.trustScore}
+        />
       </div>
 
       {/* Timeline */}
