@@ -33,7 +33,8 @@ src/
 │   ├── Navbar.jsx           # Sticky nav with mobile hamburger
 │   ├── Footer.jsx           # Contract link, network info
 │   ├── AgentCard.jsx        # Agent list card (directory)
-│   └── TrustBadge.jsx       # Trust score badge + breakdown bar
+│   ├── TrustBadge.jsx       # Trust score badge + breakdown bar
+│   └── TrustGraph.jsx       # SVG trust network visualization
 └── pages/
     ├── Directory.jsx        # / — Agent directory with search/sort
     ├── AgentProfile.jsx     # /agent/:address — Full agent profile

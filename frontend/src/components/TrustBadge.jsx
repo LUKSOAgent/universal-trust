@@ -1,23 +1,16 @@
 export default function TrustBadge({ score, size = "md" }) {
-  const maxScore = 10000;
-  const pct = Math.min((score / maxScore) * 100, 100);
-
-  let color, label, barColor;
+  let color, label;
   if (score >= 500) {
     color = "from-green-500 to-emerald-400";
-    barColor = "from-green-500 to-emerald-400";
     label = "Highly Trusted";
   } else if (score >= 200) {
     color = "from-blue-500 to-cyan-400";
-    barColor = "from-blue-500 to-cyan-400";
     label = "Trusted";
   } else if (score >= 100) {
     color = "from-yellow-500 to-amber-400";
-    barColor = "from-yellow-500 to-amber-400";
     label = "Verified";
   } else {
     color = "from-gray-500 to-gray-400";
-    barColor = "from-gray-500 to-gray-400";
     label = "New";
   }
 
