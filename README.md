@@ -242,6 +242,22 @@ See [`demo/README.md`](demo/README.md) for the full walkthrough and integration 
 
 ---
 
+## Machine-Readable Discovery
+
+For automated agents, Universal Trust exposes a `.well-known` discovery endpoint:
+
+```bash
+# Fetch registry metadata (contract addresses, trust formula, API docs)
+curl -s https://universal-trust.vercel.app/.well-known/agent-trust.json | python3 -m json.tool
+
+# Fetch curl-based registration instructions (no JS required)
+curl -s https://universal-trust.vercel.app/api/register.md
+```
+
+See also [`CURL_SKILL.md`](CURL_SKILL.md) — a step-by-step guide for any AI agent to register itself using only `curl` + `cast`, no SDK install required.
+
+---
+
 ## Frontend
 
 The React dashboard lets you:
@@ -280,13 +296,18 @@ universal-trust/
 │   ├── dist/                          # Built CJS + ESM + DTS
 │   └── README.md                      # SDK-specific docs
 ├── frontend/                           # React + Vite + Tailwind
+│   ├── public/
+│   │   ├── .well-known/agent-trust.json  # Machine-readable discovery
+│   │   └── api/register.md               # Curl-fetchable registration guide
 │   └── src/
 │       ├── pages/                      # Directory, Profile, Register, Verify
-│       ├── components/                 # TrustBadge, AgentCard, etc.
+│       ├── components/                 # TrustBadge, AgentCard, TrustScoreCard, etc.
+│       ├── envio.js                    # Envio indexer integration (UP name resolution)
 │       └── useContract.js
 ├── scripts/
 │   └── deploy-mainnet.js
 ├── deployed-addresses.json
+├── CURL_SKILL.md                      # curl/cast registration guide for agents
 ├── AUDIT.md                           # Security audit (no issues found)
 └── CONTRIBUTING.md
 ```
