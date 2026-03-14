@@ -41,6 +41,39 @@ console.log(result);
 
 ---
 
+## Agent-to-Agent Trust
+
+The core use case: one AI agent verifying another's identity before interacting.
+
+```typescript
+import { AgentTrust } from '@universal-trust/sdk';
+
+const trust = new AgentTrust({});
+const MIN_TRUST = 100;
+
+async function handleAgentRequest(callerAddress: string, request: any) {
+  const v = await trust.verify(callerAddress);
+
+  if (!v.registered) throw new Error('Unknown agent — not in registry');
+  if (!v.active)     throw new Error('Agent deactivated');
+  if (v.trustScore < MIN_TRUST) throw new Error(`Trust too low: ${v.trustScore}`);
+
+  // Verified — safe to proceed
+  console.log(`Accepted request from ${v.name} (trust: ${v.trustScore})`);
+  return processRequest(request);
+}
+```
+
+No API keys. No OAuth tokens. One on-chain call resolves identity.
+
+**Run the full example:**
+
+```bash
+npx tsx examples/agent-to-agent.ts
+```
+
+---
+
 ## Trust Verification Flow
 
 ```
