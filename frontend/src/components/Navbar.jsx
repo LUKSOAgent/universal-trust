@@ -32,7 +32,8 @@ export default function Navbar() {
         <button
           onClick={() => setOpen(!open)}
           className="sm:hidden p-2 text-gray-400 hover:text-white transition"
-          aria-label="Toggle menu"
+          aria-label="Toggle navigation menu"
+          aria-expanded={open}
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             {open ? (

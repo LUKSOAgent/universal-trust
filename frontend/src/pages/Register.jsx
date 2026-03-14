@@ -138,10 +138,11 @@ export default function Register() {
 
       <form onSubmit={handleRegister} className="space-y-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="agent-name" className="block text-sm font-medium text-gray-300 mb-2">
             Agent Name *
           </label>
           <input
+            id="agent-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -152,10 +153,11 @@ export default function Register() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="agent-desc" className="block text-sm font-medium text-gray-300 mb-2">
             Description
           </label>
           <textarea
+            id="agent-desc"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What does this agent do? What capabilities does it have?"
@@ -165,10 +167,11 @@ export default function Register() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="agent-metadata" className="block text-sm font-medium text-gray-300 mb-2">
             Metadata URI <span className="text-gray-500 font-normal">(optional)</span>
           </label>
           <input
+            id="agent-metadata"
             type="text"
             value={metadataURI}
             onChange={(e) => setMetadataURI(e.target.value)}
