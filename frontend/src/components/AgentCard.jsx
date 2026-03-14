@@ -22,10 +22,14 @@ function MiniTrustBar({ score }) {
   );
 }
 
-export default function AgentCard({ agent }) {
+export default function AgentCard({ agent, upProfile }) {
   const [skillCount, setSkillCount] = useState(null);
   const trustScore = agent.reputation + (agent.endorsementCount * 10);
   const registeredDate = new Date(agent.registeredAt * 1000).toLocaleDateString();
+
+  // Use UP name if available and different from registered name
+  const displayName = upProfile?.name || agent.name;
+  const avatarUrl = upProfile?.profileImage || null;
 
   useEffect(() => {
     let cancelled = false;
@@ -43,9 +47,24 @@ export default function AgentCard({ agent }) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
+            {/* UP avatar */}
+            {avatarUrl && (
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                className="w-7 h-7 rounded-full object-cover border border-lukso-border shrink-0"
+                onError={(e) => { e.target.style.display = "none"; }}
+              />
+            )}
             <h3 className="text-lg font-semibold text-white group-hover:text-lukso-pink transition truncate">
-              {agent.name}
+              {displayName}
             </h3>
+            {/* Show UP badge if enriched with UP name */}
+            {upProfile?.name && (
+              <span className="px-1.5 py-0.5 text-[10px] rounded bg-lukso-purple/20 text-lukso-purple border border-lukso-purple/30 shrink-0 font-medium">
+                UP
+              </span>
+            )}
             {agent.isActive ? (
               <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400 border border-green-500/30 shrink-0">
                 Active

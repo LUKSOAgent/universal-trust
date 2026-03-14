@@ -2,9 +2,11 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import AgentCard from "../components/AgentCard";
 import { getAllAgents, getAgentCount, verifyAgent } from "../useContract";
+import { fetchUPProfiles } from "../envio";
 
 export default function Directory() {
   const [agents, setAgents] = useState([]);
+  const [upProfiles, setUpProfiles] = useState({}); // address → { name, profileImage }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [count, setCount] = useState(0);
@@ -26,6 +28,13 @@ export default function Directory() {
       ]);
       setAgents(agentList);
       setCount(totalCount);
+
+      // Enrich with UP profiles from Envio (non-blocking, optional)
+      if (agentList.length > 0) {
+        fetchUPProfiles(agentList.map((a) => a.address))
+          .then((profiles) => setUpProfiles(profiles))
+          .catch(() => {}); // silently ignore
+      }
     } catch (err) {
       console.error("Failed to load agents:", err);
       setError(err.message);
@@ -249,7 +258,10 @@ export default function Directory() {
           <div className="space-y-4">
             {filteredAgents.map((agent, i) => (
               <div key={agent.address} className="animate-fade-in" style={{ animationDelay: `${i * 0.05}s` }}>
-                <AgentCard agent={agent} />
+                <AgentCard
+                  agent={agent}
+                  upProfile={upProfiles[agent.address.toLowerCase()] || null}
+                />
               </div>
             ))}
           </div>

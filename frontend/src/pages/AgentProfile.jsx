@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { verifyAgent, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered } from "../useContract";
+import { verifyAgent, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered, getAllAgents } from "../useContract";
 import { EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
+import TrustScoreCard from "../components/TrustScoreCard";
+import { fetchUPProfile } from "../envio";
 
 export default function AgentProfile() {
   const { address } = useParams();
   const [agent, setAgent] = useState(null);
   const [verification, setVerification] = useState(null);
+  const [upProfile, setUpProfile] = useState(null);
+  const [allAgents, setAllAgents] = useState([]);
 
   // Set page title when agent data loads
   useEffect(() => {
@@ -48,6 +52,12 @@ export default function AgentProfile() {
         setAgent(agentData);
         setEndorsers(endorserList);
         setSkills(skillList);
+
+        // Fetch UP profile from Envio (optional enrichment)
+        fetchUPProfile(address).then((p) => setUpProfile(p)).catch(() => {});
+
+        // Fetch all agents for rank computation (optional, non-blocking)
+        getAllAgents().then((list) => setAllAgents(list)).catch(() => {});
 
         // Fetch endorsement details
         if (endorserList.length > 0) {
@@ -196,8 +206,25 @@ export default function AgentProfile() {
           <TrustBadge score={verification.trustScore} size="lg" />
           
           <div className="flex-1 min-w-0">
+            {/* UP avatar from Envio */}
+            {upProfile?.profileImage && (
+              <div className="mb-3">
+                <img
+                  src={upProfile.profileImage}
+                  alt={upProfile.name || verification.name}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-lukso-purple/50"
+                  onError={(e) => { e.target.style.display = "none"; }}
+                />
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-white">{verification.name}</h1>
+              <h1 className="text-3xl font-bold text-white">
+                {upProfile?.name || verification.name}
+              </h1>
+              {/* Show registered name as subtitle if UP name differs */}
+              {upProfile?.name && upProfile.name !== verification.name && (
+                <span className="text-sm text-gray-500 font-normal">({verification.name})</span>
+              )}
               {verification.active ? (
                 <span className="px-3 py-1 text-sm rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
                   Active
@@ -257,14 +284,24 @@ export default function AgentProfile() {
                 + Endorse
               </Link>
               {verification.isUP && (
-                <a
-                  href={`https://universalprofile.cloud/${address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
-                >
-                  View on UP Cloud ↗
-                </a>
+                <>
+                  <a
+                    href={`https://universaleverything.io/${address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
+                  >
+                    View on Universal Everything ↗
+                  </a>
+                  <a
+                    href={`https://universalprofile.cloud/${address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
+                  >
+                    UP Cloud ↗
+                  </a>
+                </>
               )}
               <Link
                 to={`/verify?address=${address}`}
@@ -285,13 +322,13 @@ export default function AgentProfile() {
         <StatCard label="Skills" value={skills.length} />
       </div>
 
-      {/* Trust Score Visualization */}
-      <div className="bg-lukso-card border border-lukso-border rounded-xl p-5 mb-6 animate-fade-in" style={{ animationDelay: "0.12s" }}>
-        <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Trust Score Breakdown</p>
-        <TrustScoreBar
-          reputation={verification.reputation}
-          endorsements={verification.endorsements}
-          trustScore={verification.trustScore}
+      {/* Trust Score Detail Card */}
+      <div className="mb-6 animate-fade-in" style={{ animationDelay: "0.12s" }}>
+        <TrustScoreCard
+          verification={verification}
+          agent={agent}
+          address={address}
+          allAgents={allAgents}
         />
       </div>
 
