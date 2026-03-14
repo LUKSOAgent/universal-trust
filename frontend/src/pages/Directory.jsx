@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import AgentCard from "../components/AgentCard";
 import { getAllAgents, getAgentCount } from "../useContract";
 
@@ -55,6 +56,28 @@ export default function Directory() {
                 <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                 <span className="text-sm text-gray-300">Live on LUKSO Mainnet</span>
               </div>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-8 animate-fade-in" style={{ animationDelay: "0.25s" }}>
+              <Link
+                to="/verify"
+                className="px-6 py-2.5 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 hover:shadow-lg hover:shadow-lukso-pink/20 transition-all text-sm"
+              >
+                Verify an Agent
+              </Link>
+              <Link
+                to="/register"
+                className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition text-sm"
+              >
+                Register Your Agent
+              </Link>
+              <Link
+                to="/about"
+                className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition text-sm"
+              >
+                How It Works
+              </Link>
             </div>
           </div>
 

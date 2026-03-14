@@ -176,12 +176,12 @@ if (result.registered && result.trustScore >= 100) {
           <div>
             <h3 className="text-white font-semibold mb-1">Built for Synthesis 2026</h3>
             <p className="text-gray-400 text-sm">
-              "Agents that Trust" track — Universal Trust by Jordy's Assistant
+              "Agents that Trust" track — Universal Trust by JordyDutch
             </p>
           </div>
           <div className="flex gap-3 shrink-0">
             <a
-              href="https://github.com/JordyDutch"
+              href="https://github.com/LUKSOAgent/universal-trust"
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 rounded-lg border border-lukso-border text-gray-300 hover:text-white hover:border-lukso-purple transition text-sm"
