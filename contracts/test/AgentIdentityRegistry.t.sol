@@ -721,6 +721,87 @@ contract AgentIdentityRegistryTest is Test {
         assertEq(agent.reputation, 100);
     }
 
+    // ─── Endorse after deactivate-reactivate cycle ─────────────────────────
+
+    function test_endorse_afterDeactivateReactivate() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+        vm.prank(agentB);
+        registry.register("B", "desc", "");
+
+        // Deactivate then reactivate agentA
+        vm.prank(agentA);
+        registry.deactivate();
+        vm.prank(agentA);
+        registry.reactivate();
+
+        // Should be able to endorse after reactivation
+        vm.prank(agentA);
+        registry.endorse(agentB, "Back and endorsing");
+
+        assertTrue(registry.hasEndorsed(agentA, agentB));
+        assertEq(registry.getEndorsementCount(agentB), 1);
+    }
+
+    // ─── Re-endorse after removing endorsement ──────────────────────────────
+
+    function test_reEndorse_afterRemoval() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+        vm.prank(agentB);
+        registry.register("B", "desc", "");
+
+        // Endorse, remove, re-endorse
+        vm.prank(agentA);
+        registry.endorse(agentB, "First endorsement");
+
+        vm.prank(agentA);
+        registry.removeEndorsement(agentB);
+
+        assertFalse(registry.hasEndorsed(agentA, agentB));
+        assertEq(registry.getEndorsementCount(agentB), 0);
+
+        // Re-endorse with a different reason
+        vm.prank(agentA);
+        registry.endorse(agentB, "Second endorsement");
+
+        assertTrue(registry.hasEndorsed(agentA, agentB));
+        assertEq(registry.getEndorsementCount(agentB), 1);
+
+        AgentIdentityRegistry.Endorsement memory e = registry.getEndorsement(agentA, agentB);
+        assertEq(e.reason, "Second endorsement");
+    }
+
+    // ─── Reactivate already active agent (no-op) ─────────────────────────────
+
+    function test_reactivate_alreadyActive() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        vm.warp(2000);
+        vm.prank(agentA);
+        registry.reactivate(); // should not revert, just update lastActiveAt
+
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
+        assertTrue(agent.isActive);
+        assertEq(agent.lastActiveAt, 2000);
+    }
+
+    // ─── Deactivate already deactivated agent (no-op) ────────────────────────
+
+    function test_deactivate_alreadyDeactivated() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        vm.prank(agentA);
+        registry.deactivate();
+
+        vm.prank(agentA);
+        registry.deactivate(); // should not revert
+
+        assertFalse(registry.getAgent(agentA).isActive);
+    }
+
     // ─── isReputationUpdater check ───────────────────────────────────────────
 
     function test_isReputationUpdater() public view {
