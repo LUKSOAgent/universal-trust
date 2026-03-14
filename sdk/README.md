@@ -3,7 +3,7 @@
 TypeScript SDK for [Universal Trust](https://github.com/jordydutch/universal-trust) — on-chain agent identity & trust verification on LUKSO.
 
 [![npm version](https://img.shields.io/npm/v/@universal-trust/sdk)](https://www.npmjs.com/package/@universal-trust/sdk)
-[![Tests](https://img.shields.io/badge/tests-50%2F50%20passing-brightgreen)](#tests)
+[![Tests](https://img.shields.io/badge/tests-61%2F61%20passing-brightgreen)](#tests)
 
 ---
 
@@ -181,6 +181,7 @@ for (const [addr, result] of results) {
 
 Full agent profile including skills and endorsers.
 Makes multiple RPC calls (identity + skills + endorsers).
+**Throws `CONTRACT_REVERT` if the agent is not registered** — use `isRegistered()` or `verify()` first.
 
 ```typescript
 const profile = await trust.getProfile('0x293E96ebbf264ed7715cff2b67850517De70232a');
@@ -218,11 +219,11 @@ if (await trust.isRegistered('0xABC...')) {
 
 ### `getTrustScore(address): Promise<number>`
 
-Get the composite trust score directly.
+Get the composite trust score directly. **Reverts if the agent is not registered** — use `verify()` for safe lookups.
 
 ```typescript
 const score = await trust.getTrustScore('0x293E...');
-// score = reputation + (endorsementCount * 10)
+// score = reputation + (endorsementCount * 10), capped at 10,000
 ```
 
 ---
