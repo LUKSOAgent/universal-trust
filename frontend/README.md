@@ -1,16 +1,63 @@
-# React + Vite
+# Universal Trust — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+On-chain identity and trust layer for AI agents on LUKSO. Built for [Synthesis 2026](https://synthesis.lukso.network) — "Agents that Trust" track.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev        # Start dev server at http://localhost:5173
+npm run build      # Production build → dist/
+npm run preview    # Preview production build locally
+```
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 19** + **Vite 8** — fast dev/build
+- **Tailwind CSS 3** — utility-first styling, dark theme with LUKSO branding
+- **React Router 7** — client-side routing with lazy-loaded pages
+- **ethers.js 6** — LUKSO mainnet RPC + wallet interaction
 
-## Expanding the ESLint configuration
+## Project Structure
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```
+src/
+├── App.jsx                 # Router setup, lazy imports, layout
+├── main.jsx                # Entry point
+├── index.css               # Global styles, animations, focus states
+├── config.js               # Contract addresses, RPC URL, chain ID
+├── useContract.js           # RPC helpers (cached provider/contract)
+├── contract-abi.json        # AgentIdentityRegistry ABI
+├── skills-abi.json          # AgentSkillsRegistry ABI
+├── components/
+│   ├── Navbar.jsx           # Sticky nav with mobile hamburger
+│   ├── Footer.jsx           # Contract link, network info
+│   ├── AgentCard.jsx        # Agent list card (directory)
+│   └── TrustBadge.jsx       # Trust score badge + breakdown bar
+└── pages/
+    ├── Directory.jsx        # / — Agent directory with search/sort
+    ├── AgentProfile.jsx     # /agent/:address — Full agent profile
+    ├── Register.jsx         # /register — Register agent on-chain
+    ├── Verify.jsx           # /verify — Trust Scanner
+    ├── Endorse.jsx          # /endorse — Endorse an agent
+    ├── About.jsx            # /about — How it works
+    └── NotFound.jsx         # 404 catch-all
+```
+
+## Contracts (LUKSO Mainnet)
+
+| Contract | Address |
+|---|---|
+| AgentIdentityRegistry | `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7` |
+| AgentSkillsRegistry | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` |
+
+## Features
+
+- **Agent Directory** — Browse registered agents with search, sort, live stats
+- **Trust Scanner** — Verify any address against the on-chain registry
+- **Agent Profiles** — Skills, endorsements, trust score breakdown
+- **On-chain Registration** — Register via UP Extension or MetaMask
+- **Endorsement System** — Vouch for agents with on-chain endorsements
+- **Code-split pages** — Each route lazy-loaded for performance
+- **Mobile-first** — Responsive layout, hamburger nav, touch-friendly
+- **Accessibility** — Focus-visible states, aria-labels, keyboard navigation
