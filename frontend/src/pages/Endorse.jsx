@@ -238,10 +238,11 @@ export default function Endorse() {
 
       <form onSubmit={handleEndorse} className="space-y-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="endorse-address" className="block text-sm font-medium text-gray-300 mb-2">
             Agent Address *
           </label>
           <input
+            id="endorse-address"
             type="text"
             value={targetAddress}
             onChange={(e) => setTargetAddress(e.target.value.trim())}
@@ -312,10 +313,11 @@ export default function Endorse() {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label htmlFor="endorse-reason" className="block text-sm font-medium text-gray-300 mb-2">
             Reason <span className="text-gray-500 font-normal">(optional)</span>
           </label>
           <textarea
+            id="endorse-reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Why are you endorsing this agent? (e.g. Collaborated on DeFi automation, reliable and accurate)"
