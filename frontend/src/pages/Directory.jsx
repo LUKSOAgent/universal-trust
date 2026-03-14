@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import AgentCard from "../components/AgentCard";
-import { getAllAgents, getAgentCount } from "../useContract";
+import { getAllAgents, getAgentCount, verifyAgent } from "../useContract";
 
 export default function Directory() {
   const [agents, setAgents] = useState([]);
@@ -123,6 +123,9 @@ export default function Directory() {
               </Link>
             </div>
           </div>
+
+          {/* Try It — Inline Verify */}
+          <TryVerify />
 
           {/* How It Works */}
           <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto animate-fade-in" style={{ animationDelay: "0.3s" }}>
@@ -249,6 +252,164 @@ export default function Directory() {
                 <AgentCard agent={agent} />
               </div>
             ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TryVerify() {
+  const DEMO_ADDRESS = "0x293E96ebbf264ed7715cff2b67850517De70232a";
+  const [addr, setAddr] = useState("");
+  const [result, setResult] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState(null);
+  const [phase, setPhase] = useState(0); // 0=idle, 1=connecting, 2=querying, 3=done
+
+  async function doVerify(address) {
+    const target = address || addr;
+    if (!/^0x[0-9a-fA-F]{40}$/.test(target)) return;
+
+    try {
+      setVerifying(true);
+      setVerifyError(null);
+      setResult(null);
+      setPhase(1);
+      // Simulate scanning phases for visual effect
+      await new Promise((r) => setTimeout(r, 300));
+      setPhase(2);
+      const data = await verifyAgent(target);
+      setPhase(3);
+      setResult(data);
+    } catch (err) {
+      setPhase(0);
+      setVerifyError("Failed to connect to LUKSO network");
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  function useDemoAgent() {
+    setAddr(DEMO_ADDRESS);
+    setResult(null);
+    setVerifyError(null);
+    doVerify(DEMO_ADDRESS);
+  }
+
+  function getTierLabel(score) {
+    if (score >= 500) return { label: "Highly Trusted", color: "text-green-400", bg: "bg-green-500/10 border-green-500/30" };
+    if (score >= 200) return { label: "Trusted", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30" };
+    if (score >= 100) return { label: "Verified", color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/30" };
+    return { label: "New", color: "text-gray-400", bg: "bg-gray-500/10 border-gray-500/30" };
+  }
+
+  return (
+    <div className="max-w-xl mx-auto mb-10 animate-fade-in" style={{ animationDelay: "0.27s" }}>
+      <div className="bg-lukso-card/80 backdrop-blur-sm border border-lukso-border rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <svg className="w-4 h-4 text-lukso-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <h3 className="text-sm font-semibold text-white">Try It — Live Trust Verification</h3>
+        </div>
+
+        <div className="flex gap-2 mb-3">
+          <input
+            type="text"
+            value={addr}
+            onChange={(e) => setAddr(e.target.value)}
+            placeholder="0x... paste any address"
+            aria-label="Address to verify"
+            className="flex-1 bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 text-white placeholder-gray-600 font-mono text-xs focus:border-lukso-pink focus:outline-none focus:ring-1 focus:ring-lukso-pink/50 transition"
+          />
+          <button
+            onClick={() => doVerify()}
+            disabled={verifying || !/^0x[0-9a-fA-F]{40}$/.test(addr)}
+            className="px-4 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 disabled:opacity-40 transition text-xs shrink-0"
+          >
+            {verifying ? "..." : "verify()"}
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={useDemoAgent}
+          disabled={verifying}
+          className="text-xs text-lukso-purple hover:text-lukso-pink transition disabled:opacity-50"
+        >
+          Use demo agent →
+        </button>
+
+        {/* Scanning phases */}
+        {verifying && phase > 0 && (
+          <div className="mt-3 space-y-1 text-xs">
+            <p className={phase >= 1 ? "text-gray-400" : "text-gray-600"}>
+              {phase > 1 ? "✓" : "⟳"} Connecting to LUKSO mainnet...
+            </p>
+            {phase >= 2 && (
+              <p className={phase >= 3 ? "text-gray-400" : "text-gray-300"}>
+                {phase > 2 ? "✓" : "⟳"} Calling verify({addr.slice(0, 6)}...{addr.slice(-4)})...
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Error */}
+        {verifyError && (
+          <p className="mt-3 text-xs text-red-400">{verifyError}</p>
+        )}
+
+        {/* Result */}
+        {result && !verifying && (
+          <div className="mt-3 animate-fade-in">
+            {!result.registered ? (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                <svg className="w-4 h-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span className="text-xs text-red-400">Not registered in AgentIdentityRegistry</span>
+              </div>
+            ) : (
+              <div className="rounded-lg bg-lukso-darker border border-lukso-border p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-sm font-semibold text-white">{result.name}</span>
+                    {result.isUP && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-lukso-purple/20 text-lukso-purple font-medium">UP</span>
+                    )}
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full border ${getTierLabel(result.trustScore).bg} ${getTierLabel(result.trustScore).color}`}>
+                    {getTierLabel(result.trustScore).label}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="text-center">
+                    <p className="text-gray-500">Rep</p>
+                    <p className="text-lukso-purple font-semibold">{result.reputation}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-500">Endorsements</p>
+                    <p className="text-lukso-pink font-semibold">{result.endorsements}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-500">Trust</p>
+                    <p className="text-white font-bold">{result.trustScore}</p>
+                  </div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-lukso-border/50 flex items-center justify-between">
+                  <code className="text-[10px] text-gray-600 font-mono">
+                    verify() → registered: true, trustScore: {result.trustScore}
+                  </code>
+                  <Link to={`/agent/${addr}`} className="text-[10px] text-lukso-pink hover:underline">
+                    Full profile →
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
