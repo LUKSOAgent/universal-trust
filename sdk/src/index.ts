@@ -5,4 +5,5 @@ export type {
   VerifyResult,
   AgentProfile,
   SkillInfo,
+  EndorsementInfo,
 } from './trust/AgentTrust';
