@@ -175,16 +175,21 @@ export default function Directory() {
                 </button>
               )}
             </div>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-lukso-card border border-lukso-border rounded-lg px-4 py-2.5 text-sm text-gray-300 focus:border-lukso-pink focus:outline-none appearance-none cursor-pointer hover:border-lukso-border/80 transition min-w-[160px]"
-            >
-              <option value="trust">Sort: Trust Score</option>
-              <option value="name">Sort: Name</option>
-              <option value="recent">Sort: Most Recent</option>
-              <option value="endorsements">Sort: Endorsements</option>
-            </select>
+            <div className="relative min-w-[160px]">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full bg-lukso-card border border-lukso-border rounded-lg pl-4 pr-9 py-2.5 text-sm text-gray-300 focus:border-lukso-pink focus:outline-none appearance-none cursor-pointer hover:border-lukso-border/80 transition"
+              >
+                <option value="trust">Sort: Trust Score</option>
+                <option value="name">Sort: Name</option>
+                <option value="recent">Sort: Most Recent</option>
+                <option value="endorsements">Sort: Endorsements</option>
+              </select>
+              <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         )}
 
