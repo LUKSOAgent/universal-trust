@@ -383,7 +383,7 @@ curl -s -X POST https://rpc.mainnet.lukso.network \\
   -d '{
     "jsonrpc": "2.0", "method": "eth_call",
     "params": [{
-      "to": "0x1581BA9Fb480b72df3e54f51f851a644483c6ec7",
+      "to": "${CONTRACT_ADDRESS}",
       "data": "0xfe575a87000000000000000000000000<AGENT_ADDRESS_WITHOUT_0x>"
     }, "latest"],
     "id": 1
