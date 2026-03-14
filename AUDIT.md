@@ -305,16 +305,17 @@ No medium-severity issues found.
 
 ## Testing Status
 
-**Foundry Tests:** ✅ 45 tests passing
+**Foundry Tests:** ✅ 70 tests passing
 - Edge cases covered
 - Fuzz tests for reputation clamping
 - Gas snapshots recorded
 - Swap-and-pop deletion verified with 3+ endorsers
 
-**SDK Integration Tests:** ✅ 23 tests passing
+**SDK Integration Tests:** ✅ 50 tests passing
 - Live LUKSO mainnet verification
 - Input validation tested
 - Error handling verified
+- Full API surface coverage
 
 ---
 

@@ -236,7 +236,7 @@ universal-trust/
 │   │   ├── AgentIdentityRegistry.sol   # Core identity + trust contract
 │   │   └── AgentSkillsRegistry.sol     # On-chain skill storage
 │   ├── test/
-│   │   └── AgentIdentityRegistry.t.sol # 45 Foundry tests (all passing)
+│   │   └── AgentIdentityRegistry.t.sol # 70 Foundry tests (all passing)
 │   ├── abi/                            # Extracted ABIs
 │   └── foundry.toml
 ├── sdk/                                # @universal-trust/sdk (npm)
