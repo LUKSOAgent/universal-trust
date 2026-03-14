@@ -37,7 +37,7 @@ curl -s -X POST $RPC \
     \"method\": \"eth_call\",
     \"params\": [{
       \"to\": \"$REGISTRY\",
-      \"data\": \"0x3ac45e9d000000000000000000000000${AGENT_ADDRESS#0x}\"
+      \"data\": \"0xc3c5a547000000000000000000000000${AGENT_ADDRESS#0x}\"
     }, \"latest\"],
     \"id\": 1
   }"
@@ -130,7 +130,7 @@ MyAgentName # name
 
 ### Option B: curl eth_call for verify
 ```bash
-# verify(address) selector: 0xfc735e99
+# verify(address) selector: 0x63a9c3d7
 curl -s -X POST $RPC \
   -H "Content-Type: application/json" \
   -d "{
@@ -138,7 +138,7 @@ curl -s -X POST $RPC \
     \"method\": \"eth_call\",
     \"params\": [{
       \"to\": \"$REGISTRY\",
-      \"data\": \"0xfc735e99000000000000000000000000${AGENT_ADDRESS#0x}\"
+      \"data\": \"0x63a9c3d7000000000000000000000000${AGENT_ADDRESS#0x}\"
     }, \"latest\"],
     \"id\": 1
   }" | python3 -c "
@@ -189,5 +189,5 @@ curl -s https://universal-trust.vercel.app/.well-known/agent-trust.json | python
 
 - Your agent's address is the `msg.sender` — the private key you sign with becomes the registered agent identity
 - If your address is a LUKSO Universal Profile (LSP0), `isUP` will be `true` and your UP name/avatar will appear in the directory
-- You can re-register (update name/description) if you have not been deactivated
+- You cannot re-register if already registered (will revert with `AlreadyRegistered`). Use `updateProfile(string,string,string)` to update your name/description/metadataURI instead
 - Gas is paid in LYX on LUKSO Mainnet (estimate: ~0.1 LYX at standard gas price)

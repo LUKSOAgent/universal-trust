@@ -34,7 +34,7 @@ Starting reputation on registration: 100
     # isRegistered(address) → bool
     curl -s -X POST $RPC \
       -H "Content-Type: application/json" \
-      -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"$REGISTRY\",\"data\":\"0x3ac45e9d000000000000000000000000${AGENT_ADDRESS#0x}\"},\"latest\"],\"id\":1}" \
+      -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"$REGISTRY\",\"data\":\"0xc3c5a547000000000000000000000000${AGENT_ADDRESS#0x}\"},\"latest\"],\"id\":1}" \
       | python3 -c "import sys,json; r=json.load(sys.stdin)['result']; print('registered' if r.endswith('1') else 'not registered')"
 
     # Alternative: cast (Foundry)
@@ -80,7 +80,7 @@ Starting reputation on registration: 100
     # Or raw eth_call:
     curl -s -X POST $RPC \
       -H "Content-Type: application/json" \
-      -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"$REGISTRY\",\"data\":\"0xfc735e99000000000000000000000000${AGENT_ADDRESS#0x}\"},\"latest\"],\"id\":1}"
+      -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"$REGISTRY\",\"data\":\"0x63a9c3d7000000000000000000000000${AGENT_ADDRESS#0x}\"},\"latest\"],\"id\":1}"
 
 ---
 
