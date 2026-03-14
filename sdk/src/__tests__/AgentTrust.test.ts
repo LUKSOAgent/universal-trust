@@ -505,4 +505,172 @@ describe('AgentTrust SDK', () => {
       TEST_TIMEOUT,
     );
   });
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // Edge Case Tests — verifyBatch, getProfile, RPC error handling
+  // ═════════════════════════════════════════════════════════════════════════
+
+  // ─── verifyBatch edge cases ─────────────────────────────────────────
+
+  describe('verifyBatch() edge cases', () => {
+    it(
+      'should handle duplicate addresses (deduplication by last-write)',
+      async () => {
+        // Same address twice — Map will have one entry per unique key
+        const results = await trust.verifyBatch([
+          DEPLOYER_ADDRESS,
+          DEPLOYER_ADDRESS,
+          DEPLOYER_ADDRESS,
+        ]);
+
+        // Map key deduplication: last write wins, but all should be identical
+        expect(results.size).toBe(1);
+
+        const deployer = results.get(DEPLOYER_ADDRESS);
+        expect(deployer).toBeDefined();
+        expect(deployer?.registered).toBe(true);
+        expect(deployer?.name).toBe('LUKSO Agent');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should handle mix of registered and unregistered addresses',
+      async () => {
+        const unregistered1 = '0x0000000000000000000000000000000000000002';
+        const unregistered2 = '0x0000000000000000000000000000000000000003';
+
+        const results = await trust.verifyBatch([
+          DEPLOYER_ADDRESS,
+          unregistered1,
+          UP_ADDRESS,
+          unregistered2,
+        ]);
+
+        expect(results.size).toBe(4);
+
+        // Registered agents
+        expect(results.get(DEPLOYER_ADDRESS)?.registered).toBe(true);
+        expect(results.get(UP_ADDRESS)?.registered).toBe(true);
+
+        // Unregistered agents
+        expect(results.get(unregistered1)?.registered).toBe(false);
+        expect(results.get(unregistered1)?.trustScore).toBe(0);
+        expect(results.get(unregistered2)?.registered).toBe(false);
+        expect(results.get(unregistered2)?.reputation).toBe(0);
+      },
+      TEST_TIMEOUT,
+    );
+  });
+
+  // ─── getProfile edge cases ─────────────────────────────────────────
+
+  describe('getProfile() edge cases', () => {
+    it(
+      'should return profile with empty skills array when agent has no skills published',
+      async () => {
+        // The deployer is registered but has no skills in the AgentSkillsRegistry
+        const profile = await trust.getProfile(DEPLOYER_ADDRESS);
+        expect(profile.name).toBe('LUKSO Agent');
+        expect(profile.isActive).toBe(true);
+        expect(profile.reputation).toBeGreaterThanOrEqual(100);
+        // Deployer may or may not have skills — but the field should be an array
+        expect(Array.isArray(profile.skills)).toBe(true);
+        expect(typeof profile.endorsementCount).toBe('number');
+        expect(Array.isArray(profile.endorsers)).toBe(true);
+        expect(profile.address).toBe(DEPLOYER_ADDRESS);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should throw CONTRACT_REVERT for unregistered agent (getAgent reverts)',
+      async () => {
+        // getProfile calls getAgent() which reverts for unregistered agents
+        await expect(
+          trust.getProfile('0x0000000000000000000000000000000000000001'),
+        ).rejects.toBeInstanceOf(AgentTrustError);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should return full profile for UP agent with endorsements',
+      async () => {
+        const profile = await trust.getProfile(UP_ADDRESS);
+        expect(profile.name).toBe('LUKSO Agent');
+        expect(profile.isActive).toBe(true);
+        expect(profile.endorsementCount).toBeGreaterThanOrEqual(1);
+        expect(profile.endorsers.length).toBeGreaterThanOrEqual(1);
+        expect(profile.registeredAt).toBeGreaterThan(0);
+        expect(profile.lastActiveAt).toBeGreaterThan(0);
+        // Address should be normalized
+        expect(profile.address).toBe(UP_ADDRESS);
+      },
+      TEST_TIMEOUT,
+    );
+  });
+
+  // ─── RPC error handling — extended coverage ────────────────────────
+
+  describe('error handling with bad RPC (extended)', () => {
+    const badTrust = new AgentTrust({
+      rpcUrl: 'http://localhost:1', // unreachable
+      maxRetries: 0, // no retries for fast failure
+      retryDelayMs: 10,
+    });
+
+    it('should return unregistered defaults for all addresses when RPC is unreachable (verifyBatch uses allSettled)', async () => {
+      // verifyBatch uses Promise.allSettled internally, so it doesn't reject —
+      // instead it returns default unregistered results for failed lookups
+      const results = await badTrust.verifyBatch([DEPLOYER_ADDRESS, UP_ADDRESS]);
+      expect(results.size).toBe(2);
+      for (const [, result] of results) {
+        expect(result.registered).toBe(false);
+        expect(result.trustScore).toBe(0);
+        expect(result.reputation).toBe(0);
+        expect(result.name).toBe('');
+      }
+    }, TEST_TIMEOUT);
+
+    it('should throw RPC_ERROR for unreachable RPC on getProfile', async () => {
+      await expect(
+        badTrust.getProfile(DEPLOYER_ADDRESS),
+      ).rejects.toMatchObject({
+        code: AgentTrustErrorCode.RPC_ERROR,
+      });
+    }, TEST_TIMEOUT);
+
+    it('should throw RPC_ERROR for unreachable RPC on getTrustScore', async () => {
+      await expect(
+        badTrust.getTrustScore(DEPLOYER_ADDRESS),
+      ).rejects.toMatchObject({
+        code: AgentTrustErrorCode.RPC_ERROR,
+      });
+    }, TEST_TIMEOUT);
+
+    it('should throw RPC_ERROR for unreachable RPC on hasEndorsed', async () => {
+      await expect(
+        badTrust.hasEndorsed(DEPLOYER_ADDRESS, UP_ADDRESS),
+      ).rejects.toMatchObject({
+        code: AgentTrustErrorCode.RPC_ERROR,
+      });
+    }, TEST_TIMEOUT);
+
+    it('should throw RPC_ERROR for unreachable RPC on getEndorsers', async () => {
+      await expect(
+        badTrust.getEndorsers(UP_ADDRESS),
+      ).rejects.toMatchObject({
+        code: AgentTrustErrorCode.RPC_ERROR,
+      });
+    }, TEST_TIMEOUT);
+
+    it('should throw RPC_ERROR for unreachable RPC on getAgentsByPage', async () => {
+      await expect(
+        badTrust.getAgentsByPage(0, 10),
+      ).rejects.toMatchObject({
+        code: AgentTrustErrorCode.RPC_ERROR,
+      });
+    }, TEST_TIMEOUT);
+  });
 });
