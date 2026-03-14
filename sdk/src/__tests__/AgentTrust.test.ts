@@ -227,6 +227,91 @@ describe('AgentTrust SDK', () => {
     );
   });
 
+  // ─── getEndorsement() ──────────────────────────────────────────────────
+
+  describe('getEndorsement()', () => {
+    it(
+      'should return endorsement details for deployer → UP',
+      async () => {
+        const result = await trust.getEndorsement(DEPLOYER_ADDRESS, UP_ADDRESS);
+        expect(result.exists).toBe(true);
+        expect(result.endorser.toLowerCase()).toBe(DEPLOYER_ADDRESS.toLowerCase());
+        expect(result.endorsed.toLowerCase()).toBe(UP_ADDRESS.toLowerCase());
+        expect(result.timestamp).toBeGreaterThan(0);
+        expect(typeof result.reason).toBe('string');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should return exists=false for non-existent endorsement',
+      async () => {
+        const result = await trust.getEndorsement(UP_ADDRESS, DEPLOYER_ADDRESS);
+        // UP hasn't endorsed deployer (only deployer endorsed UP)
+        expect(result.exists).toBe(false);
+        expect(result.timestamp).toBe(0);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it('should throw on invalid endorser address', async () => {
+      await expect(trust.getEndorsement('bad', DEPLOYER_ADDRESS)).rejects.toThrow(
+        AgentTrustError,
+      );
+    });
+
+    it('should throw on invalid endorsed address', async () => {
+      await expect(trust.getEndorsement(DEPLOYER_ADDRESS, 'bad')).rejects.toThrow(
+        AgentTrustError,
+      );
+    });
+  });
+
+  // ─── getEndorsementCount() ────────────────────────────────────────────
+
+  describe('getEndorsementCount()', () => {
+    it(
+      'should return at least 1 for UP (endorsed by deployer)',
+      async () => {
+        const count = await trust.getEndorsementCount(UP_ADDRESS);
+        expect(count).toBeGreaterThanOrEqual(1);
+        expect(typeof count).toBe('number');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should return 0 for unendorsed address',
+      async () => {
+        const count = await trust.getEndorsementCount('0x0000000000000000000000000000000000000001');
+        expect(count).toBe(0);
+      },
+      TEST_TIMEOUT,
+    );
+  });
+
+  // ─── isReputationUpdater() ────────────────────────────────────────────
+
+  describe('isReputationUpdater()', () => {
+    it(
+      'should return true for the deployer (owner is auto-authorized)',
+      async () => {
+        const result = await trust.isReputationUpdater(DEPLOYER_ADDRESS);
+        expect(result).toBe(true);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should return false for a random address',
+      async () => {
+        const result = await trust.isReputationUpdater('0x0000000000000000000000000000000000000001');
+        expect(result).toBe(false);
+      },
+      TEST_TIMEOUT,
+    );
+  });
+
   // ─── Input validation ─────────────────────────────────────────────────
 
   describe('input validation', () => {

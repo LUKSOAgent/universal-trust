@@ -127,6 +127,44 @@ const IDENTITY_REGISTRY_ABI = [
   },
 ] as const;
 
+const IDENTITY_REGISTRY_ABI_EXTRA = [
+  {
+    name: 'getEndorsement',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'endorser', type: 'address' },
+      { name: 'endorsed', type: 'address' },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        components: [
+          { name: 'endorser', type: 'address' },
+          { name: 'endorsed', type: 'address' },
+          { name: 'timestamp', type: 'uint64' },
+          { name: 'reason', type: 'string' },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'getEndorsementCount',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'agent', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  {
+    name: 'isReputationUpdater',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+] as const;
+
 const SKILLS_REGISTRY_ABI = [
   {
     name: 'getSkillKeys',
@@ -279,6 +317,19 @@ export interface SkillInfo {
   updatedAt: number;
 }
 
+export interface EndorsementInfo {
+  /** Address of the endorsing agent */
+  endorser: string;
+  /** Address of the endorsed agent */
+  endorsed: string;
+  /** Unix timestamp when the endorsement was made */
+  timestamp: number;
+  /** Optional reason/context for the endorsement */
+  reason: string;
+  /** Whether this endorsement exists (false if no endorsement found) */
+  exists: boolean;
+}
+
 // ─── Contract Return Type Helpers ───────────────────────────────────────────
 
 /** Shape of the verify() return from the contract */
@@ -302,6 +353,14 @@ interface AgentContractResult {
   registeredAt: bigint | string;
   lastActiveAt: bigint | string;
   isActive: boolean;
+}
+
+/** Shape of the getEndorsement() return from the contract */
+interface EndorsementContractResult {
+  endorser: string;
+  endorsed: string;
+  timestamp: bigint | string;
+  reason: string;
 }
 
 /** Shape of a skill from the contract */
@@ -352,7 +411,7 @@ export class AgentTrust {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.identityContract = new this.web3.eth.Contract(
-      IDENTITY_REGISTRY_ABI as any,
+      [...IDENTITY_REGISTRY_ABI, ...IDENTITY_REGISTRY_ABI_EXTRA] as any,
       config.identityRegistryAddress || DEFAULT_IDENTITY_REGISTRY,
     );
 
@@ -410,6 +469,10 @@ export class AgentTrust {
    * Core verification function.
    * Returns trust summary for an agent address.
    *
+   * Note: The on-chain isUP check uses LSP0 interface ID 0x24871b3a which
+   * some newer Universal Profiles don't support. The SDK enhances this with
+   * a fallback check for ERC725X + ERC725Y support (the core UP interfaces).
+   *
    * Usage:
    *   const result = await agentTrust.verify('0x293E...');
    *   if (result.registered && result.trustScore > 100) { ... }
@@ -422,15 +485,59 @@ export class AgentTrust {
       'verify',
     );
 
+    // Enhance UP detection: if the contract says it's not a UP, do a fallback
+    // check for ERC725X + ERC725Y (the core interfaces of a Universal Profile).
+    // Some newer UPs don't register the legacy 0x24871b3a interface ID.
+    let isUP = result.isUP;
+    if (!isUP && result.registered) {
+      isUP = await this.isUniversalProfile(address);
+    }
+
     return {
       registered: result.registered,
       active: result.active,
-      isUniversalProfile: result.isUP,
+      isUniversalProfile: isUP,
       reputation: Number(result.reputation),
       endorsements: Number(result.endorsements),
       trustScore: Number(result.trustScore),
       name: result.name,
     };
+  }
+
+  /**
+   * Check if an address is a LUKSO Universal Profile.
+   * Uses ERC165 supportsInterface checks for ERC725X (0x7545acac)
+   * and ERC725Y (0x629aa694) — the core UP interfaces.
+   *
+   * @param address - Address to check
+   * @returns true if the address supports both ERC725X and ERC725Y
+   */
+  async isUniversalProfile(address: string): Promise<boolean> {
+    validateAddress(address);
+
+    const ERC165_ABI = [
+      {
+        name: 'supportsInterface',
+        type: 'function',
+        stateMutability: 'view',
+        inputs: [{ name: 'interfaceId', type: 'bytes4' }],
+        outputs: [{ name: '', type: 'bool' }],
+      },
+    ] as const;
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const contract = new this.web3.eth.Contract(ERC165_ABI as any, address);
+
+      const [erc725x, erc725y] = await Promise.all([
+        contract.methods.supportsInterface('0x7545acac').call() as Promise<boolean>,
+        contract.methods.supportsInterface('0x629aa694').call() as Promise<boolean>,
+      ]);
+
+      return erc725x && erc725y;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -555,7 +662,10 @@ export class AgentTrust {
   }
 
   /**
-   * Check if an agent is registered.
+   * Check if an agent is registered in the identity registry.
+   *
+   * @param address - Ethereum/LUKSO address to check
+   * @returns true if the agent is registered
    */
   async isRegistered(address: string): Promise<boolean> {
     validateAddress(address);
@@ -566,7 +676,13 @@ export class AgentTrust {
   }
 
   /**
-   * Get the trust score for an agent.
+   * Get the composite trust score for an agent.
+   * Score = reputation + (endorsementCount * 10), capped at 10000.
+   * Reverts if the agent is not registered — use verify() for safe lookups.
+   *
+   * @param address - Agent address
+   * @returns Trust score (0-10000)
+   * @throws AgentTrustError with CONTRACT_REVERT if agent is not registered
    */
   async getTrustScore(address: string): Promise<number> {
     validateAddress(address);
@@ -579,6 +695,10 @@ export class AgentTrust {
 
   /**
    * Check if one agent has endorsed another.
+   *
+   * @param endorser - Address of the potential endorser
+   * @param endorsed - Address of the potentially endorsed agent
+   * @returns true if the endorsement exists
    */
   async hasEndorsed(endorser: string, endorsed: string): Promise<boolean> {
     validateAddress(endorser, 'endorser');
@@ -590,7 +710,10 @@ export class AgentTrust {
   }
 
   /**
-   * Get all endorsers of an agent.
+   * Get all endorser addresses for an agent.
+   *
+   * @param address - Agent address to look up endorsers for
+   * @returns Array of endorser addresses
    */
   async getEndorsers(address: string): Promise<string[]> {
     validateAddress(address);
@@ -601,7 +724,76 @@ export class AgentTrust {
   }
 
   /**
-   * Get total number of registered agents.
+   * Get details of a specific endorsement between two agents.
+   * Returns the endorsement with `exists: false` if no endorsement found
+   * (checks timestamp === 0 as the indicator).
+   *
+   * @param endorser - Address of the endorsing agent
+   * @param endorsed - Address of the endorsed agent
+   * @returns EndorsementInfo with reason, timestamp, and exists flag
+   */
+  async getEndorsement(endorser: string, endorsed: string): Promise<EndorsementInfo> {
+    validateAddress(endorser, 'endorser');
+    validateAddress(endorsed, 'endorsed');
+
+    const result = await this.withRetry(
+      () =>
+        this.identityContract.methods
+          .getEndorsement(endorser, endorsed)
+          .call() as Promise<EndorsementContractResult>,
+      'getEndorsement',
+    );
+
+    const timestamp = Number(result.timestamp);
+
+    return {
+      endorser: result.endorser,
+      endorsed: result.endorsed,
+      timestamp,
+      reason: result.reason,
+      exists: timestamp !== 0,
+    };
+  }
+
+  /**
+   * Get the number of endorsements an agent has received.
+   *
+   * @param address - Agent address
+   * @returns Number of endorsements
+   */
+  async getEndorsementCount(address: string): Promise<number> {
+    validateAddress(address);
+    const count = await this.withRetry(
+      () =>
+        this.identityContract.methods
+          .getEndorsementCount(address)
+          .call() as Promise<bigint>,
+      'getEndorsementCount',
+    );
+    return Number(count);
+  }
+
+  /**
+   * Check if an address is authorized to update agent reputation scores.
+   *
+   * @param address - Address to check
+   * @returns true if the address can call updateReputation()
+   */
+  async isReputationUpdater(address: string): Promise<boolean> {
+    validateAddress(address);
+    return this.withRetry(
+      () =>
+        this.identityContract.methods
+          .isReputationUpdater(address)
+          .call() as Promise<boolean>,
+      'isReputationUpdater',
+    );
+  }
+
+  /**
+   * Get total number of registered agents in the registry.
+   *
+   * @returns Total count of registered agents (including deactivated ones)
    */
   async getAgentCount(): Promise<number> {
     const count = await this.withRetry(
@@ -612,7 +804,13 @@ export class AgentTrust {
   }
 
   /**
-   * Get a page of agent addresses.
+   * Get a page of agent addresses for enumeration.
+   * Returns an empty array if offset is beyond the end.
+   *
+   * @param offset - Zero-based starting index
+   * @param limit - Maximum number of addresses to return
+   * @returns Array of agent addresses
+   * @throws AgentTrustError with INVALID_INPUT if offset or limit is negative
    */
   async getAgentsByPage(offset: number, limit: number): Promise<string[]> {
     if (offset < 0 || limit < 0) {
@@ -631,7 +829,12 @@ export class AgentTrust {
   }
 
   /**
-   * Get skills for an agent from the AgentSkillsRegistry.
+   * Get all skills registered for an agent from the AgentSkillsRegistry.
+   * Returns skill metadata (name, version, key) without full content.
+   * Use getSkillContent() for the full skill content.
+   *
+   * @param address - Agent address
+   * @returns Array of skill metadata
    */
   async getSkills(address: string): Promise<SkillInfo[]> {
     validateAddress(address);
@@ -665,7 +868,11 @@ export class AgentTrust {
   }
 
   /**
-   * Get the full content of a specific skill.
+   * Get the full content of a specific skill by key.
+   *
+   * @param address - Agent address
+   * @param skillKey - bytes32 skill key (from getSkills())
+   * @returns Skill name, full content string, and version number
    */
   async getSkillContent(
     address: string,
