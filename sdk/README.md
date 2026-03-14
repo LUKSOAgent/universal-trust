@@ -3,7 +3,7 @@
 TypeScript SDK for [Universal Trust](https://github.com/jordydutch/universal-trust) — on-chain agent identity & trust verification on LUKSO.
 
 [![npm version](https://img.shields.io/npm/v/@universal-trust/sdk)](https://www.npmjs.com/package/@universal-trust/sdk)
-[![Tests](https://img.shields.io/badge/tests-61%2F61%20passing-brightgreen)](#tests)
+[![Tests](https://img.shields.io/badge/tests-97%2F97%20passing-brightgreen)](#tests)
 
 ---
 

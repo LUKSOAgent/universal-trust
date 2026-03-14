@@ -311,7 +311,7 @@ No medium-severity issues found.
 - Gas snapshots recorded
 - Swap-and-pop deletion verified with 3+ endorsers
 
-**SDK Integration Tests:** ✅ 61 tests passing
+**SDK Tests:** ✅ 97 tests passing (61 unit + 36 integration)
 - Live LUKSO mainnet verification
 - Input validation tested
 - Error handling verified
@@ -419,7 +419,7 @@ The trust score formula `reputation + (endorsementCount × 10)` can be inflated 
 ### Test Coverage Update
 
 **Foundry Tests:** ✅ 80 tests passing (up from 70)
-**SDK Tests:** ✅ 61 tests passing
+**SDK Tests:** ✅ 97 tests passing (61 unit + 36 integration)
 
 New tests added:
 - `test_endorsementCount_consistency` — verifies struct field matches array length
