@@ -473,9 +473,19 @@ export class AgentTrust {
    * some newer Universal Profiles don't support. The SDK enhances this with
    * a fallback check for ERC725X + ERC725Y support (the core UP interfaces).
    *
-   * Usage:
-   *   const result = await agentTrust.verify('0x293E...');
-   *   if (result.registered && result.trustScore > 100) { ... }
+   * @example
+   * ```ts
+   * const trust = new AgentTrust();
+   * const result = await trust.verify('0x293E96ebbf264ed7715cff2b67850517De70232a');
+   * if (result.registered && result.trustScore > 100) {
+   *   console.log(`Trusted agent: ${result.name} (score: ${result.trustScore})`);
+   * }
+   * ```
+   *
+   * @param address - Ethereum/LUKSO address to verify
+   * @returns VerifyResult with registration status, trust score, and UP detection
+   * @throws AgentTrustError with INVALID_ADDRESS if address format is wrong
+   * @throws AgentTrustError with RPC_ERROR if all retry attempts fail
    */
   async verify(address: string): Promise<VerifyResult> {
     validateAddress(address);
@@ -545,9 +555,21 @@ export class AgentTrust {
    * Returns a map of address → VerifyResult.
    * Runs all calls concurrently for efficiency.
    *
-   * Usage:
-   *   const results = await trust.verifyBatch(['0xA...', '0xB...']);
-   *   for (const [addr, result] of results) { ... }
+   * @example
+   * ```ts
+   * const results = await trust.verifyBatch([
+   *   '0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b',
+   *   '0x293E96ebbf264ed7715cff2b67850517De70232a',
+   * ]);
+   * for (const [addr, result] of results) {
+   *   console.log(`${addr}: trust=${result.trustScore}`);
+   * }
+   * ```
+   *
+   * @param addresses - Array of Ethereum/LUKSO addresses to verify
+   * @returns Map of address → VerifyResult (failed lookups return unregistered defaults)
+   * @throws AgentTrustError with INVALID_INPUT if array is empty
+   * @throws AgentTrustError with INVALID_ADDRESS if any address is malformed
    */
   async verifyBatch(addresses: string[]): Promise<Map<string, VerifyResult>> {
     if (!Array.isArray(addresses) || addresses.length === 0) {
@@ -591,6 +613,16 @@ export class AgentTrust {
 
   /**
    * Get full agent profile including skills and endorsers.
+   *
+   * @example
+   * ```ts
+   * const profile = await trust.getProfile('0x293E96ebbf264ed7715cff2b67850517De70232a');
+   * console.log(`${profile.name} — ${profile.skills.length} skills, ${profile.endorsers.length} endorsers`);
+   * ```
+   *
+   * @param address - Agent address to look up
+   * @returns Full agent profile with skills, endorsers, and UP detection
+   * @throws AgentTrustError with CONTRACT_REVERT if agent is not registered
    */
   async getProfile(address: string): Promise<AgentProfile> {
     validateAddress(address);
@@ -829,6 +861,68 @@ export class AgentTrust {
   }
 
   /**
+   * Discover agents with reputation at or above a minimum threshold.
+   * Iterates through all registered agents using pagination and filters
+   * by reputation score. Useful for finding high-trust agents.
+   *
+   * @example
+   * ```ts
+   * // Find all agents with reputation >= 200
+   * const topAgents = await trust.getAgentsByReputation(200);
+   * console.log(`Found ${topAgents.length} high-rep agents`);
+   * topAgents.forEach(a => console.log(`  ${a.name}: rep=${a.reputation}`));
+   * ```
+   *
+   * @param minReputation - Minimum reputation score (0-10000)
+   * @param pageSize - Number of agents to fetch per page (default: 50)
+   * @returns Array of agent profiles meeting the threshold, sorted by reputation descending
+   * @throws AgentTrustError with INVALID_INPUT if minReputation is negative
+   */
+  async getAgentsByReputation(
+    minReputation: number,
+    pageSize: number = 50,
+  ): Promise<Array<{ address: string; name: string; reputation: number; trustScore: number; active: boolean }>> {
+    if (minReputation < 0) {
+      throw new AgentTrustError(
+        'minReputation must be non-negative. Valid range: 0-10000.',
+        AgentTrustErrorCode.INVALID_INPUT,
+      );
+    }
+
+    const totalCount = await this.getAgentCount();
+    const matchingAgents: Array<{
+      address: string;
+      name: string;
+      reputation: number;
+      trustScore: number;
+      active: boolean;
+    }> = [];
+
+    for (let offset = 0; offset < totalCount; offset += pageSize) {
+      const addresses = await this.getAgentsByPage(offset, pageSize);
+
+      // Batch verify for efficiency
+      const results = await this.verifyBatch(addresses);
+
+      for (const [addr, result] of results) {
+        if (result.registered && result.reputation >= minReputation) {
+          matchingAgents.push({
+            address: addr,
+            name: result.name,
+            reputation: result.reputation,
+            trustScore: result.trustScore,
+            active: result.active,
+          });
+        }
+      }
+    }
+
+    // Sort by reputation descending
+    matchingAgents.sort((a, b) => b.reputation - a.reputation);
+    return matchingAgents;
+  }
+
+  /**
    * Get all skills registered for an agent from the AgentSkillsRegistry.
    * Returns skill metadata (name, version, key) without full content.
    * Use getSkillContent() for the full skill content.
@@ -897,13 +991,23 @@ export class AgentTrust {
    * Endorse another agent. Requires a private key to sign the transaction.
    * Both the endorser and endorsed must be registered and active.
    *
-   * Usage:
-   *   await trust.endorse('0xEndorsedAddress', privateKey, 'Great agent!');
+   * @example
+   * ```ts
+   * const tx = await trust.endorse(
+   *   '0x293E96ebbf264ed7715cff2b67850517De70232a',
+   *   process.env.PRIVATE_KEY!,
+   *   'Reliable code review agent'
+   * );
+   * console.log(`Endorsed! tx: ${tx.transactionHash}`);
+   * ```
    *
    * @param endorsed - Address of the agent to endorse
-   * @param privateKey - Private key of the endorsing agent (NEVER hardcode)
+   * @param privateKey - Private key of the endorsing agent (NEVER hardcode in source)
    * @param reason - Optional reason for the endorsement
-   * @returns Transaction receipt
+   * @returns Transaction receipt with transactionHash
+   * @throws AgentTrustError with INVALID_ADDRESS if endorsed address is malformed
+   * @throws AgentTrustError with INVALID_INPUT if privateKey is missing
+   * @throws AgentTrustError with TRANSACTION_FAILED if on-chain execution fails
    */
   async endorse(
     endorsed: string,
@@ -954,11 +1058,24 @@ export class AgentTrust {
    * Register a new agent. Requires a private key to sign the transaction.
    * The signer's address becomes the agent identity.
    *
-   * @param name - Human-readable agent name
+   * @example
+   * ```ts
+   * const result = await trust.register(
+   *   'Code Review Bot',
+   *   'Automated Solidity auditor',
+   *   process.env.AGENT_PRIVATE_KEY!,
+   *   'ipfs://QmMetadata...'
+   * );
+   * console.log(`Registered at ${result.agentAddress}, tx: ${result.transactionHash}`);
+   * ```
+   *
+   * @param name - Human-readable agent name (cannot be empty)
    * @param description - What this agent does
-   * @param privateKey - Private key of the agent (NEVER hardcode)
+   * @param privateKey - Private key of the agent (NEVER hardcode in source)
    * @param metadataURI - Optional IPFS/HTTP URI for extended metadata
-   * @returns Transaction receipt with the agent's address
+   * @returns Transaction receipt with transactionHash and agentAddress
+   * @throws AgentTrustError with INVALID_INPUT if name is empty or privateKey missing
+   * @throws AgentTrustError with TRANSACTION_FAILED if on-chain execution fails
    */
   async register(
     name: string,
