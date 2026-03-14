@@ -23,7 +23,7 @@ cd frontend && npm install
 ## Running Tests
 
 ```bash
-# Solidity (70 tests)
+# Solidity (80 tests)
 cd contracts && forge test -vv
 
 # TypeScript SDK (50 tests)

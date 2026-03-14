@@ -326,3 +326,112 @@ Both contracts are **SAFE FOR PRODUCTION** at the hackathon stage. The code is w
 **Audit Date:** 2026-03-13  
 **Auditor:** Universal Trust Agent A (Contract/Backend/SDK track)  
 **Status:** ✅ APPROVED FOR DEPLOYMENT
+
+---
+
+## Second-Pass Audit — 2026-03-14
+
+**Date:** 2026-03-14  
+**Scope:** Deep review of both contracts, SDK, and test coverage gaps
+
+### Additional Findings
+
+#### ⚠️ INFORMATIONAL: Sybil Attack Surface
+
+**Severity:** INFORMATIONAL (by design)
+
+**Finding:**
+The trust score formula `reputation + (endorsementCount × 10)` can be inflated by creating many sock-puppet agents that all endorse a single target. Each endorser must be registered (gas cost ~180K per registration + ~120K per endorsement), so there's an economic cost to sybil attacks.
+
+**Analysis:**
+- 50 sock-puppet endorsements would add 500 points to the trust score
+- On LUKSO mainnet with gas at ~7 gwei, this costs roughly 0.001-0.01 LYX per agent (~$0.002-0.02)
+- The attack is cheap in absolute terms but detectable on-chain
+
+**Mitigations already in place:**
+- Each endorser must be registered and active
+- The endorsement graph is fully transparent on-chain (anyone can audit)
+- Reputation is controlled by authorized updaters only (not inflatable by sybils)
+
+**Verdict:** ✅ **ACCEPTABLE** — This is a known property of permissionless endorsement systems. Higher-value deployments should weight endorsements by the endorser's own trust score (PageRank-style). Not needed for hackathon.
+
+---
+
+#### ✅ VERIFIED: endorsementCount Consistency
+
+**Finding:** The contract maintains `endorsementCount` in two places:
+1. `_agents[agent].endorsementCount` (struct field, used by `getTrustScore()` and `verify()`)
+2. `_endorsers[agent].length` (array length, used by `getEndorsementCount()`)
+
+**Analysis:**
+- Both are incremented/decremented in lockstep in `endorse()` and `removeEndorsement()`
+- No code path modifies one without the other
+- Added test `test_endorsementCount_consistency` to verify with 3 endorsements → removals
+
+**Verdict:** ✅ **SAFE** — Both counters always match.
+
+---
+
+#### ✅ VERIFIED: Deactivated Agent Reputation Updates
+
+**Finding:** `updateReputation()` does not check if the agent is active (only checks `onlyRegistered`).
+
+**Analysis:**
+- This is correct behavior — reputation should persist across deactivation/reactivation cycles
+- Deactivation is a soft toggle that prevents the agent from endorsing, not from receiving reputation updates
+- Added test `test_updateReputation_deactivatedAgent` to document this behavior
+
+**Verdict:** ✅ **BY DESIGN** — Correct behavior.
+
+---
+
+#### ✅ VERIFIED: Ownership Transfer Independence
+
+**Finding:** `transferOwnership()` does not revoke existing reputation updaters.
+
+**Analysis:**
+- Reputation updaters are stored in a separate mapping from ownership
+- Old updaters remain authorized after ownership transfer
+- New owner can revoke old updaters via `setReputationUpdater(updater, false)`
+- Added test `test_ownerTransfer_preservesUpdaters` to verify
+
+**Verdict:** ✅ **CORRECT** — Standard pattern. New owner has full control to revoke.
+
+---
+
+#### ✅ VERIFIED: All Events Emit Correctly
+
+**Finding:** Previous audit verified 4 events. Extended to cover all 7 events:
+- `AgentRegistered` ✅ (existing)
+- `AgentUpdated` ✅ (new test)
+- `AgentDeactivated` ✅ (existing)
+- `AgentReactivated` ✅ (existing)
+- `ReputationUpdated` ✅ (existing)
+- `EndorsementAdded` ✅ (existing)
+- `EndorsementRemoved` ✅ (new test)
+- `ReputationUpdaterSet` ✅ (new test)
+- `OwnershipTransferred` ✅ (new test)
+
+**Verdict:** ✅ **ALL EVENTS VERIFIED**
+
+---
+
+### Test Coverage Update
+
+**Foundry Tests:** ✅ 80 tests passing (up from 70)
+**SDK Tests:** ✅ 50 tests passing
+
+New tests added:
+- `test_endorsementCount_consistency` — verifies struct field matches array length
+- `test_updateReputation_deactivatedAgent` — reputation update on inactive agent
+- `test_ownerTransfer_preservesUpdaters` — updaters survive ownership transfer
+- `test_gas_sybilEndorsements_50agents` — sybil attack gas cost documentation
+- `test_trustScore_getTrustScore_vs_verify_match` — both methods return same value
+- `test_events_ownershipTransferred` — OwnershipTransferred event
+- `test_events_reputationUpdaterSet` — ReputationUpdaterSet event
+- `test_events_endorsementRemoved` — EndorsementRemoved event
+- `test_events_agentUpdated` — AgentUpdated event
+- `test_mutualEndorsement` — A↔B mutual endorsement works correctly
+
+**Second-Pass Audit Date:** 2026-03-14  
+**Status:** ✅ APPROVED — No new vulnerabilities found. Test coverage significantly improved.
