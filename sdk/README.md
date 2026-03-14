@@ -1,0 +1,391 @@
+# @universal-trust/sdk
+
+TypeScript SDK for [Universal Trust](https://github.com/jordydutch/universal-trust) — on-chain agent identity & trust verification on LUKSO.
+
+[![npm version](https://img.shields.io/npm/v/@universal-trust/sdk)](https://www.npmjs.com/package/@universal-trust/sdk)
+[![Tests](https://img.shields.io/badge/tests-23%2F23%20passing-brightgreen)](#tests)
+
+---
+
+## Installation
+
+```bash
+npm install @universal-trust/sdk
+```
+
+Requires Node.js ≥ 18.
+
+---
+
+## Quick Start
+
+```typescript
+import { AgentTrust } from '@universal-trust/sdk';
+
+// Zero config — uses LUKSO mainnet + deployed contracts
+const trust = new AgentTrust({});
+
+// Verify an agent
+const result = await trust.verify('0x293E96ebbf264ed7715cff2b67850517De70232a');
+console.log(result);
+// {
+//   registered: true,
+//   active: true,
+//   isUniversalProfile: true,
+//   reputation: 100,
+//   endorsements: 1,
+//   trustScore: 110,
+//   name: "LUKSO Agent"
+// }
+```
+
+---
+
+## Trust Verification Flow
+
+```
+Your App / Agent
+      │
+      │  trust.verify(address)
+      ▼
+┌─────────────────────────┐
+│   AgentTrust SDK        │
+│   (validates address)   │
+└────────────┬────────────┘
+             │  eth_call via Web3.js
+             │  (with auto-retry + backoff)
+             ▼
+┌─────────────────────────────────────────────────────┐
+│   AgentIdentityRegistry (LUKSO Mainnet)              │
+│   0x1581BA9Fb480b72df3e54f51f851a644483c6ec7        │
+│                                                       │
+│   verify(address) returns:                           │
+│     registered    bool                               │
+│     active        bool                               │
+│     isUP          bool   ← ERC165 UP check           │
+│     reputation    uint256                            │
+│     endorsements  uint256                            │
+│     trustScore    uint256 = rep + (endorse × 10)     │
+│     name          string                             │
+└─────────────────────────────────────────────────────┘
+             │
+             │  (optional: getProfile also queries)
+             ▼
+┌─────────────────────────────────────────────────────┐
+│   AgentSkillsRegistry (LUKSO Mainnet)                │
+│   0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6        │
+│   getSkillKeys() → getSkill() for each key           │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## Configuration
+
+```typescript
+const trust = new AgentTrust({
+  // LUKSO RPC endpoint (default: https://rpc.mainnet.lukso.network)
+  rpcUrl: 'https://rpc.mainnet.lukso.network',
+
+  // Contract addresses — already set to deployed mainnet contracts
+  identityRegistryAddress: '0x1581BA9Fb480b72df3e54f51f851a644483c6ec7',
+  skillsRegistryAddress: '0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6',
+
+  // RPC retry config
+  maxRetries: 3,       // default: 3
+  retryDelayMs: 1000,  // default: 1000ms (exponential backoff)
+});
+```
+
+---
+
+## API Reference
+
+### `verify(address): Promise<VerifyResult>`
+
+Core verification call. Returns a full trust summary for an agent address.
+
+```typescript
+const result = await trust.verify('0x293E96ebbf264ed7715cff2b67850517De70232a');
+
+// VerifyResult shape:
+// {
+//   registered: boolean        — is this agent in the registry?
+//   active: boolean            — is the agent currently active?
+//   isUniversalProfile: boolean — is this a LUKSO UP (ERC165)?
+//   reputation: number         — reputation score (0–10,000)
+//   endorsements: number       — number of peer endorsements
+//   trustScore: number         — rep + (endorsements × 10)
+//   name: string               — agent display name
+// }
+```
+
+---
+
+### `verifyBatch(addresses): Promise<Map<string, VerifyResult>>`
+
+Verify multiple agents concurrently. Returns a Map from address to result.
+Failed lookups return a default unregistered result (no throw).
+
+```typescript
+const agents = [
+  '0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b',
+  '0x293E96ebbf264ed7715cff2b67850517De70232a',
+];
+
+const results = await trust.verifyBatch(agents);
+
+for (const [addr, result] of results) {
+  if (result.registered && result.trustScore >= 100) {
+    console.log(`${addr}: trusted (score=${result.trustScore})`);
+  }
+}
+```
+
+---
+
+### `getProfile(address): Promise<AgentProfile>`
+
+Full agent profile including skills and endorsers.
+Makes multiple RPC calls (identity + skills + endorsers).
+
+```typescript
+const profile = await trust.getProfile('0x293E96ebbf264ed7715cff2b67850517De70232a');
+
+// AgentProfile shape:
+// {
+//   address: string
+//   name: string
+//   description: string
+//   metadataURI: string
+//   reputation: number
+//   endorsementCount: number
+//   registeredAt: number       — Unix timestamp
+//   lastActiveAt: number       — Unix timestamp
+//   isActive: boolean
+//   isUniversalProfile: boolean
+//   skills: SkillInfo[]        — from AgentSkillsRegistry
+//   endorsers: string[]        — addresses that endorsed this agent
+// }
+```
+
+---
+
+### `isRegistered(address): Promise<boolean>`
+
+Quick check if an agent is registered.
+
+```typescript
+if (await trust.isRegistered('0xABC...')) {
+  // agent exists in registry
+}
+```
+
+---
+
+### `getTrustScore(address): Promise<number>`
+
+Get the composite trust score directly.
+
+```typescript
+const score = await trust.getTrustScore('0x293E...');
+// score = reputation + (endorsementCount * 10)
+```
+
+---
+
+### `hasEndorsed(endorser, endorsed): Promise<boolean>`
+
+Check if one agent has endorsed another.
+
+```typescript
+const endorsed = await trust.hasEndorsed(
+  '0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b',  // endorser
+  '0x293E96ebbf264ed7715cff2b67850517De70232a',  // endorsed
+);
+```
+
+---
+
+### `getEndorsers(address): Promise<string[]>`
+
+Get all addresses that have endorsed an agent.
+
+```typescript
+const endorsers = await trust.getEndorsers('0x293E...');
+console.log(`${endorsers.length} endorsers`);
+```
+
+---
+
+### `getAgentCount(): Promise<number>`
+
+Total number of registered agents in the registry.
+
+```typescript
+const count = await trust.getAgentCount();
+console.log(`${count} agents registered`);
+```
+
+---
+
+### `getAgentsByPage(offset, limit): Promise<string[]>`
+
+Paginate through the agent registry.
+
+```typescript
+// Get first 10 agents
+const page1 = await trust.getAgentsByPage(0, 10);
+
+// Get next 10
+const page2 = await trust.getAgentsByPage(10, 10);
+```
+
+---
+
+### `getSkills(address): Promise<SkillInfo[]>`
+
+Get all skills for an agent from the AgentSkillsRegistry.
+
+```typescript
+const skills = await trust.getSkills('0x293E...');
+for (const skill of skills) {
+  console.log(`${skill.name} v${skill.version} (key: ${skill.key})`);
+}
+
+// SkillInfo shape:
+// {
+//   key: string      — bytes32 skill identifier
+//   name: string
+//   version: number
+//   updatedAt: number — Unix timestamp
+// }
+```
+
+---
+
+### `getSkillContent(address, skillKey): Promise<{name, content, version}>`
+
+Get the full content of a specific skill (includes the skill content string).
+
+```typescript
+const skill = await trust.getSkillContent('0x293E...', '0xskillkey...');
+console.log(skill.content);
+```
+
+---
+
+### `endorse(endorsed, privateKey, reason?): Promise<{transactionHash}>`
+
+Endorse another agent. Both agents must be registered and active.
+**Never hardcode private keys.**
+
+```typescript
+const receipt = await trust.endorse(
+  '0x293E96ebbf264ed7715cff2b67850517De70232a',  // agent to endorse
+  process.env.PRIVATE_KEY!,                        // your private key
+  'Reliable and accurate agent',                   // optional reason
+);
+console.log('tx:', receipt.transactionHash);
+```
+
+---
+
+### `register(name, description, privateKey, metadataURI?): Promise<{transactionHash, agentAddress}>`
+
+Register a new agent. The signer's address becomes the agent identity.
+
+```typescript
+const receipt = await trust.register(
+  'My AI Agent',
+  'Specializes in DeFi arbitrage on LUKSO',
+  process.env.PRIVATE_KEY!,
+  'ipfs://QmYourMetadata',   // optional
+);
+console.log('Registered at:', receipt.agentAddress);
+console.log('tx:', receipt.transactionHash);
+```
+
+---
+
+## Error Handling
+
+All methods throw `AgentTrustError` with a typed `code` for programmatic handling:
+
+```typescript
+import { AgentTrust, AgentTrustError, AgentTrustErrorCode } from '@universal-trust/sdk';
+
+try {
+  const result = await trust.verify('0xinvalidaddress');
+} catch (error) {
+  if (error instanceof AgentTrustError) {
+    switch (error.code) {
+      case AgentTrustErrorCode.INVALID_ADDRESS:
+        console.error('Bad address format:', error.message);
+        break;
+      case AgentTrustErrorCode.RPC_ERROR:
+        console.error('Network failed after retries:', error.message);
+        break;
+      case AgentTrustErrorCode.CONTRACT_REVERT:
+        console.error('Contract reverted:', error.message);
+        break;
+      case AgentTrustErrorCode.NOT_REGISTERED:
+        console.error('Agent not found in registry');
+        break;
+      case AgentTrustErrorCode.TRANSACTION_FAILED:
+        console.error('Transaction failed:', error.message);
+        break;
+    }
+  }
+}
+```
+
+### Error Codes
+
+| Code | When |
+|------|------|
+| `INVALID_ADDRESS` | Address fails `0x` + 40 hex char check |
+| `RPC_ERROR` | Network/timeout failure after all retries |
+| `CONTRACT_REVERT` | On-chain execution revert (deterministic — not retried) |
+| `TRANSACTION_FAILED` | `endorse()` or `register()` tx failed |
+| `NOT_REGISTERED` | Agent lookup for unregistered address |
+| `INVALID_INPUT` | Bad parameter (empty name, negative offset, etc.) |
+
+### Retry Behavior
+
+RPC calls automatically retry with exponential backoff:
+- Attempt 1 → fail → wait 1s
+- Attempt 2 → fail → wait 2s
+- Attempt 3 → fail → wait 4s
+- Attempt 4 → throw `RPC_ERROR`
+
+Contract reverts are **not retried** (they're deterministic).
+
+---
+
+## Deployed Contracts
+
+| Contract | Address |
+|----------|---------|
+| AgentIdentityRegistry | `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7` |
+| AgentSkillsRegistry | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` |
+| Chain | LUKSO Mainnet (Chain ID: 42) |
+
+---
+
+## TypeScript Types
+
+```typescript
+import type {
+  AgentTrustConfig,
+  VerifyResult,
+  AgentProfile,
+  SkillInfo,
+} from '@universal-trust/sdk';
+```
+
+---
+
+## License
+
+MIT
