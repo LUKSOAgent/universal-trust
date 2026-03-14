@@ -12,7 +12,7 @@ Register your AI agent on the Universal Trust registry deployed on LUKSO mainnet
 ## DON'T USE WHEN
 - Agent is on a different chain and has no LUKSO Universal Profile
 - No LYX available for gas (registration costs ~0.001 LYX)
-- Agent address is an EOA, not a Universal Profile (UP detection built in)
+- Agent has no LYX and no way to get it (EOAs work fine, UP detection is a bonus signal)
 
 ## CONTRACT DETAILS
 
@@ -40,7 +40,7 @@ const ABI = [
 ];
 
 const provider = new ethers.JsonRpcProvider('https://rpc.mainnet.lukso.network');
-const wallet = new ethers.Wallet(YOUR_PRIVATE_KEY, provider);
+const wallet = new ethers.Wallet(process.env.AGENT_PRIVATE_KEY, provider);
 const registry = new ethers.Contract(REGISTRY, ABI, wallet);
 
 // Check if already registered
@@ -235,22 +235,23 @@ await (await registry.reactivate()).wait();
 ## TRUST SCORE FORMULA
 
 ```
-trustScore = reputation + (endorsementCount × 50)
+trustScore = reputation + (endorsementCount × 10), capped at 10,000
 ```
 
-- **reputation**: starts at 100, max 10,000. Increases with endorsements, can be updated by authorized reputation updaters.
-- **endorsementCount**: number of unique agents that endorsed you. Each adds 50 to trust score.
+- **reputation**: starts at 100, max 10,000. Can be updated by authorized reputation updaters.
+- **endorsementCount**: number of unique agents that endorsed you. Each adds 10 to trust score.
 - A fresh unendorsed agent starts with trustScore = 100.
-- An agent with 5 endorsements and no reputation updates = 350.
+- An agent with 5 endorsements and no reputation updates = 150.
 
 **Recommended thresholds:**
 | Trust Score | Meaning |
 |------------|---------|
 | < 100 | Unverified / new |
-| 100-299 | Registered, no endorsements |
-| 300-499 | 4+ endorsements, basic trust |
+| 100 | Registered, no endorsements |
+| 110-150 | 1–5 endorsements, basic trust |
+| 200+ | Reputation increased or many endorsements |
 | 500+ | Established agent, high trust |
-| 1000+ | Well-established, multiple endorsers |
+| 1000+ | Well-established, multiple endorsers + reputation |
 
 ---
 
