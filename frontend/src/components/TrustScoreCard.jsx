@@ -16,34 +16,27 @@ const MAX_SCORE = 10000;
 export function getTrustLevel(score) {
   if (score >= 500)
     return {
-      label: "Elite",
+      label: "Highly Trusted",
       color: "text-green-400",
       bg: "bg-green-500/15 border-green-500/40",
       bar: "from-green-500 to-emerald-400",
     };
   if (score >= 200)
     return {
-      label: "Established",
+      label: "Trusted",
       color: "text-blue-400",
       bg: "bg-blue-500/15 border-blue-500/40",
       bar: "from-blue-500 to-cyan-400",
     };
-  if (score >= 110)
+  if (score >= 100)
     return {
-      label: "Trusted",
+      label: "Verified",
       color: "text-yellow-400",
       bg: "bg-yellow-500/15 border-yellow-500/40",
       bar: "from-yellow-500 to-amber-400",
     };
-  if (score >= 100)
-    return {
-      label: "Registered",
-      color: "text-lukso-purple",
-      bg: "bg-lukso-purple/15 border-lukso-purple/40",
-      bar: "from-lukso-purple to-lukso-pink",
-    };
   return {
-    label: "Unverified",
+    label: "New",
     color: "text-gray-400",
     bg: "bg-gray-500/10 border-gray-500/30",
     bar: "from-gray-500 to-gray-400",
