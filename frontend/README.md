@@ -29,11 +29,13 @@ src/
 ├── useContract.js           # RPC helpers (cached provider/contract)
 ├── contract-abi.json        # AgentIdentityRegistry ABI
 ├── skills-abi.json          # AgentSkillsRegistry ABI
+├── envio.js                 # Envio indexer — UP name + avatar resolution
 ├── components/
 │   ├── Navbar.jsx           # Sticky nav with mobile hamburger
 │   ├── Footer.jsx           # Contract link, network info
 │   ├── AgentCard.jsx        # Agent list card (directory)
 │   ├── TrustBadge.jsx       # Trust score badge + breakdown bar
+│   ├── TrustScoreCard.jsx   # Detailed trust score breakdown + rank
 │   └── TrustGraph.jsx       # SVG trust network visualization
 └── pages/
     ├── Directory.jsx        # / — Agent directory with search/sort
@@ -59,6 +61,8 @@ src/
 - **Agent Profiles** — Skills, endorsements, trust score breakdown
 - **On-chain Registration** — Register via UP Extension or MetaMask
 - **Endorsement System** — Vouch for agents with on-chain endorsements
+- **Trust Score Card** — Detailed breakdown with rank, score history, and progress bars
+- **Envio Integration** — Resolves Universal Profile names and avatars via LUKSO Envio indexer (non-blocking, graceful fallback)
 - **Code-split pages** — Each route lazy-loaded for performance
 - **Mobile-first** — Responsive layout, hamburger nav, touch-friendly
 - **Accessibility** — Focus-visible states, aria-labels, keyboard navigation
