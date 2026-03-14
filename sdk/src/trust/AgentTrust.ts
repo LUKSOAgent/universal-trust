@@ -553,7 +553,10 @@ export class AgentTrust {
   /**
    * Batch verify multiple agent addresses at once.
    * Returns a map of address → VerifyResult.
-   * Runs all calls concurrently for efficiency.
+   *
+   * For small batches (≤ 20), runs all calls concurrently.
+   * For large batches (> 20), processes in chunks of 20 to avoid
+   * overwhelming the RPC node with too many concurrent requests.
    *
    * @example
    * ```ts
@@ -584,27 +587,34 @@ export class AgentTrust {
       validateAddress(addr, 'verifyBatch address');
     }
 
-    // Run all verify calls concurrently
-    const results = await Promise.allSettled(
-      addresses.map((addr) => this.verify(addr)),
-    );
-
     const map = new Map<string, VerifyResult>();
-    for (let i = 0; i < addresses.length; i++) {
-      const result = results[i];
-      if (result.status === 'fulfilled') {
-        map.set(addresses[i], result.value);
-      } else {
-        // For failed lookups, return a default unregistered result
-        map.set(addresses[i], {
-          registered: false,
-          active: false,
-          isUniversalProfile: false,
-          reputation: 0,
-          endorsements: 0,
-          trustScore: 0,
-          name: '',
-        });
+    const defaultResult: VerifyResult = {
+      registered: false,
+      active: false,
+      isUniversalProfile: false,
+      reputation: 0,
+      endorsements: 0,
+      trustScore: 0,
+      name: '',
+    };
+
+    // Process in chunks of 20 to avoid overwhelming the RPC
+    const CHUNK_SIZE = 20;
+    for (let i = 0; i < addresses.length; i += CHUNK_SIZE) {
+      const chunk = addresses.slice(i, i + CHUNK_SIZE);
+
+      const results = await Promise.allSettled(
+        chunk.map((addr) => this.verify(addr)),
+      );
+
+      for (let j = 0; j < chunk.length; j++) {
+        const result = results[j];
+        if (result.status === 'fulfilled') {
+          map.set(chunk[j], result.value);
+        } else {
+          // For failed lookups, return a default unregistered result
+          map.set(chunk[j], { ...defaultResult });
+        }
       }
     }
 
