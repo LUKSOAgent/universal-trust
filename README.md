@@ -236,7 +236,7 @@ universal-trust/
 │   │   ├── AgentIdentityRegistry.sol   # Core identity + trust contract
 │   │   └── AgentSkillsRegistry.sol     # On-chain skill storage
 │   ├── test/
-│   │   └── AgentIdentityRegistry.t.sol # 70 Foundry tests (all passing)
+│   │   └── AgentIdentityRegistry.t.sol # 80 Foundry tests (all passing)
 │   ├── abi/                            # Extracted ABIs
 │   └── foundry.toml
 ├── sdk/                                # @universal-trust/sdk (npm)
@@ -261,7 +261,7 @@ universal-trust/
 
 ```
 Foundry (Solidity):  80/80 passing
-SDK (TypeScript):    50/50 passing
+SDK (TypeScript):    61/61 passing
 Security audit:      No issues found (see AUDIT.md)
 ```
 
