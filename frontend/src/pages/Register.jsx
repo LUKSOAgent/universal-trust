@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CONTRACT_ADDRESS, CHAIN_ID, EXPLORER_URL } from "../config";
 
 export default function Register() {
+  const [activeTab, setActiveTab] = useState("wallet"); // "wallet" | "sdk"
   const [name, setName] = useState("");
 
   useEffect(() => {
@@ -131,12 +132,40 @@ export default function Register() {
       </div>
 
       <h1 className="text-3xl font-bold text-white mb-2 animate-fade-in">Register Agent</h1>
-      <p className="text-gray-400 mb-8 animate-fade-in" style={{ animationDelay: "0.05s" }}>
+      <p className="text-gray-400 mb-6 animate-fade-in" style={{ animationDelay: "0.05s" }}>
         Register your AI agent on-chain. Your connected wallet address becomes the agent identity.
         You'll start with a base reputation of 100.
       </p>
 
-      <form onSubmit={handleRegister} className="space-y-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+      {/* Tab switcher */}
+      <div className="flex gap-1 p-1 bg-lukso-card border border-lukso-border rounded-lg mb-8 animate-fade-in" style={{ animationDelay: "0.07s" }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab("wallet")}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+            activeTab === "wallet"
+              ? "bg-gradient-to-r from-lukso-pink to-lukso-purple text-white shadow"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          Register via Wallet
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("sdk")}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+            activeTab === "sdk"
+              ? "bg-gradient-to-r from-lukso-pink to-lukso-purple text-white shadow"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          Register via SDK / CLI
+        </button>
+      </div>
+
+      {activeTab === "sdk" && <SDKTab onSwitchToWallet={() => setActiveTab("wallet")} />}
+
+      {activeTab === "wallet" && (<><form onSubmit={handleRegister} className="space-y-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
         <div>
           <label htmlFor="agent-name" className="block text-sm font-medium text-gray-300 mb-2">
             Agent Name *
@@ -238,7 +267,7 @@ export default function Register() {
             )}
           </div>
         </div>
-      )}
+      )}</>)}
 
       {/* What Happens Next — Visual Flow */}
       <div className="mt-8 animate-fade-in" style={{ animationDelay: "0.2s" }}>
@@ -324,6 +353,126 @@ export default function Register() {
             How It Works
           </Link>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SDKTab({ onSwitchToWallet }) {
+  const [copiedIdx, setCopiedIdx] = useState(null);
+
+  const snippets = [
+    {
+      label: "Install",
+      lang: "bash",
+      code: `npm install @universal-trust/sdk`,
+    },
+    {
+      label: "Register",
+      lang: "js",
+      code: `const { AgentTrust } = require('@universal-trust/sdk');
+const sdk = new AgentTrust({ privateKey: 'YOUR_KEY' });
+sdk.register('Agent Name', 'What I do', '').then(console.log);`,
+    },
+    {
+      label: "Verify (no SDK)",
+      lang: "bash",
+      code: `# Verify any agent with a single eth_call
+curl -s -X POST https://rpc.mainnet.lukso.network \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "jsonrpc": "2.0", "method": "eth_call",
+    "params": [{
+      "to": "0x1581BA9Fb480b72df3e54f51f851a644483c6ec7",
+      "data": "0xfe575a87000000000000000000000000<AGENT_ADDRESS_WITHOUT_0x>"
+    }, "latest"],
+    "id": 1
+  }'`,
+    },
+  ];
+
+  async function copySnippet(idx, code) {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    } catch {}
+  }
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="bg-lukso-card border border-lukso-border rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <svg className="w-5 h-5 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          <h3 className="text-white font-semibold">Register via SDK or CLI</h3>
+        </div>
+        <p className="text-gray-400 text-sm mb-5">
+          No browser wallet? Register programmatically using the SDK or a raw curl call.
+          Useful for CI/CD pipelines and automated agent deployments.
+        </p>
+
+        <div className="space-y-4">
+          {snippets.map((snippet, i) => (
+            <div key={i}>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">{snippet.label}</span>
+                <span className="text-xs text-gray-600 bg-lukso-darker px-2 py-0.5 rounded font-mono">{snippet.lang}</span>
+              </div>
+              <div className="relative">
+                <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed">
+                  {snippet.code}
+                </pre>
+                <button
+                  onClick={() => copySnippet(i, snippet.code)}
+                  className="absolute top-2.5 right-2.5 px-2 py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition flex items-center gap-1"
+                >
+                  {copiedIdx === i ? (
+                    <><svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Copied</>
+                  ) : (
+                    <><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>Copy</>
+                  )}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-lukso-border flex flex-wrap gap-3 text-sm">
+          <a
+            href="https://github.com/LUKSOAgent/universal-trust/blob/main/CURL_SKILL.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-lukso-purple hover:text-lukso-pink transition flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            CURL_SKILL.md — no-dependency approach ↗
+          </a>
+          <a
+            href="https://github.com/LUKSOAgent/universal-trust"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-lukso-purple hover:text-lukso-pink transition flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            Full SDK docs on GitHub ↗
+          </a>
+        </div>
+      </div>
+
+      <div className="bg-lukso-darker border border-lukso-border/50 rounded-xl p-4 text-xs text-gray-500 flex items-start gap-2">
+        <svg className="w-4 h-4 mt-0.5 shrink-0 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>
+          SDK uses ethers.js v6 under the hood. Keep your private key secure — use environment variables, never hardcode in production.
+          For wallet-based registration with a browser, switch to the <button type="button" onClick={onSwitchToWallet} className="text-lukso-purple hover:text-lukso-pink underline">Wallet tab</button>.
+        </span>
       </div>
     </div>
   );

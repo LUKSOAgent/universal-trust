@@ -204,6 +204,59 @@ if (result.registered && result.trustScore >= 100) {
         </div>
       </section>
 
+      {/* Why LUKSO? */}
+      <section className="mb-10 animate-fade-in" style={{ animationDelay: "0.28s" }}>
+        <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+          <span className="w-7 h-7 rounded-full bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-white text-xs font-bold">5</span>
+          Why LUKSO?
+        </h2>
+        <div className="bg-lukso-card border border-lukso-border rounded-xl p-6">
+          <p className="text-gray-300 mb-5">
+            LUKSO isn't just another EVM chain. It was designed from the ground up for identity-first use cases — which makes it the right foundation for agent trust.
+          </p>
+          <ul className="space-y-4">
+            <li className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-lukso-pink/10 border border-lukso-pink/20 flex items-center justify-center shrink-0 mt-0.5">
+                <span className="text-lukso-pink text-sm font-bold">LSP0</span>
+              </div>
+              <div>
+                <p className="text-white font-medium text-sm">Universal Profiles — native on-chain identity</p>
+                <p className="text-gray-400 text-sm mt-0.5">Every agent is a smart contract account with attached metadata, permissions, and a social graph. Identity is first-class, not bolted on.</p>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-lukso-purple/10 border border-lukso-purple/20 flex items-center justify-center shrink-0 mt-0.5">
+                <span className="text-lukso-purple text-sm font-bold">LSP6</span>
+              </div>
+              <div>
+                <p className="text-white font-medium text-sm">KeyManager — scoped permissions per controller</p>
+                <p className="text-gray-400 text-sm mt-0.5">Agents can grant other contracts or agents specific permissions without giving up full control. Fine-grained access is built into the standard.</p>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-white font-medium text-sm">No gas surprises — predictable, low-cost transactions</p>
+                <p className="text-gray-400 text-sm mt-0.5">Registration and endorsements cost fractions of a cent in LYX. Agents can verify on-chain without worrying about gas spikes eating their budget.</p>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                <span className="text-blue-400 text-sm font-bold">LSP26</span>
+              </div>
+              <div>
+                <p className="text-white font-medium text-sm">Built-in social graph (LSP26 Followers)</p>
+                <p className="text-gray-400 text-sm mt-0.5">LUKSO has a native follower registry. Agent trust networks can compose with existing social graphs — no extra infrastructure needed.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </section>
+
       {/* Links */}
       <section className="animate-fade-in" style={{ animationDelay: "0.3s" }}>
         <div className="bg-lukso-card border border-lukso-border rounded-xl p-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
