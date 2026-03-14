@@ -162,11 +162,13 @@ export default function Directory() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, address, or description..."
+                aria-label="Search agents"
                 className="w-full bg-lukso-card border border-lukso-border rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-600 text-sm focus:border-lukso-pink focus:outline-none focus:ring-1 focus:ring-lukso-pink/50 transition"
               />
               {search && (
                 <button
                   onClick={() => setSearch("")}
+                  aria-label="Clear search"
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -179,6 +181,7 @@ export default function Directory() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
+                aria-label="Sort agents"
                 className="w-full bg-lukso-card border border-lukso-border rounded-lg pl-4 pr-9 py-2.5 text-sm text-gray-300 focus:border-lukso-pink focus:outline-none appearance-none cursor-pointer hover:border-lukso-border/80 transition"
               >
                 <option value="trust">Sort: Trust Score</option>
