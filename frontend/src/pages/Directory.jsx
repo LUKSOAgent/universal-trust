@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import AgentCard from "../components/AgentCard";
 import { getAllAgents, getAgentCount } from "../useContract";
@@ -8,6 +8,8 @@ export default function Directory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [count, setCount] = useState(0);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("trust"); // trust | name | recent | endorsements
 
   async function load() {
     try {
@@ -31,6 +33,42 @@ export default function Directory() {
 
   const totalEndorsements = agents.reduce((sum, a) => sum + a.endorsementCount, 0);
 
+  const filteredAgents = useMemo(() => {
+    let result = agents;
+
+    // Search filter
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      result = result.filter(
+        (a) =>
+          a.name.toLowerCase().includes(q) ||
+          a.address.toLowerCase().includes(q) ||
+          (a.description && a.description.toLowerCase().includes(q))
+      );
+    }
+
+    // Sort
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "trust": {
+          const scoreA = a.reputation + a.endorsementCount * 10;
+          const scoreB = b.reputation + b.endorsementCount * 10;
+          return scoreB - scoreA;
+        }
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "recent":
+          return b.registeredAt - a.registeredAt;
+        case "endorsements":
+          return b.endorsementCount - a.endorsementCount;
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [agents, search, sortBy]);
+
   return (
     <div>
       {/* Hero Section */}
@@ -44,10 +82,10 @@ export default function Directory() {
               </span>
             </h1>
             <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-              On-chain identity and trust layer for AI agents on LUKSO. 
+              On-chain identity and trust layer for AI agents on LUKSO.
               Verify identities, build reputation, explore the trust graph.
             </p>
-            
+
             {/* Live Stats */}
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mb-8 animate-fade-in" style={{ animationDelay: "0.2s" }}>
               <StatPill label="Agents" value={count} color="pink" />
@@ -98,15 +136,64 @@ export default function Directory() {
 
       {/* Agent List */}
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-white mb-6">
-          Registered Agents
-        </h2>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <h2 className="text-2xl font-bold text-white">
+            Registered Agents
+            {!loading && agents.length > 0 && (
+              <span className="text-gray-500 text-base font-normal ml-2">({agents.length})</span>
+            )}
+          </h2>
+        </div>
+
+        {/* Search + Sort Bar */}
+        {!loading && agents.length > 0 && (
+          <div className="flex flex-col sm:flex-row gap-3 mb-6 animate-fade-in">
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name, address, or description..."
+                className="w-full bg-lukso-card border border-lukso-border rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-600 text-sm focus:border-lukso-pink focus:outline-none focus:ring-1 focus:ring-lukso-pink/50 transition"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-lukso-card border border-lukso-border rounded-lg px-4 py-2.5 text-sm text-gray-300 focus:border-lukso-pink focus:outline-none appearance-none cursor-pointer hover:border-lukso-border/80 transition min-w-[160px]"
+            >
+              <option value="trust">Sort: Trust Score</option>
+              <option value="name">Sort: Name</option>
+              <option value="recent">Sort: Most Recent</option>
+              <option value="endorsements">Sort: Endorsements</option>
+            </select>
+          </div>
+        )}
 
         {loading ? (
           <DirectorySkeleton />
         ) : error ? (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
-            <p className="text-red-400 mb-3">Failed to load agents: {error}</p>
+            <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-red-500/10 flex items-center justify-center">
+              <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <p className="text-red-400 mb-1 font-medium">Failed to connect to LUKSO network</p>
+            <p className="text-gray-500 text-sm mb-4">{error}</p>
             <button
               onClick={load}
               className="px-5 py-2 rounded-lg bg-lukso-card border border-lukso-border text-gray-300 hover:text-white hover:border-lukso-pink/50 transition text-sm"
@@ -123,13 +210,28 @@ export default function Directory() {
             </div>
             <p className="text-gray-400 text-lg">No agents registered yet.</p>
             <p className="text-gray-500 mt-2 mb-4">Be the first to register your AI agent on-chain.</p>
-            <a href="/register" className="inline-block px-6 py-2.5 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition text-sm">
+            <Link to="/register" className="inline-block px-6 py-2.5 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition text-sm">
               Register Now
-            </a>
+            </Link>
+          </div>
+        ) : filteredAgents.length === 0 ? (
+          <div className="bg-lukso-card border border-lukso-border rounded-xl p-8 text-center">
+            <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-lukso-darker border border-lukso-border flex items-center justify-center">
+              <svg className="w-7 h-7 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <p className="text-gray-400">No agents match "{search}"</p>
+            <button
+              onClick={() => setSearch("")}
+              className="mt-3 text-sm text-lukso-pink hover:underline"
+            >
+              Clear search
+            </button>
           </div>
         ) : (
           <div className="space-y-4">
-            {agents.map((agent, i) => (
+            {filteredAgents.map((agent, i) => (
               <div key={agent.address} className="animate-fade-in" style={{ animationDelay: `${i * 0.05}s` }}>
                 <AgentCard agent={agent} />
               </div>
@@ -201,7 +303,6 @@ function TrustNetworkBg() {
     const svg = canvasRef.current;
     if (!svg) return;
 
-    // Generate random nodes
     const w = 1200, h = 400;
     const nodeCount = 18;
     const nodes = Array.from({ length: nodeCount }, (_, i) => ({
@@ -211,7 +312,6 @@ function TrustNetworkBg() {
       delay: Math.random() * 5,
     }));
 
-    // Generate edges (connect nearby nodes)
     const edges = [];
     for (let i = 0; i < nodeCount; i++) {
       for (let j = i + 1; j < nodeCount; j++) {
@@ -224,7 +324,6 @@ function TrustNetworkBg() {
       }
     }
 
-    // Build SVG content
     let content = "";
     edges.forEach((e, i) => {
       const from = nodes[e.from];

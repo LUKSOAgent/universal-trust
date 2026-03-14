@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { CONTRACT_ADDRESS, CHAIN_ID, EXPLORER_URL } from "../config";
 
 export default function Register() {
@@ -9,6 +10,7 @@ export default function Register() {
   const [txHash, setTxHash] = useState(null);
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [registeredAddress, setRegisteredAddress] = useState(null);
 
   function addToast(type, msg) {
     const id = Date.now();
@@ -26,18 +28,20 @@ export default function Register() {
 
     try {
       setLoading(true);
+      setStatus(null);
+      setTxHash(null);
+      setRegisteredAddress(null);
       addToast("info", "Connecting wallet...");
 
       if (!window.ethereum) {
         setStatus({
           type: "error",
-          msg: "No wallet detected. Install the LUKSO UP Browser Extension or MetaMask.",
+          msg: "No wallet detected. Install the LUKSO UP Browser Extension or MetaMask to register.",
         });
         setLoading(false);
         return;
       }
 
-      // Dynamically import ethers only when needed
       const { ethers } = await import("ethers");
       const ABI = (await import("../contract-abi.json")).default;
 
@@ -64,6 +68,7 @@ export default function Register() {
       }
 
       const signer = await provider.getSigner();
+      const signerAddress = await signer.getAddress();
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
       addToast("info", "Sending registration transaction...");
@@ -75,6 +80,7 @@ export default function Register() {
       setStatus({ type: "info", msg: "Waiting for confirmation..." });
 
       await tx.wait();
+      setRegisteredAddress(signerAddress);
       addToast("success", `"${name}" registered successfully!`);
       setStatus({
         type: "success",
@@ -85,10 +91,14 @@ export default function Register() {
       let msg = err.message;
       if (msg.includes("AlreadyRegistered")) {
         msg = "This address is already registered as an agent.";
+      } else if (msg.includes("EmptyName")) {
+        msg = "Agent name cannot be empty.";
       } else if (msg.includes("user rejected")) {
         msg = "Transaction rejected by user.";
+      } else if (msg.length > 120) {
+        msg = msg.slice(0, 120) + "...";
       }
-      addToast("error", msg.length > 100 ? msg.slice(0, 100) + "..." : msg);
+      addToast("error", msg);
       setStatus({ type: "error", msg });
     } finally {
       setLoading(false);
@@ -118,6 +128,7 @@ export default function Register() {
       <h1 className="text-3xl font-bold text-white mb-2 animate-fade-in">Register Agent</h1>
       <p className="text-gray-400 mb-8 animate-fade-in" style={{ animationDelay: "0.05s" }}>
         Register your AI agent on-chain. Your connected wallet address becomes the agent identity.
+        You'll start with a base reputation of 100.
       </p>
 
       <form onSubmit={handleRegister} className="space-y-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
@@ -142,7 +153,7 @@ export default function Register() {
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="What does this agent do?"
+            placeholder="What does this agent do? What capabilities does it have?"
             rows={4}
             className="w-full bg-lukso-card border border-lukso-border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:border-lukso-pink focus:outline-none focus:ring-1 focus:ring-lukso-pink/50 transition resize-none"
           />
@@ -150,7 +161,7 @@ export default function Register() {
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Metadata URI (optional)
+            Metadata URI <span className="text-gray-500 font-normal">(optional)</span>
           </label>
           <input
             type="text"
@@ -159,6 +170,17 @@ export default function Register() {
             placeholder="ipfs://... or https://..."
             className="w-full bg-lukso-card border border-lukso-border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:border-lukso-pink focus:outline-none focus:ring-1 focus:ring-lukso-pink/50 transition"
           />
+          <p className="text-xs text-gray-600 mt-1">
+            Optional link to extended metadata (JSON, IPFS, or HTTP).
+          </p>
+        </div>
+
+        {/* Wallet requirement notice */}
+        <div className="bg-lukso-darker/50 border border-lukso-border/50 rounded-lg p-3 text-xs text-gray-500 flex items-start gap-2">
+          <svg className="w-4 h-4 mt-0.5 shrink-0 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Requires a connected wallet (LUKSO UP Extension or MetaMask) with LUKSO Mainnet configured. Registration costs a small amount of LYX gas.</span>
         </div>
 
         <button
@@ -187,18 +209,51 @@ export default function Register() {
             : "bg-blue-500/10 border-blue-500/30 text-blue-400"
         }`}>
           <p>{status.msg}</p>
-          {txHash && (
-            <a
-              href={`${EXPLORER_URL}/tx/${txHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-lukso-purple hover:text-lukso-pink mt-2 inline-block"
-            >
-              View transaction →
-            </a>
-          )}
+          <div className="flex flex-wrap items-center gap-3 mt-2">
+            {txHash && (
+              <a
+                href={`${EXPLORER_URL}/tx/${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-lukso-purple hover:text-lukso-pink"
+              >
+                View transaction →
+              </a>
+            )}
+            {status.type === "success" && registeredAddress && (
+              <Link
+                to={`/agent/${registeredAddress}`}
+                className="text-sm text-lukso-pink hover:underline"
+              >
+                View your agent profile →
+              </Link>
+            )}
+          </div>
         </div>
       )}
+
+      {/* What happens next */}
+      <div className="mt-8 bg-lukso-card border border-lukso-border rounded-xl p-6 animate-fade-in" style={{ animationDelay: "0.2s" }}>
+        <h3 className="text-lg font-semibold text-white mb-3">After Registration</h3>
+        <ul className="space-y-2 text-sm text-gray-400">
+          <li className="flex items-start gap-2">
+            <span className="text-lukso-pink mt-0.5">1.</span>
+            Your agent appears in the <Link to="/" className="text-lukso-purple hover:text-lukso-pink transition">Agent Directory</Link> with a base reputation of 100.
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-lukso-pink mt-0.5">2.</span>
+            Other agents can <Link to="/endorse" className="text-lukso-purple hover:text-lukso-pink transition">endorse you</Link>, each adding +10 to your trust score.
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-lukso-pink mt-0.5">3.</span>
+            Anyone can <Link to="/verify" className="text-lukso-purple hover:text-lukso-pink transition">verify your agent</Link> with a single on-chain call.
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-lukso-pink mt-0.5">4.</span>
+            Using a Universal Profile? Your UP metadata is automatically detected and linked.
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

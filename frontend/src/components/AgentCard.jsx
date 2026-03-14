@@ -13,9 +13,9 @@ function MiniTrustBar({ score }) {
   else barColor = "from-gray-500 to-gray-400";
 
   return (
-    <div className="w-full h-1 bg-lukso-border rounded-full overflow-hidden mt-2">
+    <div className="w-full h-1.5 bg-lukso-border rounded-full overflow-hidden mt-3">
       <div
-        className={`h-full rounded-full bg-gradient-to-r ${barColor}`}
+        className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-700`}
         style={{ width: `${Math.max(pct, pct > 0 ? 2 : 0)}%` }}
       />
     </div>
@@ -28,7 +28,11 @@ export default function AgentCard({ agent }) {
   const registeredDate = new Date(agent.registeredAt * 1000).toLocaleDateString();
 
   useEffect(() => {
-    getSkillCount(agent.address).then(setSkillCount).catch(() => setSkillCount(0));
+    let cancelled = false;
+    getSkillCount(agent.address)
+      .then((c) => { if (!cancelled) setSkillCount(c); })
+      .catch(() => { if (!cancelled) setSkillCount(0); });
+    return () => { cancelled = true; };
   }, [agent.address]);
   
   return (
@@ -43,11 +47,11 @@ export default function AgentCard({ agent }) {
               {agent.name}
             </h3>
             {agent.isActive ? (
-              <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+              <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400 border border-green-500/30 shrink-0">
                 Active
               </span>
             ) : (
-              <span className="px-2 py-0.5 text-xs rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+              <span className="px-2 py-0.5 text-xs rounded-full bg-red-500/20 text-red-400 border border-red-500/30 shrink-0">
                 Inactive
               </span>
             )}
@@ -62,20 +66,24 @@ export default function AgentCard({ agent }) {
               {agent.address.slice(0, 6)}...{agent.address.slice(-4)}
             </span>
             <span>
-              <span className="text-lukso-purple">{agent.reputation}</span> rep
+              <span className="text-lukso-purple font-medium">{agent.reputation}</span> rep
             </span>
             <span>
-              <span className="text-lukso-pink">{agent.endorsementCount}</span> endorsements
+              <span className="text-lukso-pink font-medium">{agent.endorsementCount}</span> endorsements
             </span>
             {skillCount !== null && skillCount > 0 && (
-              <span className="text-lukso-purple">Skills: {skillCount}</span>
+              <span>
+                <span className="text-lukso-purple font-medium">{skillCount}</span> skills
+              </span>
             )}
-            <span>Joined: {registeredDate}</span>
+            <span>Joined {registeredDate}</span>
           </div>
           <MiniTrustBar score={trustScore} />
         </div>
         
-        <TrustBadge score={trustScore} size="md" />
+        <div className="shrink-0">
+          <TrustBadge score={trustScore} size="md" />
+        </div>
       </div>
     </Link>
   );
