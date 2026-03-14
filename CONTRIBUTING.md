@@ -26,7 +26,7 @@ cd frontend && npm install
 # Solidity (80 tests)
 cd contracts && forge test -vv
 
-# TypeScript SDK (61 tests)
+# TypeScript SDK (97 tests: 61 unit + 36 integration)
 cd sdk && npx vitest run
 ```
 

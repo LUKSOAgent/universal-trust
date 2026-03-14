@@ -305,7 +305,7 @@ No medium-severity issues found.
 
 ## Testing Status
 
-**Foundry Tests:** ✅ 70 tests passing
+**Foundry Tests:** ✅ 80 tests passing
 - Edge cases covered
 - Fuzz tests for reputation clamping
 - Gas snapshots recorded
