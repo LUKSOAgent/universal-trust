@@ -355,6 +355,11 @@ export default function Verify() {
         </div>
       )}
 
+      {/* Raw Contract Data — collapsible, shown after verification */}
+      {result && !loading && result.registered && (
+        <RawContractData result={result} address={address} />
+      )}
+
       {/* SDK Code Example */}
       <div className="mt-8 bg-lukso-card border border-lukso-border rounded-xl p-6 animate-fade-in" style={{ animationDelay: "0.2s" }}>
         <div className="flex items-center justify-between mb-3">
@@ -383,6 +388,100 @@ export default function Verify() {
           </a>
         </p>
       </div>
+    </div>
+  );
+}
+
+function RawContractData({ result, address }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const rawJson = JSON.stringify(
+    {
+      address,
+      registered: result.registered,
+      active: result.active,
+      isUP: result.isUP,
+      name: result.name,
+      reputation: result.reputation,
+      endorsements: result.endorsements,
+      trustScore: result.trustScore,
+    },
+    null,
+    2
+  );
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(rawJson);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  }
+
+  return (
+    <div className="mt-4 bg-lukso-card border border-lukso-border rounded-xl overflow-hidden animate-fade-in">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-lukso-darker/40 transition"
+        aria-expanded={open}
+      >
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          <span className="text-sm font-medium text-gray-300">Raw contract data</span>
+          <span className="text-xs text-gray-600 font-mono">verify() → JSON</span>
+        </div>
+        <svg
+          className={`w-4 h-4 text-gray-500 transition-transform ${open ? "rotate-180" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="border-t border-lukso-border">
+          <div className="relative">
+            <pre className="bg-lukso-darker px-5 py-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed">
+              {rawJson}
+            </pre>
+            <button
+              onClick={handleCopy}
+              title="Copy JSON"
+              className="absolute top-3 right-3 px-2.5 py-1.5 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition flex items-center gap-1.5"
+            >
+              {copied ? (
+                <>
+                  <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copied
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy
+                </>
+              )}
+            </button>
+          </div>
+          <div className="px-5 py-3 border-t border-lukso-border/50 flex items-center justify-between text-xs text-gray-600">
+            <span>Returned by <code className="font-mono text-lukso-purple">AgentIdentityRegistry.verify("{address.slice(0, 8)}...")</code></span>
+            <a
+              href={`${EXPLORER_URL}/address/${CONTRACT_ADDRESS}#readContract`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-lukso-purple hover:text-lukso-pink transition"
+            >
+              Read on Explorer ↗
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
