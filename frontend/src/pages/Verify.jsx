@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { verifyAgent } from "../useContract";
 import { EXPLORER_URL } from "../config";
-import TrustBadge from "../components/TrustBadge";
+import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
 import { Link } from "react-router-dom";
 
 export default function Verify() {
@@ -98,7 +98,7 @@ export default function Verify() {
                 <TrustBadge score={result.trustScore} size="lg" />
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
                 <VerifyField
                   label="Registered"
                   value={result.registered ? "Yes" : "No"}
@@ -125,6 +125,16 @@ export default function Verify() {
                 <VerifyField
                   label="Trust Score"
                   value={result.trustScore.toString()}
+                />
+              </div>
+
+              {/* Trust score breakdown */}
+              <div className="bg-lukso-darker rounded-lg p-4 mb-5">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Trust Score Breakdown</p>
+                <TrustScoreBar
+                  reputation={result.reputation}
+                  endorsements={result.endorsements}
+                  trustScore={result.trustScore}
                 />
               </div>
 

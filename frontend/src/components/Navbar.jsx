@@ -23,7 +23,9 @@ export default function Navbar() {
         <div className="hidden sm:flex items-center gap-1">
           <NavLink to="/" active={isActive("/")}>Agents</NavLink>
           <NavLink to="/register" active={isActive("/register")}>Register</NavLink>
+          <NavLink to="/endorse" active={isActive("/endorse")}>Endorse</NavLink>
           <NavLink to="/verify" active={isActive("/verify")}>Verify</NavLink>
+          <NavLink to="/about" active={isActive("/about")}>About</NavLink>
         </div>
 
         {/* Mobile hamburger */}
@@ -47,7 +49,9 @@ export default function Navbar() {
         <div className="sm:hidden border-t border-lukso-border bg-lukso-darker px-4 pb-3 space-y-1">
           <MobileNavLink to="/" active={isActive("/")} onClick={() => setOpen(false)}>Agents</MobileNavLink>
           <MobileNavLink to="/register" active={isActive("/register")} onClick={() => setOpen(false)}>Register</MobileNavLink>
+          <MobileNavLink to="/endorse" active={isActive("/endorse")} onClick={() => setOpen(false)}>Endorse</MobileNavLink>
           <MobileNavLink to="/verify" active={isActive("/verify")} onClick={() => setOpen(false)}>Verify</MobileNavLink>
+          <MobileNavLink to="/about" active={isActive("/about")} onClick={() => setOpen(false)}>About</MobileNavLink>
         </div>
       )}
     </nav>

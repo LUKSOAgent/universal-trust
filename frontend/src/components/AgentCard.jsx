@@ -3,6 +3,25 @@ import { Link } from "react-router-dom";
 import TrustBadge from "./TrustBadge";
 import { getSkillCount } from "../useContract";
 
+function MiniTrustBar({ score }) {
+  const maxScore = 10000;
+  const pct = Math.min((score / maxScore) * 100, 100);
+  let barColor;
+  if (score >= 500) barColor = "from-green-500 to-emerald-400";
+  else if (score >= 200) barColor = "from-blue-500 to-cyan-400";
+  else if (score >= 100) barColor = "from-yellow-500 to-amber-400";
+  else barColor = "from-gray-500 to-gray-400";
+
+  return (
+    <div className="w-full h-1 bg-lukso-border rounded-full overflow-hidden mt-2">
+      <div
+        className={`h-full rounded-full bg-gradient-to-r ${barColor}`}
+        style={{ width: `${Math.max(pct, pct > 0 ? 2 : 0)}%` }}
+      />
+    </div>
+  );
+}
+
 export default function AgentCard({ agent }) {
   const [skillCount, setSkillCount] = useState(null);
   const trustScore = agent.reputation + (agent.endorsementCount * 10);
@@ -42,13 +61,18 @@ export default function AgentCard({ agent }) {
             <span className="font-mono">
               {agent.address.slice(0, 6)}...{agent.address.slice(-4)}
             </span>
-            <span>Rep: {agent.reputation}</span>
-            <span>Endorsements: {agent.endorsementCount}</span>
+            <span>
+              <span className="text-lukso-purple">{agent.reputation}</span> rep
+            </span>
+            <span>
+              <span className="text-lukso-pink">{agent.endorsementCount}</span> endorsements
+            </span>
             {skillCount !== null && skillCount > 0 && (
               <span className="text-lukso-purple">Skills: {skillCount}</span>
             )}
             <span>Joined: {registeredDate}</span>
           </div>
+          <MiniTrustBar score={trustScore} />
         </div>
         
         <TrustBadge score={trustScore} size="md" />
