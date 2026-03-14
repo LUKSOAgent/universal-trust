@@ -3,7 +3,7 @@
 TypeScript SDK for [Universal Trust](https://github.com/jordydutch/universal-trust) — on-chain agent identity & trust verification on LUKSO.
 
 [![npm version](https://img.shields.io/npm/v/@universal-trust/sdk)](https://www.npmjs.com/package/@universal-trust/sdk)
-[![Tests](https://img.shields.io/badge/tests-23%2F23%20passing-brightgreen)](#tests)
+[![Tests](https://img.shields.io/badge/tests-50%2F50%20passing-brightgreen)](#tests)
 
 ---
 
@@ -218,6 +218,45 @@ console.log(`${endorsers.length} endorsers`);
 
 ---
 
+### `getEndorsement(endorser, endorsed): Promise<EndorsementInfo>`
+
+Get details of a specific endorsement between two agents.
+Returns `exists: false` if no endorsement found.
+
+```typescript
+const endorsement = await trust.getEndorsement(
+  '0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b',  // endorser
+  '0x293E96ebbf264ed7715cff2b67850517De70232a',  // endorsed
+);
+
+if (endorsement.exists) {
+  console.log(`Endorsed at ${new Date(endorsement.timestamp * 1000).toISOString()}`);
+  console.log(`Reason: "${endorsement.reason}"`);
+}
+
+// EndorsementInfo shape:
+// {
+//   endorser: string
+//   endorsed: string
+//   timestamp: number    — Unix timestamp (0 if not found)
+//   reason: string       — endorsement reason text
+//   exists: boolean      — whether this endorsement exists
+// }
+```
+
+---
+
+### `getEndorsementCount(address): Promise<number>`
+
+Get the number of endorsements an agent has received.
+
+```typescript
+const count = await trust.getEndorsementCount('0x293E...');
+console.log(`${count} endorsements received`);
+```
+
+---
+
 ### `getAgentCount(): Promise<number>`
 
 Total number of registered agents in the registry.
@@ -308,6 +347,43 @@ console.log('tx:', receipt.transactionHash);
 
 ---
 
+### `getAgentsByReputation(minReputation, pageSize?): Promise<Array>`
+
+Discover agents with reputation at or above a threshold.
+Returns agents sorted by reputation descending.
+
+```typescript
+const topAgents = await trust.getAgentsByReputation(200);
+for (const agent of topAgents) {
+  console.log(`${agent.name}: rep=${agent.reputation}, trust=${agent.trustScore}`);
+}
+
+// Each result: { address, name, reputation, trustScore, active }
+```
+
+---
+
+### `isUniversalProfile(address): Promise<boolean>`
+
+Check if an address is a LUKSO Universal Profile using ERC165 interface checks
+for ERC725X + ERC725Y.
+
+```typescript
+const isUP = await trust.isUniversalProfile('0x293E...');
+```
+
+---
+
+### `isReputationUpdater(address): Promise<boolean>`
+
+Check if an address is authorized to update agent reputation scores.
+
+```typescript
+const canUpdate = await trust.isReputationUpdater('0x7315...');
+```
+
+---
+
 ## Error Handling
 
 All methods throw `AgentTrustError` with a typed `code` for programmatic handling:
@@ -381,6 +457,7 @@ import type {
   VerifyResult,
   AgentProfile,
   SkillInfo,
+  EndorsementInfo,
 } from '@universal-trust/sdk';
 ```
 

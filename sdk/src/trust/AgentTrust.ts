@@ -662,7 +662,7 @@ export class AgentTrust {
       }
     }
 
-    // Check if it's a UP
+    // Check if it's a UP — uses enhanced fallback (ERC725X + ERC725Y) like verify()
     let isUP = false;
     try {
       const verifyResult = (await this.withRetry(
@@ -673,6 +673,9 @@ export class AgentTrust {
         'verify (for UP check)',
       )) as VerifyContractResult;
       isUP = verifyResult.isUP;
+      if (!isUP) {
+        isUP = await this.isUniversalProfile(address);
+      }
     } catch {
       // ignore
     }
