@@ -1131,6 +1131,233 @@ contract AgentIdentityRegistryTest is Test {
         assertEq(p5.length, 2);
     }
 
+    // ═════════════════════════════════════════════════════════════════════════
+    // Security Deep-Dive Tests — Sybil, Consistency, Edge Cases
+    // ═════════════════════════════════════════════════════════════════════════
+
+    // ─── endorsementCount consistency: struct field vs array length ───────
+
+    function test_endorsementCount_consistency() public {
+        // The contract tracks endorsementCount in both the AgentIdentity struct
+        // and the _endorsers array. These must ALWAYS stay in sync.
+        vm.prank(agentA);
+        registry.register("A", "", "");
+        vm.prank(agentB);
+        registry.register("B", "", "");
+        vm.prank(agentC);
+        registry.register("C", "", "");
+
+        address agentD = address(0xD);
+        vm.prank(agentD);
+        registry.register("D", "", "");
+
+        // Build up endorsements
+        vm.prank(agentA);
+        registry.endorse(agentD, "");
+        vm.prank(agentB);
+        registry.endorse(agentD, "");
+        vm.prank(agentC);
+        registry.endorse(agentD, "");
+
+        // Struct endorsementCount should match endorsers array length
+        AgentIdentityRegistry.AgentIdentity memory d = registry.getAgent(agentD);
+        assertEq(d.endorsementCount, 3);
+        assertEq(registry.getEndorsementCount(agentD), 3); // uses _endorsers array
+        assertEq(registry.getEndorsers(agentD).length, 3);
+
+        // Remove middle endorsement
+        vm.prank(agentB);
+        registry.removeEndorsement(agentD);
+
+        d = registry.getAgent(agentD);
+        assertEq(d.endorsementCount, 2);
+        assertEq(registry.getEndorsementCount(agentD), 2);
+        assertEq(registry.getEndorsers(agentD).length, 2);
+
+        // Remove all
+        vm.prank(agentA);
+        registry.removeEndorsement(agentD);
+        vm.prank(agentC);
+        registry.removeEndorsement(agentD);
+
+        d = registry.getAgent(agentD);
+        assertEq(d.endorsementCount, 0);
+        assertEq(registry.getEndorsementCount(agentD), 0);
+        assertEq(registry.getEndorsers(agentD).length, 0);
+    }
+
+    // ─── Reputation update on deactivated agent (should succeed) ─────────
+
+    function test_updateReputation_deactivatedAgent() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+
+        vm.prank(agentA);
+        registry.deactivate();
+
+        // Owner can still update reputation of deactivated agent
+        vm.prank(deployer);
+        registry.updateReputation(agentA, 50, "offline bonus");
+
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
+        assertEq(agent.reputation, 150);
+        assertFalse(agent.isActive);
+    }
+
+    // ─── Ownership transfer preserves reputation updaters ────────────────
+
+    function test_ownerTransfer_preservesUpdaters() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+
+        // Grant agentB as updater under old owner
+        vm.prank(deployer);
+        registry.setReputationUpdater(agentB, true);
+
+        // Transfer ownership to agentC
+        vm.prank(deployer);
+        registry.transferOwnership(agentC);
+
+        // agentB should still be an updater (updater list is independent of owner)
+        assertTrue(registry.isReputationUpdater(agentB));
+
+        // agentB can still update reputation
+        vm.prank(agentB);
+        registry.updateReputation(agentA, 25, "still authorized");
+        assertEq(registry.getAgent(agentA).reputation, 125);
+
+        // Old owner (deployer) is still a reputation updater via the mapping
+        // (was set in constructor), but is no longer owner
+        assertTrue(registry.isReputationUpdater(deployer));
+
+        // New owner can revoke old updaters
+        vm.prank(agentC);
+        registry.setReputationUpdater(agentB, false);
+        assertFalse(registry.isReputationUpdater(agentB));
+    }
+
+    // ─── Sybil attack gas cost: 50 sock-puppet endorsements ─────────────
+
+    function test_gas_sybilEndorsements_50agents() public {
+        // Simulate a sybil attack: create 50 agents and have them all endorse a target.
+        // This documents the gas cost and verifies the trust score is correctly capped.
+        address target = address(0xEE);
+        vm.prank(target);
+        registry.register("Target", "", "");
+
+        for (uint256 i = 1; i <= 50; i++) {
+            address sybil = address(uint160(i + 1000));
+            vm.prank(sybil);
+            registry.register(string(abi.encodePacked("Sybil_", vm.toString(i))), "", "");
+
+            vm.prank(sybil);
+            registry.endorse(target, "");
+        }
+
+        // 50 endorsements × 10 points each = 500, plus base 100 = 600
+        assertEq(registry.getTrustScore(target), 600);
+
+        // Verify endorsement count
+        assertEq(registry.getEndorsementCount(target), 50);
+
+        // Endorsers array should return all 50
+        address[] memory endorsers = registry.getEndorsers(target);
+        assertEq(endorsers.length, 50);
+    }
+
+    // ─── Verify: getTrustScore matches verify() trustScore ───────────────
+
+    function test_trustScore_getTrustScore_vs_verify_match() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+        vm.prank(agentB);
+        registry.register("B", "", "");
+
+        vm.prank(agentB);
+        registry.endorse(agentA, "");
+
+        vm.prank(deployer);
+        registry.updateReputation(agentA, 50, "bonus");
+
+        uint256 getTrustScoreResult = registry.getTrustScore(agentA);
+        (,,,,, uint256 verifyTrustScore,) = registry.verify(agentA);
+
+        // Both methods must return the same value
+        assertEq(getTrustScoreResult, verifyTrustScore);
+        // Expected: 150 + (1 * 10) = 160
+        assertEq(getTrustScoreResult, 160);
+    }
+
+    // ─── Event: OwnershipTransferred ─────────────────────────────────────
+
+    function test_events_ownershipTransferred() public {
+        vm.prank(deployer);
+        vm.expectEmit(true, true, false, false);
+        emit AgentIdentityRegistry.OwnershipTransferred(deployer, agentA);
+        registry.transferOwnership(agentA);
+    }
+
+    // ─── Event: ReputationUpdaterSet ─────────────────────────────────────
+
+    function test_events_reputationUpdaterSet() public {
+        vm.prank(deployer);
+        vm.expectEmit(true, false, false, true);
+        emit AgentIdentityRegistry.ReputationUpdaterSet(agentA, true);
+        registry.setReputationUpdater(agentA, true);
+    }
+
+    // ─── Event: EndorsementRemoved ───────────────────────────────────────
+
+    function test_events_endorsementRemoved() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+        vm.prank(agentB);
+        registry.register("B", "", "");
+
+        vm.prank(agentA);
+        registry.endorse(agentB, "");
+
+        vm.prank(agentA);
+        vm.expectEmit(true, true, false, true);
+        emit AgentIdentityRegistry.EndorsementRemoved(agentA, agentB, uint64(block.timestamp));
+        registry.removeEndorsement(agentB);
+    }
+
+    // ─── Event: AgentUpdated ─────────────────────────────────────────────
+
+    function test_events_agentUpdated() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        vm.prank(agentA);
+        vm.expectEmit(true, false, false, true);
+        emit AgentIdentityRegistry.AgentUpdated(agentA, "A v2", "new desc", "ipfs://new", uint64(block.timestamp));
+        registry.updateProfile("A v2", "new desc", "ipfs://new");
+    }
+
+    // ─── Mutual endorsement (A endorses B, B endorses A) ────────────────
+
+    function test_mutualEndorsement() public {
+        vm.prank(agentA);
+        registry.register("A", "", "");
+        vm.prank(agentB);
+        registry.register("B", "", "");
+
+        vm.prank(agentA);
+        registry.endorse(agentB, "A trusts B");
+        vm.prank(agentB);
+        registry.endorse(agentA, "B trusts A");
+
+        assertTrue(registry.hasEndorsed(agentA, agentB));
+        assertTrue(registry.hasEndorsed(agentB, agentA));
+        assertEq(registry.getEndorsementCount(agentA), 1);
+        assertEq(registry.getEndorsementCount(agentB), 1);
+
+        // Both should have trust = 100 + (1 * 10) = 110
+        assertEq(registry.getTrustScore(agentA), 110);
+        assertEq(registry.getTrustScore(agentB), 110);
+    }
+
     // ─── Helper: repeat a character ──────────────────────────────────────
 
     function _repeat(string memory char, uint256 count) internal pure returns (string memory) {
