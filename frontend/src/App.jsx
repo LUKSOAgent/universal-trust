@@ -9,6 +9,7 @@ const Register = lazy(() => import("./pages/Register"));
 const Verify = lazy(() => import("./pages/Verify"));
 const Endorse = lazy(() => import("./pages/Endorse"));
 const About = lazy(() => import("./pages/About"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 function PageLoader() {
   return (
@@ -43,6 +44,7 @@ function App() {
               <Route path="/verify" element={<Verify />} />
               <Route path="/endorse" element={<Endorse />} />
               <Route path="/about" element={<About />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </main>
