@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080812"/>
+      <stop offset="50%" stop-color="#0d0d1a"/>
+      <stop offset="100%" stop-color="#080812"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FE005B"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FE005B"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="20" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="40" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Ambient glow spots -->
+  <circle cx="300" cy="315" r="200" fill="#FE005B" opacity="0.04" filter="url(#softGlow)"/>
+  <circle cx="900" cy="315" r="200" fill="#8B5CF6" opacity="0.04" filter="url(#softGlow)"/>
+
+  <!-- Trust network nodes and edges (decorative) -->
+  <!-- Edges -->
+  <line x1="150" y1="180" x2="320" y2="250" stroke="url(#accent)" stroke-width="1" opacity="0.12"/>
+  <line x1="320" y1="250" x2="480" y2="200" stroke="url(#accent)" stroke-width="1" opacity="0.1"/>
+  <line x1="480" y1="200" x2="600" y2="310" stroke="url(#accent)" stroke-width="1" opacity="0.08"/>
+  <line x1="150" y1="180" x2="200" y2="380" stroke="url(#accent)" stroke-width="1" opacity="0.08"/>
+  <line x1="200" y1="380" x2="320" y2="250" stroke="url(#accent)" stroke-width="1" opacity="0.1"/>
+  <line x1="320" y1="250" x2="350" y2="450" stroke="url(#accent)" stroke-width="1" opacity="0.08"/>
+
+  <line x1="720" y1="180" x2="880" y2="230" stroke="url(#accent)" stroke-width="1" opacity="0.12"/>
+  <line x1="880" y1="230" x2="1050" y2="200" stroke="url(#accent)" stroke-width="1" opacity="0.1"/>
+  <line x1="880" y1="230" x2="920" y2="400" stroke="url(#accent)" stroke-width="1" opacity="0.08"/>
+  <line x1="1050" y1="200" x2="1060" y2="380" stroke="url(#accent)" stroke-width="1" opacity="0.1"/>
+  <line x1="920" y1="400" x2="1060" y2="380" stroke="url(#accent)" stroke-width="1" opacity="0.08"/>
+  <line x1="720" y1="180" x2="750" y2="420" stroke="url(#accent)" stroke-width="1" opacity="0.06"/>
+
+  <!-- Nodes -->
+  <circle cx="150" cy="180" r="4" fill="url(#nodeGrad)" opacity="0.4"/>
+  <circle cx="320" cy="250" r="5" fill="url(#nodeGrad)" opacity="0.5"/>
+  <circle cx="480" cy="200" r="3.5" fill="url(#nodeGrad)" opacity="0.35"/>
+  <circle cx="200" cy="380" r="3" fill="url(#nodeGrad)" opacity="0.3"/>
+  <circle cx="350" cy="450" r="4" fill="url(#nodeGrad)" opacity="0.35"/>
+
+  <circle cx="720" cy="180" r="4" fill="url(#nodeGrad)" opacity="0.4"/>
+  <circle cx="880" cy="230" r="5" fill="url(#nodeGrad)" opacity="0.5"/>
+  <circle cx="1050" cy="200" r="3.5" fill="url(#nodeGrad)" opacity="0.35"/>
+  <circle cx="920" cy="400" r="3" fill="url(#nodeGrad)" opacity="0.3"/>
+  <circle cx="1060" cy="380" r="4" fill="url(#nodeGrad)" opacity="0.35"/>
+  <circle cx="750" cy="420" r="3" fill="url(#nodeGrad)" opacity="0.25"/>
+
+  <!-- Gradient top line -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accent)"/>
+
+  <!-- Central content area -->
+  <!-- Logo mark -->
+  <rect x="549" y="180" width="102" height="102" rx="20" fill="url(#accent)" opacity="0.15"/>
+  <rect x="551" y="182" width="98" height="98" rx="18" fill="none" stroke="url(#accent)" stroke-width="1.5" opacity="0.3"/>
+  <text x="600" y="248" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-weight="800" font-size="42" fill="white">UT</text>
+
+  <!-- Title -->
+  <text x="600" y="340" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-weight="800" font-size="52" fill="white">Universal Trust</text>
+
+  <!-- Tagline -->
+  <text x="600" y="385" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-weight="400" font-size="22" fill="#9CA3AF">On-chain identity &amp; trust layer for AI agents</text>
+
+  <!-- Chips -->
+  <rect x="380" y="415" width="130" height="32" rx="16" fill="#FE005B" opacity="0.15" stroke="#FE005B" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="445" y="436" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-weight="600" font-size="13" fill="#FE005B">Register</text>
+
+  <rect x="535" y="415" width="130" height="32" rx="16" fill="#8B5CF6" opacity="0.15" stroke="#8B5CF6" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="600" y="436" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-weight="600" font-size="13" fill="#8B5CF6">Endorse</text>
+
+  <rect x="690" y="415" width="130" height="32" rx="16" fill="#10B981" opacity="0.15" stroke="#10B981" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="755" y="436" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-weight="600" font-size="13" fill="#10B981">Verify</text>
+
+  <!-- Bottom bar -->
+  <text x="600" y="540" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-weight="500" font-size="16" fill="#6B7280">Powered by LUKSO Universal Profiles · Synthesis 2026</text>
+
+  <!-- Bottom gradient line -->
+  <rect x="0" y="627" width="1200" height="3" fill="url(#accent)"/>
+</svg>
