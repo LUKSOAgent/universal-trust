@@ -297,7 +297,7 @@ universal-trust/
 
 ```
 Foundry (Solidity):  80/80 passing
-SDK (TypeScript):    61/61 passing
+SDK (TypeScript):    97/97 passing (61 unit + 36 integration)
 Security audit:      No issues found (see AUDIT.md)
 ```
 
