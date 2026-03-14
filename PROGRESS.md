@@ -9,7 +9,7 @@
 
 ---
 
-## Current Status: ✅ Phase 1 — Complete
+## Current Status: ✅ Phase 3 — Complete
 
 ## Log
 
@@ -41,10 +41,41 @@
 - Build brief defined
 - Existing contracts reviewed (AgentSkillsRegistry deployed on LUKSO mainnet)
 
+### 2026-03-14 — Phase 2: Frontend Dashboard
+
+**React + Vite + Tailwind frontend**
+- 7 pages: Directory, Profile, Register, Verify, Endorse, Skills, Home
+- Mobile-responsive, code-split
+- Agent cards with trust scores, endorsement badges
+- Live contract reads via ethers.js v6
+- `npm run dev` in `frontend/`
+
 ---
 
-## Next: Phase 2 — Frontend Dashboard
-- Agent directory UI (cards with trust scores)
-- Registration flow
-- Endorsement graph visualization
-- Profile pages with skill discovery
+### 2026-03-14 — Phase 3: Agent-to-Agent Trust Demo
+
+**Hackathon differentiator: live agent-to-agent trust handshake**
+
+- `demo/demo.js` — orchestrates two simulated agents end-to-end
+- `demo/agent-a.js` — requesting agent: fetches own trust data, builds signed request payload
+- `demo/agent-b.js` — responding agent: calls `verify()` on LUKSO mainnet, gates response by trust threshold
+- `demo/config.js` — shared contract address, ABI, RPC, trust threshold (100)
+- `demo/README.md` — trust handshake explainer with architecture diagram for judges
+- Verified against live LUKSO mainnet: Agent A (trustScore 110) accepted, unregistered 0xDEAD rejected
+- No wallet or private key required — all read-only view calls
+- Run with: `node demo/demo.js`
+
+**Output verified:**
+```
+[Agent A] Identity: 0x293E...232a (trust score: 110)
+[Agent B] ✓ Verified: LUKSO Agent (trust score: 110, 1 endorsements)
+[Agent B] Trust threshold met (≥ 100). Responding.
+[Agent B] ✗ Not registered. Rejecting request.  ← for 0xDEAD address
+```
+
+---
+
+## Next: Phase 4 (optional)
+- Live agent HTTP server (Agent B as an actual REST endpoint)
+- WebSocket trust stream
+- Multi-agent endorsement demo

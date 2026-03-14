@@ -1,0 +1,12 @@
+{
+  "name": "universal-trust-demo",
+  "version": "1.0.0",
+  "description": "Agent-to-agent trust handshake demo for Universal Trust",
+  "main": "demo.js",
+  "scripts": {
+    "demo": "node demo.js"
+  },
+  "dependencies": {
+    "ethers": "^6.16.0"
+  }
+}

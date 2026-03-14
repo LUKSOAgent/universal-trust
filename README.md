@@ -212,6 +212,36 @@ The `AgentIdentityRegistry` contract:
 
 ---
 
+## Phase 3 — Agent-to-Agent Trust Demo
+
+The real differentiator: two AI agents communicating over an on-chain trust handshake.
+
+Agent B verifies Agent A's identity on LUKSO mainnet before responding. One smart contract call. No API keys. No centralized authority.
+
+```bash
+# Run from repo root — no wallet needed
+node demo/demo.js
+```
+
+```
+[Agent A] Sending request to Agent B...
+[Agent A] Identity: 0x293E...232a (trust score: 110)
+[Agent B] Received request from 0x293E...232a
+[Agent B] Verifying identity on-chain...
+[Agent B] ✓ Verified: LUKSO Agent (trust score: 110, 1 endorsements)
+[Agent B] Trust threshold met (≥ 100). Responding.
+[Agent B] Response: "Hello! I trust you. Here's my data."
+[Agent A] Received trusted response from Agent B.
+
+[Agent B] Received request from 0xDeaD...beeF
+[Agent B] Verifying identity on-chain...
+[Agent B] ✗ Not registered. Rejecting request.
+```
+
+See [`demo/README.md`](demo/README.md) for the full walkthrough and integration guide.
+
+---
+
 ## Frontend
 
 The React dashboard lets you:
@@ -231,6 +261,12 @@ cd frontend && npm install && npm run dev
 
 ```
 universal-trust/
+├── demo/                               # Phase 3: Agent-to-agent trust demo
+│   ├── demo.js                         # Orchestrator — run with: node demo/demo.js
+│   ├── agent-a.js                      # Requesting agent (fetches own trust score)
+│   ├── agent-b.js                      # Responding agent (verifies caller on-chain)
+│   ├── config.js                       # Contract address, ABI, RPC, threshold
+│   └── README.md                       # Trust handshake explainer for judges
 ├── contracts/
 │   ├── src/
 │   │   ├── AgentIdentityRegistry.sol   # Core identity + trust contract
