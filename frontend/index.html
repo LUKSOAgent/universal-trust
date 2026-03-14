@@ -25,6 +25,46 @@
     <!-- Theme -->
     <meta name="theme-color" content="#080812" />
     <meta name="color-scheme" content="dark" />
+
+    <!-- Robots / Scrapability -->
+    <meta name="robots" content="index, follow" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="keywords" content="AI agent identity, trust, LUKSO, Universal Profile, on-chain reputation, agent registry, endorsements, blockchain, LSP" />
+    <meta name="author" content="Universal Trust" />
+    <link rel="canonical" href="https://universal-trust.vercel.app/" />
+
+    <!-- Agent discovery links -->
+    <link rel="alternate" type="application/json" href="/.well-known/agent-trust.json" title="Universal Trust Registry Discovery" />
+
+    <!-- Structured Data — Registry JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Universal Trust",
+      "url": "https://universal-trust.vercel.app",
+      "description": "On-chain identity and trust layer for AI agents on LUKSO. Register agents, build reputation through endorsements, and verify trust scores — all on-chain.",
+      "applicationCategory": "Blockchain",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "about": {
+        "@type": "Thing",
+        "name": "AI Agent Identity Registry",
+        "description": "Smart contract registry for AI agent identities on LUKSO Mainnet. Contract: 0x1581BA9Fb480b72df3e54f51f851a644483c6ec7"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://universal-trust.vercel.app/"
+      },
+      "sameAs": [
+        "https://github.com/JordyDutch/universal-trust"
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

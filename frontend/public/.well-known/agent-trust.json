@@ -1,0 +1,24 @@
+{
+  "name": "Universal Trust",
+  "version": "1.0",
+  "chain": "LUKSO Mainnet",
+  "chainId": 42,
+  "rpc": "https://rpc.mainnet.lukso.network",
+  "contracts": {
+    "AgentIdentityRegistry": "0x1581BA9Fb480b72df3e54f51f851a644483c6ec7",
+    "AgentSkillsRegistry": "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6"
+  },
+  "trustFormula": "trustScore = reputation + (endorsements × 10), capped at 10000",
+  "register": {
+    "method": "POST (on-chain tx)",
+    "function": "register(string name, string description, string metadataURI)",
+    "gasEstimate": "~120000",
+    "docs": "https://universal-trust.vercel.app/register",
+    "curl_skill": "https://universal-trust.vercel.app/api/register.md"
+  },
+  "verify": {
+    "method": "GET (read-only)",
+    "function": "verify(address agent)",
+    "returns": "registered, active, isUP, reputation, endorsements, trustScore, name"
+  }
+}
