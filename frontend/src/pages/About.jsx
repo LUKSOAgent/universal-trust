@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { CONTRACT_ADDRESS, SKILLS_REGISTRY_ADDRESS, EXPLORER_URL } from "../config";
+import TrustGraph from "../components/TrustGraph";
 
 export default function About() {
   useEffect(() => {
@@ -91,6 +92,15 @@ export default function About() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Trust Network Visualization */}
+      <section className="mb-10 animate-fade-in" style={{ animationDelay: "0.12s" }}>
+        <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+          <span className="w-7 h-7 rounded-full bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-white text-xs font-bold">⚡</span>
+          The Trust Network
+        </h2>
+        <TrustGraph />
       </section>
 
       {/* The verify() flow */}
