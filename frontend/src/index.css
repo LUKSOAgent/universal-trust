@@ -29,10 +29,10 @@ body {
 
 /* Glow effects */
 .glow-pink {
-  box-shadow: 0 0 20px rgba(254, 0, 91, 0.3);
+  box-shadow: 0 0 20px rgba(254, 0, 91, 0.15), 0 0 40px rgba(254, 0, 91, 0.05);
 }
 .glow-purple {
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15), 0 0 40px rgba(139, 92, 246, 0.05);
 }
 
 /* Trust score bar animation */
@@ -61,4 +61,29 @@ body {
 }
 .animate-gradient {
   animation: gradient 4s ease infinite;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Smooth page transitions */
+main {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid #FE005B;
+  outline-offset: 2px;
+}
+
+/* Select dropdown styling */
+select option {
+  background: #14142b;
+  color: #e5e7eb;
 }

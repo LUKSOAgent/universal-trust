@@ -14,7 +14,16 @@ export default function AgentProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Validate address format
+  const isValidAddress = /^0x[0-9a-fA-F]{40}$/.test(address);
+
   useEffect(() => {
+    if (!isValidAddress) {
+      setLoading(false);
+      setError("Invalid address format");
+      return;
+    }
+
     async function load() {
       try {
         setLoading(true);
@@ -30,7 +39,7 @@ export default function AgentProfile() {
         setEndorsers(endorserList);
         setSkills(skillList);
 
-        // Fetch endorsement details + check if endorsers are registered agents
+        // Fetch endorsement details
         if (endorserList.length > 0) {
           const details = {};
           await Promise.all(
@@ -60,7 +69,11 @@ export default function AgentProfile() {
           setEndorsementDetails(details);
         }
       } catch (err) {
-        setError(err.message);
+        if (err.message?.includes("network") || err.message?.includes("fetch")) {
+          setError("Failed to connect to LUKSO network. Please try again.");
+        } else {
+          setError(err.message);
+        }
       } finally {
         setLoading(false);
       }
@@ -68,34 +81,91 @@ export default function AgentProfile() {
     load();
   }, [address]);
 
-  if (loading) {
-    return <ProfileSkeleton />;
-  }
-
-  if (error || !verification?.registered) {
+  if (!isValidAddress) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center">
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-8">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
             <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-red-400 mb-2">Agent Not Found</h2>
+          <h2 className="text-2xl font-bold text-red-400 mb-2">Invalid Address</h2>
           <p className="text-gray-400 mb-4">
-            Address <span className="font-mono text-sm">{address}</span> is not registered in the AgentIdentityRegistry.
+            <span className="font-mono text-sm break-all">{address}</span> is not a valid Ethereum/LUKSO address.
           </p>
           <Link to="/" className="inline-flex items-center gap-2 text-lukso-pink hover:underline">
             ← Back to directory
           </Link>
-          {error && (
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return <ProfileSkeleton />;
+  }
+
+  if (error && !verification) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+            <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-red-400 mb-2">Failed to Load</h2>
+          <p className="text-gray-400 mb-4">{error}</p>
+          <div className="flex items-center justify-center gap-3">
+            <Link to="/" className="text-lukso-pink hover:underline">
+              ← Back to directory
+            </Link>
             <button
               onClick={() => window.location.reload()}
-              className="ml-4 px-4 py-2 rounded-lg bg-lukso-card border border-lukso-border text-gray-300 hover:text-white transition text-sm"
+              className="px-4 py-2 rounded-lg bg-lukso-card border border-lukso-border text-gray-300 hover:text-white transition text-sm"
             >
               Retry
             </button>
-          )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!verification?.registered) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <div className="bg-lukso-card border border-lukso-border rounded-xl p-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-lukso-darker border border-lukso-border flex items-center justify-center">
+            <svg className="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Agent Not Found</h2>
+          <p className="text-gray-400 mb-2">
+            This address is not registered in the AgentIdentityRegistry.
+          </p>
+          <p className="text-gray-500 font-mono text-sm mb-6 break-all">{address}</p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link to="/" className="text-lukso-pink hover:underline text-sm">
+              ← Back to directory
+            </Link>
+            <Link
+              to={`/verify?address=${address}`}
+              className="px-4 py-2 rounded-lg text-sm text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition"
+            >
+              Scan this address
+            </Link>
+            <a
+              href={`https://universalprofile.cloud/${address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-lg text-sm text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
+            >
+              Check Universal Profile ↗
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -149,12 +219,31 @@ export default function AgentProfile() {
                 >
                   {address}
                 </a>
+                <CopyButton text={address} />
               </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 mt-3">
               <Link
                 to={`/endorse?address=${address}`}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition shrink-0"
               >
                 + Endorse
+              </Link>
+              {verification.isUP && (
+                <a
+                  href={`https://universalprofile.cloud/${address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
+                >
+                  View on UP Cloud ↗
+                </a>
+              )}
+              <Link
+                to={`/verify?address=${address}`}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition"
+              >
+                Quick Verify
               </Link>
             </div>
           </div>
@@ -239,7 +328,7 @@ export default function AgentProfile() {
           Endorsements ({endorsers.length})
         </h2>
         {endorsers.length === 0 ? (
-          <EmptyState icon="endorsements" message="No endorsements yet." />
+          <EmptyState icon="endorsements" message="No endorsements yet. Be the first to endorse this agent!" />
         ) : (
           <div className="space-y-3">
             {endorsers.map((endorser) => {
@@ -250,26 +339,31 @@ export default function AgentProfile() {
                   className="bg-lukso-darker rounded-lg p-4 border border-lukso-border/50 hover:border-lukso-pink/30 transition"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
-                    {detail?.isAgent && detail?.endorserName ? (
-                      <Link
-                        to={`/agent/${endorser}`}
-                        className="font-medium text-lukso-purple hover:text-lukso-pink transition"
-                      >
-                        {detail.endorserName}
-                        <span className="text-gray-500 font-mono text-xs ml-2">
-                          {endorser.slice(0, 6)}...{endorser.slice(-4)}
-                        </span>
-                      </Link>
-                    ) : (
-                      <a
-                        href={`${EXPLORER_URL}/address/${endorser}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-mono text-sm text-lukso-purple hover:text-lukso-pink transition break-all"
-                      >
-                        {endorser}
-                      </a>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {detail?.isAgent && (
+                        <span className="w-2 h-2 rounded-full bg-lukso-pink shrink-0" title="Registered agent" />
+                      )}
+                      {detail?.isAgent && detail?.endorserName ? (
+                        <Link
+                          to={`/agent/${endorser}`}
+                          className="font-medium text-lukso-purple hover:text-lukso-pink transition"
+                        >
+                          {detail.endorserName}
+                          <span className="text-gray-500 font-mono text-xs ml-2">
+                            {endorser.slice(0, 6)}...{endorser.slice(-4)}
+                          </span>
+                        </Link>
+                      ) : (
+                        <a
+                          href={`${EXPLORER_URL}/address/${endorser}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-sm text-lukso-purple hover:text-lukso-pink transition break-all"
+                        >
+                          {endorser}
+                        </a>
+                      )}
+                    </div>
                     {detail?.timestamp > 0 && (
                       <span className="text-xs text-gray-500 shrink-0">
                         {new Date(detail.timestamp * 1000).toLocaleDateString()}
@@ -298,6 +392,36 @@ function StatCard({ label, value }) {
   );
 }
 
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="text-gray-500 hover:text-white transition p-1"
+      title="Copy address"
+    >
+      {copied ? (
+        <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 function EmptyState({ icon, message }) {
   return (
     <div className="py-8 text-center">
@@ -322,7 +446,6 @@ function ProfileSkeleton() {
     <div className="max-w-4xl mx-auto px-4 py-8 animate-pulse">
       <div className="h-4 w-32 bg-lukso-card rounded mb-6" />
       
-      {/* Header skeleton */}
       <div className="bg-lukso-card border border-lukso-border rounded-xl p-8 mb-6">
         <div className="flex flex-col md:flex-row items-start gap-6">
           <div className="w-24 h-24 rounded-full bg-lukso-border" />
@@ -335,7 +458,6 @@ function ProfileSkeleton() {
         </div>
       </div>
 
-      {/* Stats skeleton */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="bg-lukso-card border border-lukso-border rounded-xl p-4 text-center">
@@ -345,7 +467,6 @@ function ProfileSkeleton() {
         ))}
       </div>
 
-      {/* Timeline skeleton */}
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         {[...Array(2)].map((_, i) => (
           <div key={i} className="bg-lukso-card border border-lukso-border rounded-xl p-5">
@@ -355,7 +476,6 @@ function ProfileSkeleton() {
         ))}
       </div>
 
-      {/* Skills/Endorsements skeleton */}
       {[...Array(2)].map((_, i) => (
         <div key={i} className="bg-lukso-card border border-lukso-border rounded-xl p-6 mb-6">
           <div className="h-6 w-40 bg-lukso-border rounded mb-4" />
