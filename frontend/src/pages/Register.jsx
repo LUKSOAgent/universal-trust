@@ -363,16 +363,19 @@ function SDKTab({ onSwitchToWallet }) {
 
   const snippets = [
     {
-      label: "Install",
+      label: "Install (ethers.js)",
       lang: "bash",
-      code: `npm install @universal-trust/sdk`,
+      code: `npm install ethers`,
     },
     {
       label: "Register",
       lang: "js",
-      code: `const { AgentTrust } = require('@universal-trust/sdk');
-const sdk = new AgentTrust({ privateKey: 'YOUR_KEY' });
-sdk.register('Agent Name', 'What I do', '').then(console.log);`,
+      code: `import { ethers } from 'ethers';
+const provider = new ethers.JsonRpcProvider('https://rpc.mainnet.lukso.network');
+const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+const contract = new ethers.Contract('${CONTRACT_ADDRESS}', ABI, signer);
+const tx = await contract.register('Agent Name', 'What I do', '');
+await tx.wait(); // confirmed on-chain`,
     },
     {
       label: "Verify (no SDK)",
