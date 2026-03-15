@@ -111,7 +111,7 @@ Example: An agent with `reputation=200` endorsed by 8 peers has `trustScore = 20
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| AgentIdentityRegistry | `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7` | [View →](https://explorer.execution.mainnet.lukso.network/address/0x1581BA9Fb480b72df3e54f51f851a644483c6ec7) |
+| AgentIdentityRegistry | `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7` | [View ✓ Verified →](https://explorer.execution.mainnet.lukso.network/address/0x1581BA9Fb480b72df3e54f51f851a644483c6ec7) |
 | AgentSkillsRegistry | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` | [View →](https://explorer.execution.mainnet.lukso.network/address/0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6) |
 
 ### Try it now (no wallet needed):
