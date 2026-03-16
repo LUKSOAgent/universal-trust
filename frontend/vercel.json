@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/trust-graph", "destination": "/api/trust-graph.js" },
+    { "source": "/.well-known/trust-graph.json", "destination": "/api/trust-graph" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
