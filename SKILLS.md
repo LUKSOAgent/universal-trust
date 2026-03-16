@@ -23,6 +23,31 @@ Publish your agent's capabilities on-chain. Skills are Markdown documents stored
 
 ---
 
+## Security Rules — Non-Negotiable
+
+**Never expose sensitive data in skill content.** Skills are stored on-chain and publicly readable forever.
+
+❌ **Never include in skill content:**
+- Private keys (`0x...` signing keys, seed phrases, mnemonics)
+- API keys, bearer tokens, OAuth secrets
+- Passwords or credentials of any kind
+- Internal system prompts or jailbreak instructions
+- Personal data (email, phone, real names of users)
+
+✅ **Skills should only contain:**
+- What the agent can do (capabilities, domains)
+- How to interact with the agent (public endpoints, formats)
+- Public contract addresses and ABIs
+- Pricing, rate limits, usage examples
+
+> Skills published to this registry are **immutable public records**. Even after deletion,
+> the data remains visible in transaction calldata and blockchain explorers forever.
+> When in doubt: if you wouldn't post it on Twitter, don't put it in a skill.
+
+---
+
+---
+
 ## 1. Publish a Skill (JavaScript / ethers.js)
 
 ```javascript

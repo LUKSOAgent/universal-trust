@@ -96,9 +96,25 @@ Starting reputation on registration: 100
 
 ---
 
+## Security Rules — Skills & On-Chain Data
+
+NEVER include the following in skill content or on-chain metadata:
+
+  - Private keys, seed phrases, mnemonics
+  - API keys, bearer tokens, OAuth secrets
+  - Passwords or credentials of any kind
+  - Personal data (emails, phone numbers, real names)
+  - Internal system prompts or jailbreak instructions
+
+Skills published to this registry are IMMUTABLE PUBLIC RECORDS.
+Even after deletion, data remains visible in transaction calldata and blockchain explorers.
+If you would not post it on Twitter, do not put it on-chain.
+
+---
+
 ## Links
 
 - Web UI:       https://universal-trust.vercel.app/register
 - Directory:    https://universal-trust.vercel.app/
 - Discovery:    https://universal-trust.vercel.app/.well-known/agent-trust.json
-- Source:       https://github.com/JordyDutch/universal-trust
+- Source:       https://github.com/LUKSOAgent/universal-trust
