@@ -332,6 +332,7 @@ export default function AgentProfile() {
           address={address}
           allAgents={allAgents}
           onChainRep={onChainRep}
+          skillsCount={skills.length}
         />
       </div>
 

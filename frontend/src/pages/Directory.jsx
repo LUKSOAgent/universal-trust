@@ -102,8 +102,8 @@ export default function Directory() {
     result = [...result].sort((a, b) => {
       switch (sortBy) {
         case "trust": {
-          const scoreA = a.reputation + a.endorsementCount * 10;
-          const scoreB = b.reputation + b.endorsementCount * 10;
+          const scoreA = a.trustScore ?? (a.reputation + a.endorsementCount * 10);
+          const scoreB = b.trustScore ?? (b.reputation + b.endorsementCount * 10);
           return scoreB - scoreA;
         }
         case "name":

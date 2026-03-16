@@ -62,10 +62,12 @@ export default async function handler(req, res) {
           id: addr,
           name: a.name,
           description: a.description,
+          metadataURI: a.metadataURI || "",
           reputation: Number(a.reputation),
           endorsementCount: Number(a.endorsementCount),
           trustScore: Number(a.reputation) + Number(a.endorsementCount) * 10,
           registeredAt: Number(a.registeredAt),
+          lastActiveAt: Number(a.lastActiveAt),
           isActive: a.isActive,
           isUP,
         };

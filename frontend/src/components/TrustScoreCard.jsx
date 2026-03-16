@@ -11,6 +11,16 @@
 const MAX_SCORE = 10000;
 
 /**
+ * Compute the composite trust score from all data sources.
+ * compositeScore = contractTrustScore + Math.round(onChainScore * 2) + skillsCount * 5
+ */
+export function computeCompositeScore(trustScore, onChainScore, skillsCount) {
+  const onChain = onChainScore ?? 0;
+  const skills = skillsCount ?? 0;
+  return trustScore + Math.round(onChain * 2) + skills * 5;
+}
+
+/**
  * Return a trust level label and color classes based on trustScore.
  */
 export function getTrustLevel(score) {
@@ -73,12 +83,16 @@ function daysSince(timestampSeconds) {
   return Math.max(0, Math.floor(seconds / 86400));
 }
 
-export default function TrustScoreCard({ verification, agent, address, allAgents, onChainRep }) {
+export default function TrustScoreCard({ verification, agent, address, allAgents, onChainRep, skillsCount }) {
   if (!verification) return null;
 
   const { reputation, endorsements, trustScore, isUP } = verification;
   const endorsementPoints = endorsements * 10;
   const level = getTrustLevel(trustScore);
+
+  // Composite Trust Score: contract score + on-chain activity + skills
+  const onChainScore = onChainRep?.generalScore ?? null;
+  const compositeScore = computeCompositeScore(trustScore, onChainScore, skillsCount ?? 0);
 
   // Rank: position among all agents sorted by trustScore descending
   let rank = null;
@@ -139,20 +153,33 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
         </div>
       </div>
 
-      {/* Big score + rank */}
+      {/* Composite Score — primary display */}
+      <div className="bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border border-lukso-pink/30 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider">Composite Trust Score</p>
+          {rank !== null && totalAgents !== null && (
+            <p className="text-xs text-gray-500">
+              <span className="text-lukso-pink font-bold">#{rank}</span> of {totalAgents}
+            </p>
+          )}
+        </div>
+        <p className="text-5xl font-bold text-white tabular-nums">{compositeScore.toLocaleString()}</p>
+        {onChainScore !== null ? (
+          <p className="text-xs text-gray-500 mt-1 font-mono">
+            {trustScore} (contract) + {Math.round(onChainScore * 2)} (activity×2) + {(skillsCount ?? 0) * 5} (skills×5)
+          </p>
+        ) : (
+          <p className="text-xs text-gray-600 mt-1">Loading on-chain activity…</p>
+        )}
+      </div>
+
+      {/* Contract trust score */}
       <div className="flex items-end gap-4">
         <div>
-          <p className="text-5xl font-bold text-white tabular-nums">{trustScore.toLocaleString()}</p>
+          <p className="text-xs text-gray-500 mb-0.5">Contract Score</p>
+          <p className="text-3xl font-bold text-white tabular-nums">{trustScore.toLocaleString()}</p>
           <p className="text-xs text-gray-500 mt-0.5">/ {MAX_SCORE.toLocaleString()} max</p>
         </div>
-        {rank !== null && totalAgents !== null && (
-          <div className="mb-1.5 text-right">
-            <p className="text-lg font-semibold text-lukso-pink">
-              #{rank}
-            </p>
-            <p className="text-xs text-gray-500">of {totalAgents} agents</p>
-          </div>
-        )}
       </div>
 
       {/* Total bar */}
@@ -271,7 +298,10 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-gray-500">Activity Score</span>
-              <span className="text-xs font-mono text-white">{onChainRep.generalScore}<span className="text-gray-600">/100</span></span>
+              <span className="text-xs font-mono text-white">
+                {onChainRep.generalScore}<span className="text-gray-600">/100</span>
+                <span className="text-gray-500 ml-1">(+{Math.round(onChainRep.generalScore * 2)} composite pts)</span>
+              </span>
             </div>
             <div className="h-1.5 bg-lukso-darker rounded-full overflow-hidden">
               <div
