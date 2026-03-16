@@ -150,9 +150,12 @@ export default function Directory() {
             } />
           </div>
 
-          {/* For AI Agents — quick register snippet */}
-          <AgentQuickstart />
         </div>
+      </div>
+
+      {/* For AI Agents — quick register snippet (outside hero to avoid overflow-hidden clip) */}
+      <div className="max-w-6xl mx-auto px-4 pt-2 pb-4">
+        <AgentQuickstart />
       </div>
 
       {/* Agent List */}
@@ -488,7 +491,7 @@ function DirectorySkeleton() {
 // Animated SVG trust network background
 function AgentQuickstart() {
   const [copied, setCopied] = useState(false);
-  const CONTRACT_ADDRESS_LOCAL = "0x8004A818BFB912233c491871b3d84c89A494BD9e";
+  const CONTRACT_ADDRESS_LOCAL = "0x16505FeC789F4553Ea88d812711A0E913D926ADD";
 
   const snippet = `import { ethers } from 'ethers';
 
