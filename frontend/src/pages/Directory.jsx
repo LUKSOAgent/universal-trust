@@ -1,16 +1,20 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import AgentCard from "../components/AgentCard";
-import { verifyAgent } from "../useContract";
+import { getAllAgents, getAgentCount, verifyAgent } from "../useContract";
 import { fetchUPProfiles } from "../envio";
 
 async function loadAgentsFromAPI() {
   const res = await fetch("/api/trust-graph");
   if (!res.ok) throw new Error(`API error ${res.status}`);
   const data = await res.json();
-  // Normalize to same shape as getAllAgents()
+  const nodes = data.nodes || [];
+  // If API returns empty but claims 0 agents, fall through to RPC
+  if (nodes.length === 0 && (data.meta?.agentCount ?? 0) === 0) {
+    throw new Error("API returned no agents, falling back to RPC");
+  }
   return {
-    agents: (data.nodes || []).map((n) => ({
+    agents: nodes.map((n) => ({
       address: n.id,
       name: n.name,
       description: n.description || "",
@@ -23,7 +27,7 @@ async function loadAgentsFromAPI() {
       isActive: n.isActive ?? true,
       isUP: n.isUP ?? false,
     })),
-    count: data.meta?.agentCount ?? 0,
+    count: data.meta?.agentCount ?? nodes.length,
   };
 }
 
@@ -45,7 +49,20 @@ export default function Directory() {
     try {
       setLoading(true);
       setError(null);
-      const { agents: agentList, count: totalCount } = await loadAgentsFromAPI();
+
+      // Try API first, fall back to direct RPC if API not ready
+      let agentList, totalCount;
+      try {
+        const result = await loadAgentsFromAPI();
+        agentList = result.agents;
+        totalCount = result.count;
+      } catch {
+        // API not available or returning empty — fall back to direct RPC
+        const [list, cnt] = await Promise.all([getAllAgents(), getAgentCount()]);
+        agentList = list;
+        totalCount = cnt;
+      }
+
       setAgents(agentList);
       setCount(totalCount);
 
