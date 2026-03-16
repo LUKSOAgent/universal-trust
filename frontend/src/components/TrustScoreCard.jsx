@@ -73,7 +73,7 @@ function daysSince(timestampSeconds) {
   return Math.max(0, Math.floor(seconds / 86400));
 }
 
-export default function TrustScoreCard({ verification, agent, address, allAgents }) {
+export default function TrustScoreCard({ verification, agent, address, allAgents, onChainRep }) {
   if (!verification) return null;
 
   const { reputation, endorsements, trustScore, isUP } = verification;
@@ -249,17 +249,69 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
         )}
         {endorsements === 0 && reputationGain === 0 && (
           <p className="text-xs text-gray-600 italic">
-            No reputation updates or endorsements yet.
+            No endorsements yet. Reputation starts at 100 for all registered agents.
           </p>
         )}
       </div>
 
+      {/* On-Chain Activity from Envio */}
+      {onChainRep && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">On-Chain Activity</p>
+            <span className="text-xs px-2 py-0.5 rounded-full border font-medium"
+              style={{
+                borderColor: onChainRep.generalScore >= 60 ? "#A78BFA" : onChainRep.generalScore >= 35 ? "#60A5FA" : "#6B7280",
+                color:       onChainRep.generalScore >= 60 ? "#A78BFA" : onChainRep.generalScore >= 35 ? "#60A5FA" : "#9CA3AF",
+              }}>
+              {onChainRep.activityLevel}
+            </span>
+          </div>
+          {/* Activity score bar */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500">Activity Score</span>
+              <span className="text-xs font-mono text-white">{onChainRep.generalScore}<span className="text-gray-600">/100</span></span>
+            </div>
+            <div className="h-1.5 bg-lukso-darker rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${onChainRep.generalScore}%`,
+                  background: onChainRep.generalScore >= 60
+                    ? "linear-gradient(90deg, #7C3AED, #A78BFA)"
+                    : onChainRep.generalScore >= 35
+                    ? "linear-gradient(90deg, #1D4ED8, #60A5FA)"
+                    : "linear-gradient(90deg, #374151, #6B7280)",
+                }}
+              />
+            </div>
+          </div>
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "Transactions",  value: onChainRep.transactionCount.toLocaleString() },
+              { label: "Followers",     value: onChainRep.followersCount.toLocaleString() },
+              { label: "Following",     value: onChainRep.followingCount.toLocaleString() },
+              { label: "Assets Issued", value: onChainRep.issuedAssetsCount.toLocaleString() },
+              { label: "Assets Held",   value: onChainRep.receivedAssetsCount.toLocaleString() },
+              { label: "Account Age",   value: onChainRep.accountAge ?? "< 1d" },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-lukso-darker rounded-lg p-2.5 text-center border border-lukso-border/30">
+                <p className="text-sm font-bold font-mono text-white">{value}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Activity */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-lukso-darker rounded-lg p-3 border border-lukso-border/50">
-          <p className="text-xs text-gray-500 mb-0.5">Days Active</p>
+          <p className="text-xs text-gray-500 mb-0.5">Registered</p>
           <p className="text-base font-semibold text-white">
-            {daysActive !== null ? `${daysActive}d` : "—"}
+            {daysActive === null ? "—" : daysActive === 0 ? "Today" : `${daysActive}d ago`}
           </p>
         </div>
         <div className="bg-lukso-darker rounded-lg p-3 border border-lukso-border/50">

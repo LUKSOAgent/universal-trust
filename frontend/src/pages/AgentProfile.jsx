@@ -4,13 +4,14 @@ import { verifyAgent, getEndorsers, getAgent, getSkills, getEndorsement, isRegis
 import { EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
 import TrustScoreCard from "../components/TrustScoreCard";
-import { fetchUPProfile } from "../envio";
+import { fetchUPProfile, fetchOnChainReputation } from "../envio";
 
 export default function AgentProfile() {
   const { address } = useParams();
   const [agent, setAgent] = useState(null);
   const [verification, setVerification] = useState(null);
   const [upProfile, setUpProfile] = useState(null);
+  const [onChainRep, setOnChainRep] = useState(null);
   const [allAgents, setAllAgents] = useState([]);
 
   // Set page title when agent data loads
@@ -53,8 +54,9 @@ export default function AgentProfile() {
         setEndorsers(endorserList);
         setSkills(skillList);
 
-        // Fetch UP profile from Envio (optional enrichment)
+        // Fetch UP profile + on-chain reputation from Envio (optional, non-blocking)
         fetchUPProfile(address).then((p) => setUpProfile(p)).catch(() => {});
+        fetchOnChainReputation(address).then((r) => setOnChainRep(r)).catch(() => {});
 
         // Fetch all agents for rank computation (optional, non-blocking)
         getAllAgents().then((list) => setAllAgents(list)).catch(() => {});
@@ -329,6 +331,7 @@ export default function AgentProfile() {
           agent={agent}
           address={address}
           allAgents={allAgents}
+          onChainRep={onChainRep}
         />
       </div>
 
