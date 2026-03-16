@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import * as d3 from "d3";
 import { getAllAgents, getEndorsers, getEndorsement, getSkills } from "../useContract";
-import { fetchUPProfiles } from "../envio";
+import { fetchUPProfiles, fetchERC8004Agents } from "../envio";
 import { KNOWN_AGENTS, discoverAgentsFromEnvio } from "../agents";
 
 // Case-insensitive lookup helper for upProfiles (keys are always lowercase)
@@ -15,6 +15,7 @@ function upLookup(upProfiles, address) {
 const COLORS = {
   agent_up:        "#FF2975",   // pink   — registered UP on Universal Trust
   agent_eoa:       "#8B5CF6",   // purple — registered EOA on Universal Trust
+  agent_8004:      "#F97316",   // orange — registered on ERC-8004 Identity Registry
   ecosystem:       "#10B981",   // green  — known LUKSO agent, not yet registered
   skill:           "#22D3EE",   // cyan   — skill node
   endorsement:     "#F59E0B",   // amber  — endorsement event node
@@ -23,12 +24,13 @@ const COLORS = {
 const TYPE_LABELS = {
   agent_up:    "Registered (UP)",
   agent_eoa:   "Registered (EOA)",
+  agent_8004:  "ERC-8004 Agent",
   ecosystem:   "LUKSO Ecosystem Agent",
   skill:       "Skill",
   endorsement: "Endorsement",
 };
 
-const NODE_R = { agent_up: 16, agent_eoa: 13, ecosystem: 11, skill: 9, endorsement: 7 };
+const NODE_R = { agent_up: 16, agent_eoa: 13, agent_8004: 13, ecosystem: 11, skill: 9, endorsement: 7 };
 const SCORE_SCALE_MAX = 2.5; // max multiplier for trust score scaling
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -44,9 +46,11 @@ export default function TrustGraph() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
 
+  const [erc8004Agents, setErc8004Agents] = useState([]); // agents from ERC-8004 registry
+
   const [search, setSearch]       = useState("");
   const [selected, setSelected]   = useState(null); // node id
-  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, ecosystem: true, skill: true, endorsement: false });
+  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: true, ecosystem: true, skill: true, endorsement: false });
   const [dims, setDims]           = useState({ w: 900, h: 600 });
 
   // AI Query
@@ -138,6 +142,16 @@ export default function TrustGraph() {
         fetchUPProfiles(agentList.map((a) => a.address))
           .then(setUpProfiles)
           .catch(() => {});
+
+        // Load ERC-8004 agents (non-blocking)
+        fetchERC8004Agents().then((agents8004) => {
+          setErc8004Agents(agents8004);
+          // Enrich UP profiles for ERC-8004 owners too
+          fetchUPProfiles(agents8004.map((a) => a.owner))
+            .then((profiles) => setUpProfiles((prev) => ({ ...prev, ...profiles })))
+            .catch(() => {});
+        }).catch(() => {});
+
       } catch (err) {
         setError(err.message);
       } finally {
@@ -176,6 +190,27 @@ export default function TrustGraph() {
         registered: true,
       });
       nodeIds.add(a.address);
+    }
+
+    // ERC-8004 agents (registered on ERC-8004 Identity Registry, may or may not be on Universal Trust)
+    if (filters.agent_8004) {
+      for (const a of erc8004Agents) {
+        if (nodeIds.has(a.owner)) continue; // already shown as agent_up / agent_eoa node
+        const upData = upLookup(upProfiles, a.owner);
+        const name = upData?.name || a.name || `Agent #${a.agentId}`;
+        nodes.push({
+          id: a.owner,
+          type: "agent_8004",
+          label: name,
+          address: a.owner,
+          agentId: a.agentId,
+          description: a.description || "",
+          r: NODE_R.agent_8004,
+          registered: false,
+          erc8004: true,
+        });
+        nodeIds.add(a.owner);
+      }
     }
 
     // Ecosystem agents (known LUKSO agents, not yet on Universal Trust)
@@ -245,7 +280,7 @@ export default function TrustGraph() {
     }
 
     return { nodes, links };
-  }, [rawData, upProfiles, filters, ecosystemAgents]);
+  }, [rawData, upProfiles, filters, ecosystemAgents, erc8004Agents]);
 
   // ── Render D3 ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -640,6 +675,26 @@ export default function TrustGraph() {
           </>
         )}
 
+        {/* ERC-8004 */}
+        {selectedNode.type === "agent_8004" && (
+          <>
+            {selectedNode.description && <p className="text-xs text-gray-400 line-clamp-3">{selectedNode.description}</p>}
+            <div className="p-2 bg-orange-500/10 border border-orange-500/20 rounded-lg text-xs text-orange-400">
+              ERC-8004 agentId #{selectedNode.agentId} · LUKSO registry
+            </div>
+            <div className="flex flex-col gap-2">
+              <a
+                href={`https://explorer.execution.mainnet.lukso.network/address/0xe30B7514744D324e8bD93157E4c82230d6e6e8f3`}
+                target="_blank" rel="noopener noreferrer"
+                className="w-full text-center text-xs font-medium py-2 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition"
+              >
+                View ERC-8004 Registry →
+              </a>
+              <Link to="/register" className="w-full text-center text-xs font-medium py-2 rounded-lg bg-lukso-pink/10 text-lukso-pink border border-lukso-pink/20 hover:bg-lukso-pink/20 transition">Register on Universal Trust</Link>
+            </div>
+          </>
+        )}
+
         {/* Skill */}
         {selectedNode.type === "skill" && (
           <>
@@ -766,7 +821,7 @@ export default function TrustGraph() {
             {/* Legend */}
             <div className="bg-lukso-card border border-lukso-border rounded-xl p-3">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Legend</p>
-              {Object.entries(COLORS).filter(([type]) => type !== "agent_eoa").map(([type, color]) => (
+              {Object.entries(COLORS).map(([type, color]) => (
                 <div key={type} className="flex items-center gap-2 py-0.5">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0 border" style={{ background: color + "22", borderColor: color }} />
                   <span className="text-xs text-gray-400">{TYPE_LABELS[type]}</span>

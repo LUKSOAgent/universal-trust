@@ -4,8 +4,18 @@
  *
  * Endpoint: https://envio.lukso-mainnet.universal.tech/v1/graphql
  */
+import { ethers } from "ethers";
 
 const ENVIO_ENDPOINT = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
+const ERC8004_ADDRESS = "0xe30B7514744D324e8bD93157E4c82230d6e6e8f3";
+const RPC_URL = "https://rpc.mainnet.lukso.network";
+
+const ERC8004_ABI = [
+  "function totalAgents() external view returns (uint256)",
+  "function ownerOf(uint256 tokenId) external view returns (address)",
+  "function tokenURI(uint256 tokenId) external view returns (string)",
+  "function exists(uint256 agentId) external view returns (bool)",
+];
 
 /**
  * Resolve IPFS URIs to HTTP URLs via the LUKSO IPFS gateway.
@@ -108,4 +118,67 @@ export async function fetchUPProfile(address) {
   if (!address) return null;
   const profiles = await fetchUPProfiles([address]);
   return profiles[address.toLowerCase()] || null;
+}
+
+/**
+ * Fetch all agents registered on the ERC-8004 Identity Registry on LUKSO.
+ * Returns an array of { agentId, owner, agentURI, metadata } objects.
+ * Falls back to empty array on any error.
+ *
+ * @returns {Promise<Array<{ agentId: number, owner: string, agentURI: string, name: string|null, description: string|null, image: string|null }>>}
+ */
+export async function fetchERC8004Agents() {
+  try {
+    const provider = new ethers.JsonRpcProvider(RPC_URL, 42);
+    const contract = new ethers.Contract(ERC8004_ADDRESS, ERC8004_ABI, provider);
+
+    const total = Number(await contract.totalAgents());
+    if (total === 0) return [];
+
+    const agents = [];
+    // Fetch all in parallel (reasonable for small counts)
+    const ids = Array.from({ length: total }, (_, i) => i + 1);
+    await Promise.all(ids.map(async (agentId) => {
+      try {
+        const [owner, uri] = await Promise.all([
+          contract.ownerOf(agentId),
+          contract.tokenURI(agentId).catch(() => ""),
+        ]);
+
+        let name = null;
+        let description = null;
+        let image = null;
+
+        // Parse agentURI — supports data URI and https://
+        if (uri) {
+          try {
+            let json = null;
+            if (uri.startsWith("data:application/json;base64,")) {
+              json = JSON.parse(atob(uri.slice("data:application/json;base64,".length)));
+            } else if (uri.startsWith("data:application/json,")) {
+              json = JSON.parse(decodeURIComponent(uri.slice("data:application/json,".length)));
+            } else if (uri.startsWith("https://") || uri.startsWith("http://")) {
+              const res = await fetch(uri, { signal: AbortSignal.timeout(4000) });
+              if (res.ok) json = await res.json();
+            } else if (uri.startsWith("ipfs://")) {
+              const url = `https://api.universalprofile.cloud/ipfs/${uri.slice(7)}`;
+              const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+              if (res.ok) json = await res.json();
+            }
+            if (json) {
+              name = json.name || null;
+              description = json.description || null;
+              image = json.image ? resolveIPFS(json.image) : null;
+            }
+          } catch {}
+        }
+
+        agents.push({ agentId, owner: owner.toLowerCase(), agentURI: uri, name, description, image });
+      } catch {}
+    }));
+
+    return agents;
+  } catch {
+    return [];
+  }
 }
