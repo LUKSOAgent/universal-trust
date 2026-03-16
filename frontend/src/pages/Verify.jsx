@@ -234,7 +234,7 @@ export default function Verify() {
       </div>
 
       {/* Search Form */}
-      <form onSubmit={handleVerify} className="mb-8 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+      <form onSubmit={handleVerify} className="mb-8 animate-fade-in relative z-20" style={{ animationDelay: "0.1s" }}>
         <div className="flex gap-3">
           <div className="relative flex-1">
             <input
@@ -283,7 +283,7 @@ export default function Verify() {
 
             {/* Autocomplete dropdown */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-lukso-card border border-lukso-border rounded-xl overflow-hidden shadow-xl z-50">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-lukso-card border border-lukso-border rounded-xl overflow-hidden shadow-xl z-[200]">
                 {suggestions.map((s) => (
                   <button
                     key={s.address}
