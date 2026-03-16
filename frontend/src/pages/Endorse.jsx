@@ -23,11 +23,20 @@ async function searchUPByName(query) {
       signal: AbortSignal.timeout(4000),
     });
     const { data } = await r.json();
-    return (data?.Profile || []).map((p) => ({
-      address: p.id,
-      name: p.name,
-      avatar: p.profileImages?.[0]?.url || null,
-    }));
+    return (data?.Profile || []).map((p) => {
+      const imgs = p.profileImages || [];
+      // Pick smallest ≥ 120px, resolve ipfs://
+      const sorted = [...imgs].filter((i) => i.url).sort((a, b) => {
+        const aOk = (a.width || 0) >= 120, bOk = (b.width || 0) >= 120;
+        if (aOk && !bOk) return -1; if (!aOk && bOk) return 1;
+        return (a.width || 9999) - (b.width || 9999);
+      });
+      const rawUrl = sorted[0]?.url || null;
+      const avatar = rawUrl?.startsWith("ipfs://")
+        ? `https://api.universalprofile.cloud/ipfs/${rawUrl.slice(7)}`
+        : rawUrl;
+      return { address: p.id, name: p.name, avatar };
+    });
   } catch { return []; }
 }
 
