@@ -90,7 +90,7 @@ Your App / Agent
              ▼
 ┌─────────────────────────────────────────────────────┐
 │   AgentIdentityRegistry (LUKSO Mainnet)              │
-│   0x1581BA9Fb480b72df3e54f51f851a644483c6ec7        │
+│   0x8EAE36077D386Eb9A5B957dC8397d96804DA449D        │
 │                                                       │
 │   verify(address) returns:                           │
 │     registered    bool                               │
@@ -121,7 +121,7 @@ const trust = new AgentTrust({
   rpcUrl: 'https://rpc.mainnet.lukso.network',
 
   // Contract addresses — already set to deployed mainnet contracts
-  identityRegistryAddress: '0x1581BA9Fb480b72df3e54f51f851a644483c6ec7',
+  identityRegistryAddress: '0x8EAE36077D386Eb9A5B957dC8397d96804DA449D',
   skillsRegistryAddress: '0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6',
 
   // RPC retry config
@@ -477,7 +477,7 @@ Contract reverts are **not retried** (they're deterministic).
 
 | Contract | Address |
 |----------|---------|
-| AgentIdentityRegistry | `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7` |
+| AgentIdentityRegistry | `0x8EAE36077D386Eb9A5B957dC8397d96804DA449D` |
 | AgentSkillsRegistry | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` |
 | Chain | LUKSO Mainnet (Chain ID: 42) |
 

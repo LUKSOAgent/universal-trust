@@ -136,6 +136,7 @@ contract AgentIdentityRegistry {
     error NotEndorsed(address endorser, address endorsed);
     error NotAuthorized();
     error AgentNotActive(address agent);
+    error EndorserMustBeUniversalProfile(address endorser);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Modifiers
@@ -294,14 +295,15 @@ contract AgentIdentityRegistry {
 
     /**
      * @notice Endorse another agent. Creates a trust link.
-     *         Both endorser and endorsed must be registered and active.
+     *         Endorser must hold a Universal Profile (LSP0). Endorsed must be registered and active.
      * @param endorsed The agent to endorse
      * @param reason   Optional reason/context for the endorsement
      */
     function endorse(
         address endorsed,
         string calldata reason
-    ) external onlyRegistered(msg.sender) onlyActive(msg.sender) onlyRegistered(endorsed) onlyActive(endorsed) {
+    ) external onlyRegistered(endorsed) onlyActive(endorsed) {
+        if (!isUniversalProfile(msg.sender)) revert EndorserMustBeUniversalProfile(msg.sender);
         if (msg.sender == endorsed) revert CannotEndorseSelf();
         if (_endorserIndex[endorsed][msg.sender] != 0) revert AlreadyEndorsed(msg.sender, endorsed);
 
@@ -318,7 +320,6 @@ contract AgentIdentityRegistry {
         _endorserIndex[endorsed][msg.sender] = _endorsers[endorsed].length; // index+1
 
         _agents[endorsed].endorsementCount++;
-        _agents[msg.sender].lastActiveAt = ts;
         _agents[endorsed].lastActiveAt = ts;
 
         emit EndorsementAdded(msg.sender, endorsed, reason, ts);
@@ -329,7 +330,7 @@ contract AgentIdentityRegistry {
      */
     function removeEndorsement(
         address endorsed
-    ) external onlyRegistered(msg.sender) {
+    ) external {
         if (_endorserIndex[endorsed][msg.sender] == 0) revert NotEndorsed(msg.sender, endorsed);
 
         // Swap-and-pop removal from _endorsers array
