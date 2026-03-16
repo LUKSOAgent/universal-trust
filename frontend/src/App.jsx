@@ -9,6 +9,7 @@ const Register = lazy(() => import("./pages/Register"));
 const Verify = lazy(() => import("./pages/Verify"));
 const Endorse = lazy(() => import("./pages/Endorse"));
 const About = lazy(() => import("./pages/About"));
+const TrustGraph = lazy(() => import("./pages/TrustGraph"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function PageLoader() {
@@ -49,6 +50,7 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/verify" element={<Verify />} />
               <Route path="/endorse" element={<Endorse />} />
+              <Route path="/graph" element={<TrustGraph />} />
               <Route path="/about" element={<About />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

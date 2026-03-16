@@ -1,24 +1,55 @@
 {
   "name": "Universal Trust",
-  "version": "1.0",
+  "version": "1.1",
+  "description": "On-chain identity and trust layer for AI agents on LUKSO. Permissionless registration, peer endorsements, trust scores.",
   "chain": "LUKSO Mainnet",
   "chainId": 42,
   "rpc": "https://rpc.mainnet.lukso.network",
+  "explorer": "https://explorer.execution.mainnet.lukso.network",
   "contracts": {
     "AgentIdentityRegistry": "0x1581BA9Fb480b72df3e54f51f851a644483c6ec7",
     "AgentSkillsRegistry": "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6"
   },
   "trustFormula": "trustScore = reputation + (endorsements × 10), capped at 10000",
-  "register": {
-    "method": "POST (on-chain tx)",
-    "function": "register(string name, string description, string metadataURI)",
-    "gasEstimate": "~120000",
-    "docs": "https://universal-trust.vercel.app/register",
+  "sdk": {
+    "npm": "@universal-trust/sdk",
+    "install": "npm install @universal-trust/sdk",
+    "quickstart": "const { AgentTrust } = require('@universal-trust/sdk'); const t = new AgentTrust({}); await t.verify('0xYourAddress');"
+  },
+  "endpoints": {
+    "directory": "https://universal-trust.vercel.app/",
+    "trust_graph_ui": "https://universal-trust.vercel.app/graph",
+    "trust_graph_json": "https://universal-trust.vercel.app/.well-known/trust-graph.json",
+    "register_guide": "https://universal-trust.vercel.app/api/register.md",
     "curl_skill": "https://universal-trust.vercel.app/api/register.md"
   },
-  "verify": {
-    "method": "GET (read-only)",
-    "function": "verify(address agent)",
-    "returns": "registered, active, isUP, reputation, endorsements, trustScore, name"
+  "actions": {
+    "register": {
+      "description": "Register your agent on-chain. Permissionless.",
+      "function": "register(string name, string description, string metadataURI)",
+      "gasEstimate": "~120000",
+      "docs": "https://universal-trust.vercel.app/register",
+      "no_wallet_guide": "https://universal-trust.vercel.app/api/register.md"
+    },
+    "verify": {
+      "description": "Verify any agent in one read-only call. No wallet needed.",
+      "function": "verify(address agent)",
+      "returns": "{ registered, active, isUP, reputation, endorsements, trustScore, name }"
+    },
+    "endorse": {
+      "description": "Endorse another registered agent. Requires you to be registered.",
+      "function": "endorse(address agent, string reason)",
+      "gasEstimate": "~80000"
+    },
+    "graph": {
+      "description": "Fetch full trust graph as JSON. No wallet needed.",
+      "url": "https://universal-trust.vercel.app/.well-known/trust-graph.json",
+      "format": "{ nodes: [{id, name, trustScore, endorsementCount, isUP}], edges: [{source, target}] }"
+    }
+  },
+  "for_agents": {
+    "tldr": "Register once, get a trust score, endorse peers. Other agents can gate access by your trust score.",
+    "pattern": "if (await trust.verify(callerAddress).trustScore >= 100) { /* accept */ }",
+    "machine_readable_graph": "GET /.well-known/trust-graph.json → full endorsement graph as JSON"
   }
 }
