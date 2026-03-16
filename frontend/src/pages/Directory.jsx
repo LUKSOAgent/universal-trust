@@ -176,7 +176,7 @@ export default function Directory() {
           </div>
 
           {/* Try It — Inline Verify */}
-          <TryVerify />
+          <TryVerify agents={agents} upProfiles={upProfiles} />
 
           {/* How It Works */}
           <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto animate-fade-in" style={{ animationDelay: "0.3s" }}>
@@ -319,13 +319,52 @@ export default function Directory() {
   );
 }
 
-function TryVerify() {
+function TryVerify({ agents = [], upProfiles = {} }) {
   const DEMO_ADDRESS = "0x293E96ebbf264ed7715cff2b67850517De70232a";
+  const [inputVal, setInputVal] = useState("");
   const [addr, setAddr] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [result, setResult] = useState(null);
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState(null);
-  const [phase, setPhase] = useState(0); // 0=idle, 1=connecting, 2=querying, 3=done
+  const [phase, setPhase] = useState(0);
+
+  function handleInput(val) {
+    setInputVal(val);
+    setResult(null);
+    setVerifyError(null);
+    if (/^0x[0-9a-fA-F]{40}$/.test(val)) {
+      setAddr(val);
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    setAddr("");
+    if (val.length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
+    const q = val.toLowerCase();
+    const hits = agents
+      .filter((a) => {
+        const name = (upProfiles[a.address.toLowerCase()]?.name || a.name || "").toLowerCase();
+        return name.includes(q) || a.address.toLowerCase().includes(q);
+      })
+      .slice(0, 5)
+      .map((a) => ({
+        address: a.address,
+        name: upProfiles[a.address.toLowerCase()]?.name || a.name || a.address,
+        avatar: upProfiles[a.address.toLowerCase()]?.profileImage || null,
+      }));
+    setSuggestions(hits);
+    setShowSuggestions(hits.length > 0);
+  }
+
+  function selectSuggestion(s) {
+    setInputVal(s.address);
+    setAddr(s.address);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    doVerify(s.address);
+  }
 
   async function doVerify(address) {
     const target = address || addr;
@@ -351,6 +390,7 @@ function TryVerify() {
   }
 
   function useDemoAgent() {
+    setInputVal(DEMO_ADDRESS);
     setAddr(DEMO_ADDRESS);
     setResult(null);
     setVerifyError(null);
@@ -374,23 +414,46 @@ function TryVerify() {
           <h3 className="text-sm font-semibold text-white">Try It — Live Trust Verification</h3>
         </div>
 
-        <div className="flex gap-2 mb-3">
-          <input
-            type="text"
-            value={addr}
-            onChange={(e) => setAddr(e.target.value)}
-            placeholder="0x... paste any address"
-            aria-label="Address to verify"
-            className="flex-1 bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 text-white placeholder-gray-600 font-mono text-xs focus:border-lukso-pink focus:outline-none focus:ring-1 focus:ring-lukso-pink/50 transition"
-          />
-          <button
-            onClick={() => doVerify()}
-            disabled={verifying || !/^0x[0-9a-fA-F]{40}$/.test(addr)}
-            className="px-4 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 disabled:opacity-40 transition text-xs shrink-0"
-          >
-            {verifying ? "..." : "verify()"}
-          </button>
-        </div>
+        <form onSubmit={(e) => { e.preventDefault(); doVerify(); }} className="relative z-20 mb-3">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={inputVal}
+              onChange={(e) => handleInput(e.target.value)}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              placeholder="0x address or agent name"
+              aria-label="Address or name to verify"
+              autoComplete="off"
+              className="flex-1 bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 text-white placeholder-gray-600 text-xs focus:border-lukso-pink focus:outline-none focus:ring-1 focus:ring-lukso-pink/50 transition"
+            />
+            <button
+              type="submit"
+              disabled={verifying || !/^0x[0-9a-fA-F]{40}$/.test(addr)}
+              className="px-4 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 disabled:opacity-40 transition text-xs shrink-0"
+            >
+              {verifying ? "..." : "verify()"}
+            </button>
+          </div>
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-lukso-card border border-lukso-border rounded-lg shadow-xl z-[200] overflow-hidden">
+              {suggestions.map((s) => (
+                <button
+                  key={s.address}
+                  type="button"
+                  onMouseDown={() => selectSuggestion(s)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-lukso-darker transition text-left"
+                >
+                  {s.avatar
+                    ? <img src={s.avatar} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
+                    : <span className="w-5 h-5 rounded-full bg-lukso-purple/30 shrink-0" />}
+                  <span className="text-white font-medium">{s.name}</span>
+                  <span className="text-gray-600 font-mono truncate">{s.address.slice(0, 8)}…</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </form>
 
         <button
           type="button"
