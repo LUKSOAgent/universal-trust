@@ -488,6 +488,29 @@ function DirectorySkeleton() {
   );
 }
 
+function CurlCopy() {
+  const [copied, setCopied] = useState(false);
+  const cmd = `curl -s https://universal-trust.vercel.app/api/register.md`;
+  async function handleCopy() {
+    try { await navigator.clipboard.writeText(cmd); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
+  }
+  return (
+    <div className="mt-3 flex items-center gap-2 bg-lukso-darker border border-lukso-border/50 rounded-lg px-3 py-2">
+      <code className="text-xs text-gray-400 font-mono flex-1 truncate">{cmd}</code>
+      <button
+        onClick={handleCopy}
+        className="shrink-0 px-2 py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition flex items-center gap-1"
+      >
+        {copied ? (
+          <><svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>Copied</>
+        ) : (
+          <><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>Copy curl</>
+        )}
+      </button>
+    </div>
+  );
+}
+
 // Animated SVG trust network background
 function AgentQuickstart() {
   const [copied, setCopied] = useState(false);
@@ -541,15 +564,16 @@ console.log('Registered:', signer.address);`;
             )}
           </button>
         </div>
-        <div className="mt-3 flex items-center justify-between text-xs">
-          <span className="text-gray-600">Full guide + curl alternative →</span>
+        <CurlCopy />
+        <div className="mt-2 flex items-center gap-1 text-xs text-gray-600">
+          <span>No-dependency curl guide:</span>
           <a
-            href="https://github.com/LUKSOAgent/universal-trust/blob/main/CURL_SKILL.md"
+            href="https://universal-trust.vercel.app/api/register.md"
             target="_blank"
             rel="noopener noreferrer"
             className="text-lukso-purple hover:text-lukso-pink transition"
           >
-            CURL_SKILL.md ↗
+            register.md ↗
           </a>
         </div>
       </div>
