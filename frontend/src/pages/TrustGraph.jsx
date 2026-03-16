@@ -5,6 +5,12 @@ import { getAllAgents, getEndorsers, getEndorsement, getSkills } from "../useCon
 import { fetchUPProfiles } from "../envio";
 import { KNOWN_AGENTS, discoverAgentsFromEnvio } from "../agents";
 
+// Case-insensitive lookup helper for upProfiles (keys are always lowercase)
+function upLookup(upProfiles, address) {
+  if (!address) return undefined;
+  return upProfiles[address.toLowerCase()] || upProfiles[address];
+}
+
 // ─── Color palette ────────────────────────────────────────────────────────────
 const COLORS = {
   agent_up:        "#FF2975",   // pink   — registered UP on Universal Trust
@@ -152,14 +158,14 @@ export default function TrustGraph() {
 
     // Agent nodes (registered on Universal Trust)
     for (const a of agents) {
-      const upData = upProfiles[a.address?.toLowerCase()] || upProfiles[a.address]; const type = (upData?.isUP === true) ? "agent_up" : "agent_eoa";
+      const upData = upLookup(upProfiles, a.address); const type = (upData?.isUP === true) ? "agent_up" : "agent_eoa";
       if (!filters[type]) continue;
       const score = a.reputation + a.endorsementCount * 10;
       const rScale = d3.scaleSqrt().domain([0, 500]).range([1, SCORE_SCALE_MAX]);
       nodes.push({
         id: a.address,
         type,
-        label: upProfiles[a.address]?.name || a.name || a.address.slice(0, 8) + "…",
+        label: upLookup(upProfiles, a.address)?.name || a.name || a.address.slice(0, 8) + "…",
         fullName: a.name,
         address: a.address,
         trustScore: score,
@@ -176,7 +182,7 @@ export default function TrustGraph() {
     if (filters.ecosystem) {
       for (const a of ecosystemAgents) {
         if (nodeIds.has(a.address)) continue; // already registered
-        const name = upProfiles[a.address]?.name || a.name || a.address.slice(0, 8) + "…";
+        const name = upLookup(upProfiles, a.address)?.name || a.name || a.address.slice(0, 8) + "…";
         nodes.push({
           id: a.address,
           type: "ecosystem",
@@ -322,7 +328,8 @@ export default function TrustGraph() {
 
     // Clip paths for PFP images (one per node that has an avatar)
     nodes.forEach((d) => {
-      const avatar = upProfiles[d.id]?.profileImage || upProfiles[d.address]?.profileImage;
+      const key = (d.id || d.address || "").toLowerCase();
+      const avatar = upProfiles[key]?.profileImage || upLookup(upProfiles, d.id)?.profileImage || upLookup(upProfiles, d.address)?.profileImage;
       if (avatar && (d.type === "agent_up" || d.type === "agent_eoa" || d.type === "ecosystem")) {
         d._avatar = avatar;
         defs.append("clipPath")
@@ -481,17 +488,17 @@ export default function TrustGraph() {
     if (q.includes("most trusted") || q.includes("highest trust") || q.includes("top agent")) {
       const sorted = [...agents].sort((a, b) => (b.reputation + b.endorsementCount * 10) - (a.reputation + a.endorsementCount * 10));
       const top = sorted.slice(0, 3);
-      answer = `Top agents by trust score:\n${top.map((a, i) => `${i + 1}. ${upProfiles[a.address]?.name || a.name} — score ${a.reputation + a.endorsementCount * 10}`).join("\n")}`;
+      answer = `Top agents by trust score:\n${top.map((a, i) => `${i + 1}. ${upLookup(upProfiles, a.address)?.name || a.name} — score ${a.reputation + a.endorsementCount * 10}`).join("\n")}`;
 
     } else if (q.includes("most endors") || q.includes("most connected")) {
       const sorted = [...agents].sort((a, b) => b.endorsementCount - a.endorsementCount);
       const top = sorted.slice(0, 3);
-      answer = `Most endorsed agents:\n${top.map((a, i) => `${i + 1}. ${upProfiles[a.address]?.name || a.name} — ${a.endorsementCount} endorsements`).join("\n")}`;
+      answer = `Most endorsed agents:\n${top.map((a, i) => `${i + 1}. ${upLookup(upProfiles, a.address)?.name || a.name} — ${a.endorsementCount} endorsements`).join("\n")}`;
 
     } else if (q.includes("skill") && (q.includes("who") || q.includes("which") || q.includes("have"))) {
       const withSkills = Object.entries(skills).map(([addr, s]) => {
         const agent = agents.find((a) => a.address === addr);
-        return { name: upProfiles[addr]?.name || agent?.name || addr.slice(0, 8), skills: s.map((sk) => sk.name) };
+        return { name: upLookup(upProfiles, addr)?.name || agent?.name || addr.slice(0, 8), skills: s.map((sk) => sk.name) };
       });
       if (withSkills.length === 0) {
         answer = "No agents have published skills yet.";
@@ -500,7 +507,7 @@ export default function TrustGraph() {
       }
 
     } else if (q.includes("universal profile") || q.includes("up") || q.includes("eoa")) {
-      const ups = agents.filter((a) => !!upProfiles[a.address]).length;
+      const ups = agents.filter((a) => !!upLookup(upProfiles, a.address)).length;
       const eoas = agents.length - ups;
       answer = `${ups} Universal Profile agents, ${eoas} EOA agents out of ${agents.length} total.`;
 
@@ -511,16 +518,16 @@ export default function TrustGraph() {
 
     } else if (q.includes("endorse") && q.includes("who")) {
       // "who does X endorse" or "who endorsed X"
-      const names = agents.map((a) => ({ addr: a.address, name: (upProfiles[a.address]?.name || a.name || "").toLowerCase() }));
+      const names = agents.map((a) => ({ addr: a.address, name: (upLookup(upProfiles, a.address)?.name || a.name || "").toLowerCase() }));
       const match = names.find((n) => q.includes(n.name) && n.name.length > 2);
       if (match) {
         const outgoing = edges.filter((e) => e.source === match.addr).map((e) => {
           const t = agents.find((a) => a.address === e.target);
-          return upProfiles[e.target]?.name || t?.name || e.target.slice(0, 8);
+          return upLookup(upProfiles, e.target)?.name || t?.name || e.target.slice(0, 8);
         });
         const incoming = edges.filter((e) => e.target === match.addr).map((e) => {
           const s = agents.find((a) => a.address === e.source);
-          return upProfiles[e.source]?.name || s?.name || e.source.slice(0, 8);
+          return upLookup(upProfiles, e.source)?.name || s?.name || e.source.slice(0, 8);
         });
         answer = `${match.name}:\n• Endorsed by: ${incoming.length > 0 ? incoming.join(", ") : "nobody yet"}\n• Endorses: ${outgoing.length > 0 ? outgoing.join(", ") : "nobody yet"}`;
       } else {
@@ -558,7 +565,7 @@ export default function TrustGraph() {
   // Node detail card — shared between mobile bottom sheet and desktop right panel
   function NodeDetailCard() {
     if (!selectedNode) return null;
-    const avatar = upProfiles[selectedNode.id]?.profileImage;
+    const avatar = upLookup(upProfiles, selectedNode.id)?.profileImage;
     const nodeColor = COLORS[selectedNode.type];
 
     return (
@@ -742,10 +749,10 @@ export default function TrustGraph() {
                   {rawData.agents
                     .sort((a, b) => (b.reputation + b.endorsementCount * 10) - (a.reputation + a.endorsementCount * 10))
                     .map((a) => {
-                      const name = upProfiles[a.address]?.name || a.name || a.address.slice(0, 8);
+                      const name = upLookup(upProfiles, a.address)?.name || a.name || a.address.slice(0, 8);
                       const score = a.reputation + a.endorsementCount * 10;
-                      const upData = upProfiles[a.address?.toLowerCase()] || upProfiles[a.address]; const type = (upData?.isUP === true) ? "agent_up" : "agent_eoa";
-                      const avatar = upProfiles[a.address]?.profileImage;
+                      const upData = upLookup(upProfiles, a.address); const type = (upData?.isUP === true) ? "agent_up" : "agent_eoa";
+                      const avatar = upLookup(upProfiles, a.address)?.profileImage;
                       return (
                         <button key={a.address} onClick={() => { setSelected((p) => p === a.address ? null : a.address); setSidebarOpen(false); }}
                           className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg transition text-xs ${selected === a.address ? "bg-lukso-darker" : "hover:bg-lukso-darker/50"}`}>
@@ -763,8 +770,8 @@ export default function TrustGraph() {
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 pt-2 border-t border-lukso-border">Ecosystem</p>
                     <div className="space-y-0.5">
                       {ecosystemAgents.map((a) => {
-                        const name = upProfiles[a.address]?.name || a.name || a.address.slice(0, 8);
-                        const avatar = upProfiles[a.address]?.profileImage;
+                        const name = upLookup(upProfiles, a.address)?.name || a.name || a.address.slice(0, 8);
+                        const avatar = upLookup(upProfiles, a.address)?.profileImage;
                         return (
                           <button key={a.address} onClick={() => { setSelected((p) => p === a.address ? null : a.address); setSidebarOpen(false); }}
                             className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg transition text-xs ${selected === a.address ? "bg-lukso-darker" : "hover:bg-lukso-darker/50"}`}>
