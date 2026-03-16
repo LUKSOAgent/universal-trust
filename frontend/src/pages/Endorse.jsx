@@ -1,7 +1,35 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { CONTRACT_ADDRESS, CHAIN_ID, EXPLORER_URL } from "../config";
 import { verifyAgent, getEndorsers, getEndorsement, getAgent, isRegistered } from "../useContract";
+import { resolveIPFS } from "../envio";
+
+const ENVIO = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
+
+async function searchUPByName(query) {
+  if (!query || query.length < 2) return [];
+  const q = `
+    query Search($q: String!) {
+      Profile(where: {name: {_ilike: $q}, isEOA: {_eq: false}}, limit: 8, order_by: {name: asc}) {
+        id name profileImages { url width }
+      }
+    }
+  `;
+  try {
+    const r = await fetch(ENVIO, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: q, variables: { q: `%${query}%` } }),
+      signal: AbortSignal.timeout(4000),
+    });
+    const { data } = await r.json();
+    return (data?.Profile || []).map((p) => ({
+      address: p.id,
+      name: p.name,
+      avatar: p.profileImages?.[0]?.url || null,
+    }));
+  } catch { return []; }
+}
 
 export default function Endorse() {
   const [searchParams] = useSearchParams();
@@ -17,6 +45,14 @@ export default function Endorse() {
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
 
+  // Name search / autocomplete
+  const [inputValue, setInputValue] = useState(searchParams.get("address") || "");
+  const [suggestions, setSuggestions] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimer = useRef(null);
+  const inputRef = useRef(null);
+
   // Preview data for target agent
   const [targetAgent, setTargetAgent] = useState(null);
   const [targetEndorsers, setTargetEndorsers] = useState([]);
@@ -27,6 +63,43 @@ export default function Endorse() {
     const id = Date.now();
     setToasts((t) => [...t, { id, type, msg }]);
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 5000);
+  }
+
+  function handleInputChange(val) {
+    setInputValue(val);
+    const trimmed = val.trim();
+
+    // If it looks like an address, set directly
+    if (/^0x[0-9a-fA-F]{40}$/.test(trimmed)) {
+      setTargetAddress(trimmed);
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setTargetAddress(""); // clear until resolved
+    clearTimeout(searchTimer.current);
+
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    searchTimer.current = setTimeout(async () => {
+      const results = await searchUPByName(trimmed);
+      setSuggestions(results);
+      setShowSuggestions(results.length > 0);
+      setSearchLoading(false);
+    }, 350);
+  }
+
+  function selectSuggestion(s) {
+    setInputValue(s.name || s.address);
+    setTargetAddress(s.address);
+    setSuggestions([]);
+    setShowSuggestions(false);
   }
 
   // Load target agent info when a valid address is entered
@@ -97,7 +170,7 @@ export default function Endorse() {
 
     const isAddr = /^0x[0-9a-fA-F]{40}$/.test(targetAddress);
     if (!isAddr) {
-      setStatus({ type: "error", msg: "Invalid address. Must be a valid 0x... Ethereum/LUKSO address." });
+      setStatus({ type: "error", msg: "Select an agent from the dropdown or paste a valid 0x address." });
       return;
     }
 
@@ -243,38 +316,71 @@ export default function Endorse() {
       </p>
 
       <form onSubmit={handleEndorse} className="space-y-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-        <div>
+        <div className="relative">
           <label htmlFor="endorse-address" className="block text-sm font-medium text-gray-300 mb-2">
-            Agent Address *
+            Agent Name or Address *
           </label>
-          <input
-            id="endorse-address"
-            type="text"
-            value={targetAddress}
-            onChange={(e) => setTargetAddress(e.target.value.trim())}
-            placeholder="0x... agent address"
-            className="w-full bg-lukso-card border border-lukso-border rounded-lg px-4 py-3 text-white placeholder-gray-600 font-mono text-sm focus:border-lukso-pink focus:outline-none focus:ring-1 focus:ring-lukso-pink/50 transition"
-            required
-          />
-          {!targetAddress && (
-            <p className="mt-2 text-xs text-gray-600">
-              Try it:{" "}
-              <button
-                type="button"
-                onClick={() => setTargetAddress("0x293E96ebbf264ed7715cff2b67850517De70232a")}
-                className="text-lukso-purple hover:text-lukso-pink transition font-mono"
-              >
-                0x293E...0232a
-              </button>
-              {" "}(registered agent)
-            </p>
+          <div className="relative">
+            <input
+              id="endorse-address"
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={(e) => handleInputChange(e.target.value)}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              placeholder="Search by name (e.g. luksoagent) or paste 0x address"
+              className="w-full bg-lukso-card border border-lukso-border rounded-lg px-4 py-3 text-white placeholder-gray-500 text-sm focus:border-lukso-pink focus:outline-none focus:ring-1 focus:ring-lukso-pink/50 transition"
+              autoComplete="off"
+            />
+            {searchLoading && (
+              <div className="absolute right-3 top-3.5">
+                <svg className="w-4 h-4 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+              </div>
+            )}
+          </div>
+
+          {/* Autocomplete dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-lukso-card border border-lukso-border rounded-lg shadow-xl overflow-hidden">
+              {suggestions.map((s) => (
+                <button
+                  key={s.address}
+                  type="button"
+                  onMouseDown={() => selectSuggestion(s)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-lukso-darker text-left transition"
+                >
+                  {s.avatar ? (
+                    <img src={s.avatar} alt={s.name} className="w-7 h-7 rounded-full object-cover shrink-0 border border-lukso-border" onError={(e) => { e.target.style.display = "none"; }} />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-lukso-purple/20 border border-lukso-purple/30 shrink-0 flex items-center justify-center text-xs text-lukso-purple font-bold">
+                      {(s.name || "?")[0].toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{s.name}</p>
+                    <p className="text-xs text-gray-500 font-mono truncate">{s.address.slice(0,10)}...{s.address.slice(-6)}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           )}
-          {targetAddress && /^0x[0-9a-fA-F]{40}$/.test(targetAddress) && (
-            <p className="mt-2 text-xs text-gray-500">
-              <Link to={`/agent/${targetAddress}`} className="text-lukso-purple hover:text-lukso-pink transition">
-                View agent profile →
+
+          {/* Resolved address indicator */}
+          {targetAddress && (
+            <p className="mt-2 text-xs text-gray-500 font-mono flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+              {targetAddress.slice(0,10)}...{targetAddress.slice(-8)}
+              <Link to={`/agent/${targetAddress}`} className="text-lukso-purple hover:text-lukso-pink transition ml-1">
+                view profile →
               </Link>
             </p>
+          )}
+          {inputValue && !targetAddress && !/^0x[0-9a-fA-F]{40}$/.test(inputValue) && !searchLoading && suggestions.length === 0 && inputValue.length >= 2 && (
+            <p className="mt-2 text-xs text-red-400">No Universal Profile found for "{inputValue}"</p>
           )}
         </div>
 
