@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { verifyAgent, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered, getAllAgents } from "../useContract";
 import { EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
-import TrustScoreCard from "../components/TrustScoreCard";
+import TrustScoreCard, { computeCompositeScore, getTrustLevel } from "../components/TrustScoreCard";
 import { fetchUPProfile, fetchOnChainReputation } from "../envio";
 
 export default function AgentProfile() {
@@ -316,13 +316,40 @@ export default function AgentProfile() {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-        <StatCard label="Reputation" value={verification.reputation} />
-        <StatCard label="Endorsements" value={verification.endorsements} />
-        <StatCard label="Trust Score" value={verification.trustScore} />
-        <StatCard label="Skills" value={skills.length} />
-      </div>
+      {/* Composite Score Hero + Stats Grid */}
+      {(() => {
+        const onChainScore = onChainRep?.generalScore ?? null;
+        const composite = computeCompositeScore(verification.trustScore, onChainScore, skills.length);
+        const lvl = getTrustLevel(composite);
+        return (
+          <div className="mb-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+            {/* Composite Score — prominent hero */}
+            <div className={`bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border rounded-xl p-5 mb-4 ${lvl.bg}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider mb-1">Composite Trust Score</p>
+                  <p className="text-5xl font-bold text-white tabular-nums">{composite.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1 font-mono">
+                    {verification.trustScore} (contract)
+                    {onChainScore !== null ? ` + ${Math.round(onChainScore * 2)} (activity×2)` : ""}
+                    {skills.length > 0 ? ` + ${skills.length * 5} (${skills.length} skills×5)` : ""}
+                  </p>
+                </div>
+                <span className={`text-lg font-semibold px-3 py-1.5 rounded-full border ${lvl.bg} ${lvl.color}`}>
+                  {lvl.label}
+                </span>
+              </div>
+            </div>
+            {/* Detail stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard label="Reputation" value={verification.reputation} />
+              <StatCard label="Endorsements" value={verification.endorsements} />
+              <StatCard label="Contract Score" value={verification.trustScore} />
+              <StatCard label="Skills" value={skills.length} />
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Trust Score Detail Card */}
       <div className="mb-6 animate-fade-in" style={{ animationDelay: "0.12s" }}>
@@ -361,27 +388,7 @@ export default function AgentProfile() {
         ) : (
           <div className="space-y-3">
             {skills.map((skill, i) => (
-              <div
-                key={i}
-                className="bg-lukso-darker rounded-lg p-4 border border-lukso-border/50 hover:border-lukso-purple/40 transition"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-medium truncate">{skill.name}</h3>
-                    {skill.content && (
-                      <p className="text-gray-400 text-sm mt-1 line-clamp-2">{skill.content}</p>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className="px-2 py-0.5 text-xs rounded bg-lukso-purple/20 text-lukso-purple border border-lukso-purple/30">
-                      v{skill.version}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {skill.updatedAt ? new Date(skill.updatedAt * 1000).toLocaleDateString() : "—"}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <SkillCard key={i} skill={skill} />
             ))}
           </div>
         )}

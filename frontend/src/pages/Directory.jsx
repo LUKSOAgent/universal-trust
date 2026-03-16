@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import AgentCard from "../components/AgentCard";
 import { getAllAgents, getAgentCount, verifyAgent } from "../useContract";
 import { fetchUPProfiles } from "../envio";
+import { computeCompositeScore } from "../components/TrustScoreCard";
 
 async function loadAgentsFromAPI() {
   const res = await fetch("/api/trust-graph");
