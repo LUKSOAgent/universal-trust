@@ -152,7 +152,7 @@ export default function TrustGraph() {
 
     // Agent nodes (registered on Universal Trust)
     for (const a of agents) {
-      const type = upProfiles[a.address] ? "agent_up" : "agent_eoa";
+      const upData = upProfiles[a.address?.toLowerCase()] || upProfiles[a.address]; const type = (upData?.isUP === true) ? "agent_up" : "agent_eoa";
       if (!filters[type]) continue;
       const score = a.reputation + a.endorsementCount * 10;
       const rScale = d3.scaleSqrt().domain([0, 500]).range([1, SCORE_SCALE_MAX]);
@@ -744,7 +744,7 @@ export default function TrustGraph() {
                     .map((a) => {
                       const name = upProfiles[a.address]?.name || a.name || a.address.slice(0, 8);
                       const score = a.reputation + a.endorsementCount * 10;
-                      const type = upProfiles[a.address] ? "agent_up" : "agent_eoa";
+                      const upData = upProfiles[a.address?.toLowerCase()] || upProfiles[a.address]; const type = (upData?.isUP === true) ? "agent_up" : "agent_eoa";
                       const avatar = upProfiles[a.address]?.profileImage;
                       return (
                         <button key={a.address} onClick={() => { setSelected((p) => p === a.address ? null : a.address); setSidebarOpen(false); }}

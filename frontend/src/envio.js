@@ -1,7 +1,6 @@
 /**
  * Envio indexer integration for Universal Trust
- * Fetches Universal Profile names and avatars for registered agent addresses.
- * This is optional enrichment — failures are handled gracefully.
+ * Fetches Universal Profile names, avatars, and UP status for registered agents.
  *
  * Endpoint: https://envio.lukso-mainnet.universal.tech/v1/graphql
  */
@@ -10,8 +9,6 @@ const ENVIO_ENDPOINT = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
 
 /**
  * Resolve IPFS URIs to HTTP URLs via the LUKSO IPFS gateway.
- * @param {string} uri
- * @returns {string}
  */
 export function resolveIPFS(uri) {
   if (!uri) return null;
@@ -22,17 +19,38 @@ export function resolveIPFS(uri) {
 }
 
 /**
- * Fetch Universal Profile data (name + avatar) for a list of addresses.
- * Returns a map of { address (lowercase) → { name, profileImage } }
- * On failure returns an empty map (Envio is optional).
+ * Pick the best profile image from the profileImages array.
+ * Prefers the image closest to 120px wide (small avatar size).
+ */
+function pickBestImage(profileImages) {
+  if (!Array.isArray(profileImages) || profileImages.length === 0) return null;
+  // Prefer smallest image ≥ 120px wide for avatar use
+  const sorted = [...profileImages]
+    .filter((img) => img.url)
+    .sort((a, b) => {
+      const aw = a.width || 9999;
+      const bw = b.width || 9999;
+      // Prefer images ≥ 120 wide, pick smallest of those
+      const aOk = aw >= 120;
+      const bOk = bw >= 120;
+      if (aOk && !bOk) return -1;
+      if (!aOk && bOk) return 1;
+      return aw - bw;
+    });
+  return sorted[0]?.url || null;
+}
+
+/**
+ * Fetch Universal Profile data (name, avatar, isEOA) for a list of addresses.
+ * Returns a map of { address (lowercase) → { name, profileImage, isUP } }
+ * On failure returns an empty map (Envio is optional enrichment).
  *
- * @param {string[]} addresses - array of EVM addresses
- * @returns {Promise<Record<string, { name: string|null, profileImage: string|null }>>}
+ * @param {string[]} addresses
+ * @returns {Promise<Record<string, { name: string|null, profileImage: string|null, isUP: boolean }>>}
  */
 export async function fetchUPProfiles(addresses) {
   if (!addresses || addresses.length === 0) return {};
 
-  // Normalize to lowercase for consistent keying
   const lowercased = addresses.map((a) => a.toLowerCase());
 
   const query = `
@@ -40,7 +58,12 @@ export async function fetchUPProfiles(addresses) {
       Profile(where: {id: {_in: $addresses}}) {
         id
         name
-        profileImage
+        isEOA
+        profileImages {
+          url
+          width
+          height
+        }
       }
     }
   `;
@@ -50,7 +73,7 @@ export async function fetchUPProfiles(addresses) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query, variables: { addresses: lowercased } }),
-      signal: AbortSignal.timeout(5000), // 5s timeout — don't block UI
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!response.ok) return {};
@@ -61,32 +84,25 @@ export async function fetchUPProfiles(addresses) {
     const result = {};
     for (const profile of data.Profile) {
       const addr = profile.id.toLowerCase();
-      // profileImage may be an array of images or a URI string — normalize it
-      let imageUrl = null;
-      if (Array.isArray(profile.profileImage) && profile.profileImage.length > 0) {
-        const img = profile.profileImage[0];
-        imageUrl = resolveIPFS(img?.url || img?.src || null);
-      } else if (typeof profile.profileImage === "string") {
-        imageUrl = resolveIPFS(profile.profileImage);
-      }
+      const imageUrl = pickBestImage(profile.profileImages);
       result[addr] = {
         name: profile.name || null,
         profileImage: imageUrl,
+        isUP: profile.isEOA === false, // explicit false = UP; null/true = EOA
       };
     }
     return result;
   } catch {
-    // Network error, timeout, parse error — silently return empty
     return {};
   }
 }
 
 /**
  * Fetch UP profile for a single address.
- * Returns { name, profileImage } or null on failure.
+ * Returns { name, profileImage, isUP } or null on failure.
  *
  * @param {string} address
- * @returns {Promise<{ name: string|null, profileImage: string|null }|null>}
+ * @returns {Promise<{ name: string|null, profileImage: string|null, isUP: boolean }|null>}
  */
 export async function fetchUPProfile(address) {
   if (!address) return null;
