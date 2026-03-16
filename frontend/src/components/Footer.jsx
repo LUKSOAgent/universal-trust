@@ -98,7 +98,7 @@ export default function Footer() {
         {/* Bottom row */}
         <div className="pt-4 border-t border-lukso-border/50 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-600">
           <span className="font-medium text-gray-500">Built for Synthesis 2026 — Agents that Trust track</span>
-          <span>Last updated March 14, 2026 · v1.0.0</span>
+          <span>Last updated March 16, 2026 · v1.1.0</span>
         </div>
       </div>
     </footer>

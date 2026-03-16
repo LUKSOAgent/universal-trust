@@ -1,17 +1,25 @@
 export default function TrustBadge({ score, size = "md" }) {
-  let color, label;
+  let color, label, ringColor, glowColor;
   if (score >= 500) {
     color = "from-green-500 to-emerald-400";
     label = "Highly Trusted";
+    ringColor = "border-green-500/40";
+    glowColor = "shadow-green-500/20";
   } else if (score >= 200) {
     color = "from-blue-500 to-cyan-400";
     label = "Trusted";
+    ringColor = "border-blue-500/40";
+    glowColor = "shadow-blue-500/20";
   } else if (score >= 100) {
     color = "from-yellow-500 to-amber-400";
     label = "Verified";
+    ringColor = "border-yellow-500/30";
+    glowColor = "shadow-yellow-500/10";
   } else {
     color = "from-gray-500 to-gray-400";
     label = "New";
+    ringColor = "border-gray-500/20";
+    glowColor = "";
   }
 
   const sizeClasses = {
@@ -20,12 +28,24 @@ export default function TrustBadge({ score, size = "md" }) {
     lg: "w-24 h-24 text-lg",
   };
 
+  const ringSize = {
+    sm: "w-12 h-12",
+    md: "w-[4.5rem] h-[4.5rem]",
+    lg: "w-[7rem] h-[7rem]",
+  };
+
   return (
     <div className="flex flex-col items-center gap-1">
-      <div
-        className={`${sizeClasses[size]} rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white shadow-lg`}
-      >
-        {score}
+      <div className="relative">
+        {/* Outer ring for trusted agents */}
+        {score >= 100 && (
+          <div className={`absolute inset-0 ${ringSize[size]} -m-1 rounded-full border-2 ${ringColor} animate-pulse`} />
+        )}
+        <div
+          className={`${sizeClasses[size]} rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white shadow-lg ${glowColor} relative z-10`}
+        >
+          {score}
+        </div>
       </div>
       <span className="text-xs text-gray-400">{label}</span>
     </div>
