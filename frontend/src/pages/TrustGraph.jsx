@@ -562,6 +562,24 @@ export default function TrustGraph() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  function EndorserRow({ label, addr, name, avatar, color, onSelect }) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-gray-500 w-7 shrink-0">{label}</span>
+        <button onClick={onSelect} className="flex items-center gap-2 hover:opacity-80 transition min-w-0">
+          {avatar
+            ? <img src={avatar} alt={name} className="w-6 h-6 rounded-full object-cover shrink-0 border" style={{ borderColor: color }} onError={e => e.target.style.display="none"} />
+            : <span className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-white" style={{ background: color + "44", borderColor: color, border: `1px solid ${color}` }}>
+                {(name[0] || "?").toUpperCase()}
+              </span>
+          }
+          <span className="text-gray-200 font-medium truncate">{name}</span>
+          <span className="text-gray-600 font-mono shrink-0">{addr.slice(0,6)}…{addr.slice(-4)}</span>
+        </button>
+      </div>
+    );
+  }
+
   // Node detail card — shared between mobile bottom sheet and desktop right panel
   function NodeDetailCard() {
     if (!selectedNode) return null;
@@ -631,13 +649,29 @@ export default function TrustGraph() {
         )}
 
         {/* Endorsement */}
-        {selectedNode.type === "endorsement" && (
-          <div className="space-y-1 text-xs text-gray-500">
-            {selectedNode.reason && <p className="text-gray-400 italic">"{selectedNode.reason}"</p>}
-            <p>From: <span className="text-gray-300 font-mono">{(selectedNode.from || "").slice(0, 10)}…</span></p>
-            <p>To: <span className="text-gray-300 font-mono">{(selectedNode.to || "").slice(0, 10)}…</span></p>
-          </div>
-        )}
+        {selectedNode.type === "endorsement" && (() => {
+          const fromAddr = selectedNode.from || "";
+          const toAddr = selectedNode.to || "";
+          const fromUp = upLookup(upProfiles, fromAddr);
+          const toUp = upLookup(upProfiles, toAddr);
+          const fromAgent = rawData?.agents?.find(a => a.address?.toLowerCase() === fromAddr.toLowerCase());
+          const toAgent = rawData?.agents?.find(a => a.address?.toLowerCase() === toAddr.toLowerCase());
+          const fromName = fromUp?.name || fromAgent?.name || (fromAddr.slice(0,8) + "…");
+          const toName = toUp?.name || toAgent?.name || (toAddr.slice(0,8) + "…");
+          const fromAvatar = fromUp?.profileImage;
+          const toAvatar = toUp?.profileImage;
+          return (
+            <div className="space-y-3 text-xs">
+              {selectedNode.reason && (
+                <p className="text-gray-400 italic bg-lukso-darker rounded-lg px-3 py-2">"{selectedNode.reason}"</p>
+              )}
+              <div className="space-y-2">
+                <EndorserRow label="From" addr={fromAddr} name={fromName} avatar={fromAvatar} color={COLORS.agent_up} onSelect={() => setSelected(fromAddr)} />
+                <EndorserRow label="To" addr={toAddr} name={toName} avatar={toAvatar} color={COLORS.agent_up} onSelect={() => setSelected(toAddr)} />
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   }
@@ -732,7 +766,7 @@ export default function TrustGraph() {
             {/* Legend */}
             <div className="bg-lukso-card border border-lukso-border rounded-xl p-3">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Legend</p>
-              {Object.entries(COLORS).map(([type, color]) => (
+              {Object.entries(COLORS).filter(([type]) => type !== "agent_eoa").map(([type, color]) => (
                 <div key={type} className="flex items-center gap-2 py-0.5">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0 border" style={{ background: color + "22", borderColor: color }} />
                   <span className="text-xs text-gray-400">{TYPE_LABELS[type]}</span>
