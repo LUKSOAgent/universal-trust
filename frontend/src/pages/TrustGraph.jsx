@@ -320,6 +320,19 @@ export default function TrustGraph() {
       )
       .on("click", (ev, d) => { ev.stopPropagation(); setSelected((p) => p === d.id ? null : d.id); });
 
+    // Clip paths for PFP images (one per node that has an avatar)
+    nodes.forEach((d) => {
+      const avatar = upProfiles[d.id]?.profileImage || upProfiles[d.address]?.profileImage;
+      if (avatar && (d.type === "agent_up" || d.type === "agent_eoa" || d.type === "ecosystem")) {
+        d._avatar = avatar;
+        defs.append("clipPath")
+          .attr("id", `clip-${d.id.replace(/[^a-zA-Z0-9]/g, "_")}`)
+          .append("circle")
+          .attr("r", d.r - 1)
+          .attr("cx", 0).attr("cy", 0);
+      }
+    });
+
     // Glow ring for UPs
     node.filter((d) => d.type === "agent_up")
       .append("circle")
@@ -330,15 +343,26 @@ export default function TrustGraph() {
       .attr("opacity", 0.3)
       .attr("filter", "url(#glow)");
 
-    // Main circle
+    // Main circle (background / border)
     node.append("circle")
       .attr("r", (d) => d.r)
-      .attr("fill", (d) => COLORS[d.type] + "20")
+      .attr("fill", (d) => d._avatar ? "#111" : COLORS[d.type] + "20")
       .attr("stroke", (d) => COLORS[d.type])
-      .attr("stroke-width", (d) => d.type.startsWith("agent") ? 2 : 1.5);
+      .attr("stroke-width", (d) => d.type.startsWith("agent") || d.type === "ecosystem" ? 2 : 1.5);
 
-    // Inner label
-    node.append("text")
+    // PFP image (only for agent nodes with avatar)
+    node.filter((d) => !!d._avatar)
+      .append("image")
+      .attr("href", (d) => d._avatar)
+      .attr("x", (d) => -d.r + 1).attr("y", (d) => -d.r + 1)
+      .attr("width", (d) => (d.r - 1) * 2).attr("height", (d) => (d.r - 1) * 2)
+      .attr("clip-path", (d) => `url(#clip-${d.id.replace(/[^a-zA-Z0-9]/g, "_")})`)
+      .attr("preserveAspectRatio", "xMidYMid slice")
+      .attr("pointer-events", "none");
+
+    // Inner label (only for nodes WITHOUT avatar, or skill/endorsement)
+    node.filter((d) => !d._avatar)
+      .append("text")
       .text((d) => {
         if (d.type === "skill") return "⚡";
         if (d.type === "endorsement") return "✓";
@@ -346,12 +370,31 @@ export default function TrustGraph() {
       })
       .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
       .attr("fill", (d) => COLORS[d.type])
-      .attr("font-size", (d) => d.type.startsWith("agent") ? Math.max(9, d.r * 0.55) : 9)
+      .attr("font-size", (d) => d.type.startsWith("agent") || d.type === "ecosystem" ? Math.max(9, d.r * 0.55) : 9)
       .attr("font-weight", "700")
       .attr("pointer-events", "none");
 
+    // Trust score overlay (small badge) for nodes WITH avatar
+    node.filter((d) => !!d._avatar && d.trustScore)
+      .append("circle")
+      .attr("cx", (d) => d.r * 0.6).attr("cy", (d) => d.r * 0.6)
+      .attr("r", 8)
+      .attr("fill", "#0d0d0d")
+      .attr("stroke", (d) => COLORS[d.type])
+      .attr("stroke-width", 1)
+      .attr("pointer-events", "none");
+
+    node.filter((d) => !!d._avatar && d.trustScore)
+      .append("text")
+      .text((d) => d.trustScore)
+      .attr("x", (d) => d.r * 0.6).attr("y", (d) => d.r * 0.6)
+      .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
+      .attr("fill", (d) => COLORS[d.type])
+      .attr("font-size", 7).attr("font-weight", "700")
+      .attr("pointer-events", "none");
+
     // Name below
-    node.filter((d) => d.type.startsWith("agent")).append("text")
+    node.filter((d) => d.type.startsWith("agent") || d.type === "ecosystem").append("text")
       .text((d) => d.label.length > 14 ? d.label.slice(0, 13) + "…" : d.label)
       .attr("text-anchor", "middle")
       .attr("y", (d) => d.r + 13)
@@ -510,105 +553,205 @@ export default function TrustGraph() {
     nodes: graphNodes.length,
   } : null;
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Node detail card — shared between mobile bottom sheet and desktop right panel
+  function NodeDetailCard() {
+    if (!selectedNode) return null;
+    const avatar = upProfiles[selectedNode.id]?.profileImage;
+    const nodeColor = COLORS[selectedNode.type];
+
+    return (
+      <div className="space-y-3">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          {avatar ? (
+            <img src={avatar} alt="" className="w-10 h-10 rounded-full object-cover border-2 shrink-0" style={{ borderColor: nodeColor }} />
+          ) : (
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0" style={{ background: `linear-gradient(135deg, ${nodeColor}, ${COLORS.agent_eoa})` }}>
+              {(selectedNode.label || "?")[0].toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-white text-sm truncate">{selectedNode.label}</p>
+            <p className="text-xs" style={{ color: nodeColor }}>{TYPE_LABELS[selectedNode.type]}</p>
+          </div>
+          <button onClick={() => setSelected(null)} className="text-gray-600 hover:text-white shrink-0 p-1">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        {/* Agent registered */}
+        {selectedAgent && (
+          <>
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="bg-lukso-darker rounded-lg p-2">
+                <p className="text-xl font-bold" style={{ color: nodeColor }}>{selectedNode.trustScore}</p>
+                <p className="text-xs text-gray-500">Score</p>
+              </div>
+              <div className="bg-lukso-darker rounded-lg p-2">
+                <p className="text-xl font-bold text-lukso-purple">{selectedAgent.endorsementCount}</p>
+                <p className="text-xs text-gray-500">Endorsed</p>
+              </div>
+            </div>
+            {selectedAgent.description && <p className="text-xs text-gray-400 line-clamp-3">{selectedAgent.description}</p>}
+            <div className="flex flex-col gap-2">
+              <Link to={`/agent/${selectedAgent.address}`} className="w-full text-center text-xs font-medium py-2 rounded-lg bg-lukso-pink/10 text-lukso-pink border border-lukso-pink/20 hover:bg-lukso-pink/20 transition">View Profile</Link>
+              <Link to={`/endorse?target=${selectedAgent.address}`} className="w-full text-center text-xs font-medium py-2 rounded-lg bg-lukso-purple/10 text-lukso-purple border border-lukso-purple/20 hover:bg-lukso-purple/20 transition">Endorse</Link>
+            </div>
+          </>
+        )}
+
+        {/* Ecosystem */}
+        {selectedNode.type === "ecosystem" && (
+          <>
+            {selectedNode.description && <p className="text-xs text-gray-400 line-clamp-3">{selectedNode.description}</p>}
+            {selectedEcoAgent?.twitter && <p className="text-xs text-gray-500">Twitter: <span className="text-gray-300">{selectedEcoAgent.twitter}</span></p>}
+            <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-400">Not yet on Universal Trust</div>
+            <div className="flex flex-col gap-2">
+              <a href={`https://universalprofile.cloud/${selectedNode.id}`} target="_blank" rel="noopener noreferrer" className="w-full text-center text-xs font-medium py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition">View UP Profile →</a>
+              <Link to="/register" className="w-full text-center text-xs font-medium py-2 rounded-lg bg-lukso-pink/10 text-lukso-pink border border-lukso-pink/20 hover:bg-lukso-pink/20 transition">Register on Universal Trust</Link>
+            </div>
+          </>
+        )}
+
+        {/* Skill */}
+        {selectedNode.type === "skill" && (
+          <>
+            {selectedNode.content && <pre className="text-xs text-gray-400 bg-lukso-darker rounded-lg p-2 whitespace-pre-wrap line-clamp-5 font-mono">{selectedNode.content.slice(0, 200)}{selectedNode.content.length > 200 ? "…" : ""}</pre>}
+            <button onClick={() => setSelected(selectedNode.agentAddr)} className="w-full text-center text-xs font-medium py-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition">View Agent</button>
+          </>
+        )}
+
+        {/* Endorsement */}
+        {selectedNode.type === "endorsement" && (
+          <div className="space-y-1 text-xs text-gray-500">
+            {selectedNode.reason && <p className="text-gray-400 italic">"{selectedNode.reason}"</p>}
+            <p>From: <span className="text-gray-300 font-mono">{(selectedNode.from || "").slice(0, 10)}…</span></p>
+            <p>To: <span className="text-gray-300 font-mono">{(selectedNode.to || "").slice(0, 10)}…</span></p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-lukso-darker flex flex-col">
-      <div className="max-w-7xl mx-auto px-4 py-6 w-full flex-1 flex flex-col gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 w-full flex-1 flex flex-col gap-3 sm:gap-4">
 
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-lukso-pink to-lukso-purple bg-clip-text text-transparent mb-1">
-            Trust Graph
-          </h1>
-          <p className="text-gray-500 text-sm">
-            On-chain agent endorsement network — live from LUKSO mainnet. Drag, zoom, click to explore.
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-lukso-pink to-lukso-purple bg-clip-text text-transparent mb-1">
+              Trust Graph
+            </h1>
+            <p className="text-gray-500 text-xs sm:text-sm hidden sm:block">
+              On-chain agent endorsement network — live from LUKSO mainnet.
+            </p>
+          </div>
+          {/* Mobile: sidebar toggle */}
+          <button
+            onClick={() => setSidebarOpen((o) => !o)}
+            className="sm:hidden shrink-0 p-2 rounded-lg bg-lukso-card border border-lukso-border text-gray-400 hover:text-white"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
         </div>
 
         {/* Controls row */}
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           {/* Search */}
-          <div className="relative flex-1 min-w-48 max-w-72">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="relative flex-1 min-w-36">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search nodes…"
-              className="w-full bg-lukso-card border border-lukso-border rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-lukso-pink/50"
+              placeholder="Search…"
+              className="w-full bg-lukso-card border border-lukso-border rounded-lg pl-8 pr-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-lukso-pink/50"
             />
           </div>
 
-          {/* Type filters */}
-          <div className="flex gap-2 flex-wrap">
+          {/* Type filters — scroll horizontally on mobile */}
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
             {Object.entries(COLORS).map(([type, color]) => (
               <button
                 key={type}
                 onClick={() => setFilters((f) => ({ ...f, [type]: !f[type] }))}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                  filters[type]
-                    ? "border-current opacity-100"
-                    : "border-lukso-border opacity-40"
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border whitespace-nowrap transition ${
+                  filters[type] ? "opacity-100" : "opacity-30"
                 }`}
-                style={{ color, borderColor: filters[type] ? color : undefined }}
+                style={{ color, borderColor: color + "66" }}
               >
-                <span className="w-2 h-2 rounded-full inline-block" style={{ background: color }} />
-                {TYPE_LABELS[type]}
+                <span className="w-1.5 h-1.5 rounded-full inline-block shrink-0" style={{ background: color }} />
+                <span className="hidden sm:inline">{TYPE_LABELS[type]}</span>
+                <span className="sm:hidden">{type.replace("agent_", "").replace("ecosystem", "eco")}</span>
               </button>
             ))}
           </div>
 
-          {/* Stats */}
+          {/* Stats — desktop only */}
           {stats && (
-            <div className="ml-auto flex gap-4 text-xs text-gray-600">
-              <span className="text-lukso-pink">{stats.agents} registered</span>
-              <span className="text-emerald-500">{stats.ecosystem} ecosystem</span>
-              <span>{stats.edges} endorsements</span>
-              <span>{stats.skills} skills</span>
+            <div className="hidden md:flex ml-auto gap-3 text-xs text-gray-600 shrink-0">
+              <span className="text-lukso-pink">{stats.agents} reg.</span>
+              <span className="text-emerald-500">{stats.ecosystem} eco</span>
+              <span>{stats.edges} endorse</span>
             </div>
           )}
         </div>
 
-        {/* Main layout: sidebar + graph */}
-        <div className="flex gap-4 flex-1 min-h-0">
+        {/* Main layout */}
+        <div className="flex gap-3 flex-1 min-h-0 relative">
 
-          {/* Left sidebar — explorer */}
-          <div className="w-52 shrink-0 flex flex-col gap-3 overflow-y-auto max-h-[600px]">
-            {/* Node type legend */}
+          {/* Left sidebar — hidden on mobile unless toggled */}
+          <div className={`
+            ${sidebarOpen ? "flex" : "hidden"} sm:flex
+            w-48 shrink-0 flex-col gap-2 overflow-y-auto
+            absolute sm:relative z-20 sm:z-auto
+            bg-lukso-darker sm:bg-transparent
+            inset-y-0 left-0 sm:inset-auto
+            p-3 sm:p-0 shadow-xl sm:shadow-none
+            rounded-r-2xl sm:rounded-none
+            border-r border-lukso-border sm:border-0
+          `}>
+            {/* Close button mobile */}
+            <button onClick={() => setSidebarOpen(false)} className="sm:hidden self-end text-gray-500 hover:text-white p-1">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+
+            {/* Legend */}
             <div className="bg-lukso-card border border-lukso-border rounded-xl p-3">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Legend</p>
               {Object.entries(COLORS).map(([type, color]) => (
                 <div key={type} className="flex items-center gap-2 py-0.5">
-                  <span className="w-3 h-3 rounded-full shrink-0 border" style={{ background: color + "22", borderColor: color }} />
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0 border" style={{ background: color + "22", borderColor: color }} />
                   <span className="text-xs text-gray-400">{TYPE_LABELS[type]}</span>
                 </div>
               ))}
-              <div className="mt-2 pt-2 border-t border-lukso-border text-xs text-gray-600">
-                Node size = trust score
-              </div>
+              <p className="text-xs text-gray-600 mt-2 pt-2 border-t border-lukso-border">Node size = trust score</p>
             </div>
 
             {/* Agent list */}
             {rawData && (
-              <div className="bg-lukso-card border border-lukso-border rounded-xl p-3 flex-1">
+              <div className="bg-lukso-card border border-lukso-border rounded-xl p-3 flex-1 overflow-y-auto">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Registered</p>
-                <div className="space-y-0.5 mb-3">
+                <div className="space-y-0.5 mb-2">
                   {rawData.agents
                     .sort((a, b) => (b.reputation + b.endorsementCount * 10) - (a.reputation + a.endorsementCount * 10))
                     .map((a) => {
                       const name = upProfiles[a.address]?.name || a.name || a.address.slice(0, 8);
                       const score = a.reputation + a.endorsementCount * 10;
                       const type = upProfiles[a.address] ? "agent_up" : "agent_eoa";
-                      const isSelected = selected === a.address;
+                      const avatar = upProfiles[a.address]?.profileImage;
                       return (
-                        <button
-                          key={a.address}
-                          onClick={() => setSelected((p) => p === a.address ? null : a.address)}
-                          className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg transition text-xs ${
-                            isSelected ? "bg-lukso-darker" : "hover:bg-lukso-darker/50"
-                          }`}
-                        >
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: COLORS[type] }} />
+                        <button key={a.address} onClick={() => { setSelected((p) => p === a.address ? null : a.address); setSidebarOpen(false); }}
+                          className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg transition text-xs ${selected === a.address ? "bg-lukso-darker" : "hover:bg-lukso-darker/50"}`}>
+                          {avatar
+                            ? <img src={avatar} alt="" className="w-5 h-5 rounded-full object-cover shrink-0 border" style={{ borderColor: COLORS[type] }} />
+                            : <span className="w-2 h-2 rounded-full shrink-0" style={{ background: COLORS[type] }} />}
                           <span className="truncate text-gray-300 flex-1">{name}</span>
                           <span className="text-gray-600 shrink-0">{score}</span>
                         </button>
@@ -621,16 +764,13 @@ export default function TrustGraph() {
                     <div className="space-y-0.5">
                       {ecosystemAgents.map((a) => {
                         const name = upProfiles[a.address]?.name || a.name || a.address.slice(0, 8);
-                        const isSelected = selected === a.address;
+                        const avatar = upProfiles[a.address]?.profileImage;
                         return (
-                          <button
-                            key={a.address}
-                            onClick={() => setSelected((p) => p === a.address ? null : a.address)}
-                            className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg transition text-xs ${
-                              isSelected ? "bg-lukso-darker" : "hover:bg-lukso-darker/50"
-                            }`}
-                          >
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: COLORS.ecosystem }} />
+                          <button key={a.address} onClick={() => { setSelected((p) => p === a.address ? null : a.address); setSidebarOpen(false); }}
+                            className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg transition text-xs ${selected === a.address ? "bg-lukso-darker" : "hover:bg-lukso-darker/50"}`}>
+                            {avatar
+                              ? <img src={avatar} alt="" className="w-5 h-5 rounded-full object-cover shrink-0 border border-emerald-500/50" />
+                              : <span className="w-2 h-2 rounded-full shrink-0" style={{ background: COLORS.ecosystem }} />}
                             <span className="truncate text-gray-400 flex-1">{name}</span>
                           </button>
                         );
@@ -641,15 +781,17 @@ export default function TrustGraph() {
               </div>
             )}
           </div>
+          {/* Mobile sidebar backdrop */}
+          {sidebarOpen && <div className="fixed inset-0 z-10 sm:hidden" onClick={() => setSidebarOpen(false)} />}
 
-          {/* Graph + panels */}
+          {/* Graph + AI */}
           <div className="flex-1 min-w-0 flex flex-col gap-3">
             {/* Graph canvas */}
-            <div ref={containerRef} className="bg-lukso-card border border-lukso-border rounded-2xl overflow-hidden relative flex-1">
+            <div ref={containerRef} className="bg-lukso-card border border-lukso-border rounded-2xl overflow-hidden relative flex-1 min-h-[300px]">
               {loading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
                   <div className="w-10 h-10 border-4 border-lukso-border border-t-lukso-pink rounded-full animate-spin mb-3" />
-                  <p className="text-gray-400 text-sm">Loading trust graph from chain…</p>
+                  <p className="text-gray-400 text-sm">Loading from chain…</p>
                 </div>
               )}
               {error && (
@@ -657,156 +799,56 @@ export default function TrustGraph() {
                   <p className="text-red-400 text-sm">Error: {error}</p>
                 </div>
               )}
-              <svg ref={svgRef} width={dims.w} height={dims.h} className="w-full" style={{ display: "block" }} />
-
-              {/* Agent discovery badge */}
-              <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-lukso-darker/90 border border-lukso-border rounded-lg px-3 py-1.5 text-xs">
-                <span className="text-lukso-pink font-semibold">🤖</span>
-                <code className="text-gray-400">GET /api/trust-graph</code>
-                <a href="/api/trust-graph" target="_blank" rel="noopener noreferrer" className="text-lukso-purple hover:text-lukso-pink transition">→</a>
+              <svg ref={svgRef} width={dims.w} height={dims.h} className="w-full touch-none" style={{ display: "block" }} />
+              {/* API badge */}
+              <div className="absolute bottom-2 left-2 hidden sm:flex items-center gap-2 bg-lukso-darker/90 border border-lukso-border rounded-lg px-2.5 py-1.5 text-xs">
+                <span className="text-lukso-pink">🤖</span>
+                <code className="text-gray-500">GET /api/trust-graph</code>
+                <a href="/api/trust-graph" target="_blank" rel="noopener noreferrer" className="text-lukso-purple hover:text-lukso-pink">→</a>
               </div>
+              {/* Mobile stats overlay */}
+              {stats && (
+                <div className="absolute top-2 right-2 sm:hidden flex gap-2 text-xs">
+                  <span className="bg-lukso-darker/90 border border-lukso-border rounded px-2 py-1 text-lukso-pink">{stats.agents + stats.ecosystem} agents</span>
+                </div>
+              )}
             </div>
 
-            {/* AI Query interface */}
-            <div className="bg-lukso-card border border-lukso-border rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-md bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-white text-xs font-bold">N</div>
+            {/* Mobile: selected node bottom sheet */}
+            {selectedNode && (
+              <div className="sm:hidden bg-lukso-card border border-lukso-border rounded-xl p-4">
+                <NodeDetailCard />
+              </div>
+            )}
+
+            {/* AI Query */}
+            <div className="bg-lukso-card border border-lukso-border rounded-xl p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-white text-xs font-bold shrink-0">N</div>
                 <span className="text-sm font-semibold text-white">Nexus AI</span>
-                <span className="text-xs text-gray-600">— query the trust network</span>
+                <span className="text-xs text-gray-600 hidden sm:inline">— query the trust network</span>
               </div>
               <form onSubmit={handleAiQuery} className="flex gap-2">
-                <input
-                  value={aiQuery}
-                  onChange={(e) => setAiQuery(e.target.value)}
-                  placeholder="Who has the highest trust score? Which agents have skills? How many endorsements?"
-                  className="flex-1 bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-lukso-pink/50"
-                />
-                <button
-                  type="submit"
-                  disabled={aiLoading || !aiQuery.trim()}
-                  className="px-4 py-2 bg-lukso-pink/10 border border-lukso-pink/30 text-lukso-pink text-sm font-medium rounded-lg hover:bg-lukso-pink/20 transition disabled:opacity-40"
-                >
+                <input value={aiQuery} onChange={(e) => setAiQuery(e.target.value)}
+                  placeholder="Who has the highest score? Which agents have skills?"
+                  className="flex-1 bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-lukso-pink/50 min-w-0" />
+                <button type="submit" disabled={aiLoading || !aiQuery.trim()}
+                  className="px-3 sm:px-4 py-2 bg-lukso-pink/10 border border-lukso-pink/30 text-lukso-pink text-sm font-medium rounded-lg hover:bg-lukso-pink/20 transition disabled:opacity-40 shrink-0">
                   {aiLoading ? "…" : "Ask"}
                 </button>
               </form>
               {aiAnswer && (
-                <pre className="mt-3 text-xs text-gray-300 bg-lukso-darker rounded-lg p-3 whitespace-pre-wrap font-mono leading-relaxed">
+                <pre className="mt-3 text-xs text-gray-300 bg-lukso-darker rounded-lg p-3 whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto">
                   {aiAnswer}
                 </pre>
               )}
             </div>
           </div>
 
-          {/* Right panel — selected node */}
+          {/* Right panel — desktop only */}
           {selectedNode && (
-            <div className="w-56 shrink-0 bg-lukso-card border border-lukso-border rounded-2xl p-4 space-y-4 self-start">
-              {/* Agent panel */}
-              {selectedAgent && (
-                <>
-                  <div className="flex items-center gap-3">
-                    {upProfiles[selectedNode.id]?.profileImage ? (
-                      <img src={upProfiles[selectedNode.id].profileImage} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-lukso-pink" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ background: `linear-gradient(135deg, ${COLORS[selectedNode.type]}, ${COLORS.agent_eoa})` }}>
-                        {(selectedNode.label || "?")[0].toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-semibold text-white text-sm truncate">{selectedNode.label}</p>
-                      <p className="text-xs" style={{ color: COLORS[selectedNode.type] }}>{TYPE_LABELS[selectedNode.type]}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-center">
-                    <div className="bg-lukso-darker rounded-lg p-2">
-                      <p className="text-xl font-bold" style={{ color: COLORS[selectedNode.type] }}>{selectedNode.trustScore}</p>
-                      <p className="text-xs text-gray-500">Score</p>
-                    </div>
-                    <div className="bg-lukso-darker rounded-lg p-2">
-                      <p className="text-xl font-bold text-lukso-purple">{selectedAgent.endorsementCount}</p>
-                      <p className="text-xs text-gray-500">Endorsed</p>
-                    </div>
-                  </div>
-                  {selectedAgent.description && (
-                    <p className="text-xs text-gray-400 line-clamp-3">{selectedAgent.description}</p>
-                  )}
-                  <div className="flex flex-col gap-2">
-                    <Link to={`/agent/${selectedAgent.address}`} className="w-full text-center text-xs font-medium py-2 rounded-lg bg-lukso-pink/10 text-lukso-pink border border-lukso-pink/20 hover:bg-lukso-pink/20 transition">
-                      View Profile
-                    </Link>
-                    <Link to={`/endorse?target=${selectedAgent.address}`} className="w-full text-center text-xs font-medium py-2 rounded-lg bg-lukso-purple/10 text-lukso-purple border border-lukso-purple/20 hover:bg-lukso-purple/20 transition">
-                      Endorse
-                    </Link>
-                  </div>
-                </>
-              )}
-
-              {/* Skill panel */}
-              {selectedNode.type === "skill" && (
-                <>
-                  <div>
-                    <p className="font-semibold text-white text-sm mb-1">⚡ {selectedNode.label}</p>
-                    <p className="text-xs" style={{ color: COLORS.skill }}>Skill</p>
-                  </div>
-                  {selectedNode.content && (
-                    <pre className="text-xs text-gray-400 bg-lukso-darker rounded-lg p-2 whitespace-pre-wrap line-clamp-6 font-mono">{selectedNode.content.slice(0, 300)}{selectedNode.content.length > 300 ? "…" : ""}</pre>
-                  )}
-                  <button onClick={() => setSelected(selectedNode.agentAddr)} className="w-full text-center text-xs font-medium py-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition">
-                    View Agent
-                  </button>
-                </>
-              )}
-
-              {/* Ecosystem agent panel */}
-              {selectedNode.type === "ecosystem" && (
-                <>
-                  <div className="flex items-center gap-3">
-                    {upProfiles[selectedNode.id]?.profileImage ? (
-                      <img src={upProfiles[selectedNode.id].profileImage} alt="" className="w-10 h-10 rounded-full object-cover border-2" style={{borderColor: COLORS.ecosystem}} />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ background: `linear-gradient(135deg, ${COLORS.ecosystem}, #0891b2)` }}>
-                        {(selectedNode.label || "?")[0].toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-semibold text-white text-sm truncate">{selectedNode.label}</p>
-                      <p className="text-xs" style={{ color: COLORS.ecosystem }}>Ecosystem Agent</p>
-                    </div>
-                  </div>
-                  {selectedNode.description && (
-                    <p className="text-xs text-gray-400 line-clamp-4">{selectedNode.description}</p>
-                  )}
-                  {selectedEcoAgent?.twitter && (
-                    <p className="text-xs text-gray-500">Twitter: <span className="text-gray-300">{selectedEcoAgent.twitter}</span></p>
-                  )}
-                  <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-400">
-                    Not yet registered on Universal Trust
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <a
-                      href={`https://universalprofile.cloud/${selectedNode.id}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="w-full text-center text-xs font-medium py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition"
-                    >
-                      View UP Profile →
-                    </a>
-                    <Link to="/register" className="w-full text-center text-xs font-medium py-2 rounded-lg bg-lukso-pink/10 text-lukso-pink border border-lukso-pink/20 hover:bg-lukso-pink/20 transition">
-                      Register on Universal Trust
-                    </Link>
-                  </div>
-                </>
-              )}
-
-              {/* Endorsement panel */}
-              {selectedNode.type === "endorsement" && (
-                <div>
-                  <p className="font-semibold text-white text-sm mb-2">✓ Endorsement</p>
-                  {selectedNode.reason && <p className="text-xs text-gray-400 italic">"{selectedNode.reason}"</p>}
-                  <div className="mt-3 space-y-1 text-xs text-gray-500">
-                    <p>From: <span className="text-gray-300 font-mono">{(selectedNode.from || "").slice(0, 10)}…</span></p>
-                    <p>To: <span className="text-gray-300 font-mono">{(selectedNode.to || "").slice(0, 10)}…</span></p>
-                  </div>
-                </div>
-              )}
+            <div className="hidden sm:block w-52 shrink-0 bg-lukso-card border border-lukso-border rounded-2xl p-4 self-start">
+              <NodeDetailCard />
             </div>
           )}
         </div>
