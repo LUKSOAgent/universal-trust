@@ -3,23 +3,26 @@ import { Link } from "react-router-dom";
 import * as d3 from "d3";
 import { getAllAgents, getEndorsers, getEndorsement, getSkills } from "../useContract";
 import { fetchUPProfiles } from "../envio";
+import { KNOWN_AGENTS, discoverAgentsFromEnvio } from "../agents";
 
 // ─── Color palette ────────────────────────────────────────────────────────────
 const COLORS = {
-  agent_up:        "#FF2975",   // pink  — Universal Profile agent
-  agent_eoa:       "#8B5CF6",   // purple — EOA agent
-  skill:           "#22D3EE",   // cyan  — skill node
-  endorsement:     "#F59E0B",   // amber — endorsement event node
+  agent_up:        "#FF2975",   // pink   — registered UP on Universal Trust
+  agent_eoa:       "#8B5CF6",   // purple — registered EOA on Universal Trust
+  ecosystem:       "#10B981",   // green  — known LUKSO agent, not yet registered
+  skill:           "#22D3EE",   // cyan   — skill node
+  endorsement:     "#F59E0B",   // amber  — endorsement event node
 };
 
 const TYPE_LABELS = {
-  agent_up:    "Universal Profile",
-  agent_eoa:   "EOA Agent",
+  agent_up:    "Registered (UP)",
+  agent_eoa:   "Registered (EOA)",
+  ecosystem:   "LUKSO Ecosystem Agent",
   skill:       "Skill",
   endorsement: "Endorsement",
 };
 
-const NODE_R = { agent_up: 16, agent_eoa: 13, skill: 9, endorsement: 7 };
+const NODE_R = { agent_up: 16, agent_eoa: 13, ecosystem: 11, skill: 9, endorsement: 7 };
 const SCORE_SCALE_MAX = 2.5; // max multiplier for trust score scaling
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -31,12 +34,13 @@ export default function TrustGraph() {
 
   const [rawData, setRawData]     = useState(null); // { agents, edges, skills }
   const [upProfiles, setUpProfiles] = useState({});
+  const [ecosystemAgents, setEcosystemAgents] = useState([]); // agents from Envio, not on Universal Trust
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
 
   const [search, setSearch]       = useState("");
   const [selected, setSelected]   = useState(null); // node id
-  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, skill: true, endorsement: false });
+  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, ecosystem: true, skill: true, endorsement: false });
   const [dims, setDims]           = useState({ w: 900, h: 600 });
 
   // AI Query
@@ -101,6 +105,30 @@ export default function TrustGraph() {
 
         setRawData({ agents: agentList, edges: endorseEdges, skills: skillMap });
 
+        // Load ecosystem agents from Envio (non-blocking)
+        const registeredAddrs = new Set(agentList.map((a) => a.address.toLowerCase()));
+
+        // Start with known curated list immediately
+        const filtered = KNOWN_AGENTS.filter((a) => !registeredAddrs.has(a.address.toLowerCase()));
+        setEcosystemAgents(filtered);
+
+        // Then enrich with live Envio discovery
+        discoverAgentsFromEnvio().then((discovered) => {
+          const unique = discovered.filter((a) => !registeredAddrs.has(a.address.toLowerCase()));
+          // Merge with curated (curated takes precedence for known addresses)
+          const curatedAddrs = new Set(KNOWN_AGENTS.map((a) => a.address.toLowerCase()));
+          const merged = [
+            ...KNOWN_AGENTS.filter((a) => !registeredAddrs.has(a.address.toLowerCase())),
+            ...unique.filter((a) => !curatedAddrs.has(a.address.toLowerCase())),
+          ];
+          setEcosystemAgents(merged);
+
+          // Fetch UP profiles for ecosystem agents too
+          fetchUPProfiles(merged.map((a) => a.address))
+            .then((eco) => setUpProfiles((prev) => ({ ...prev, ...eco })))
+            .catch(() => {});
+        }).catch(() => {});
+
         fetchUPProfiles(agentList.map((a) => a.address))
           .then(setUpProfiles)
           .catch(() => {});
@@ -122,7 +150,7 @@ export default function TrustGraph() {
     const links = [];
     const nodeIds = new Set();
 
-    // Agent nodes
+    // Agent nodes (registered on Universal Trust)
     for (const a of agents) {
       const type = upProfiles[a.address] ? "agent_up" : "agent_eoa";
       if (!filters[type]) continue;
@@ -139,8 +167,29 @@ export default function TrustGraph() {
         reputation: a.reputation,
         description: a.description,
         r: NODE_R[type] * Math.max(1, rScale(score)),
+        registered: true,
       });
       nodeIds.add(a.address);
+    }
+
+    // Ecosystem agents (known LUKSO agents, not yet on Universal Trust)
+    if (filters.ecosystem) {
+      for (const a of ecosystemAgents) {
+        if (nodeIds.has(a.address)) continue; // already registered
+        const name = upProfiles[a.address]?.name || a.name || a.address.slice(0, 8) + "…";
+        nodes.push({
+          id: a.address,
+          type: "ecosystem",
+          label: name,
+          address: a.address,
+          description: a.description || "",
+          twitter: a.twitter || null,
+          tags: a.tags || [],
+          r: NODE_R.ecosystem,
+          registered: false,
+        });
+        nodeIds.add(a.address);
+      }
     }
 
     // Skill nodes
@@ -190,7 +239,7 @@ export default function TrustGraph() {
     }
 
     return { nodes, links };
-  }, [rawData, upProfiles, filters]);
+  }, [rawData, upProfiles, filters, ecosystemAgents]);
 
   // ── Render D3 ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -449,9 +498,13 @@ export default function TrustGraph() {
   const selectedAgent = selectedNode?.type?.startsWith("agent")
     ? rawData?.agents.find((a) => a.address === selectedNode.id)
     : null;
+  const selectedEcoAgent = selectedNode?.type === "ecosystem"
+    ? ecosystemAgents.find((a) => a.address === selectedNode.id)
+    : null;
 
   const stats = rawData ? {
     agents: rawData.agents.length,
+    ecosystem: ecosystemAgents.length,
     edges: rawData.edges.length,
     skills: Object.values(rawData.skills).reduce((s, v) => s + v.length, 0),
     nodes: graphNodes.length,
@@ -508,7 +561,8 @@ export default function TrustGraph() {
           {/* Stats */}
           {stats && (
             <div className="ml-auto flex gap-4 text-xs text-gray-600">
-              <span>{stats.agents} agents</span>
+              <span className="text-lukso-pink">{stats.agents} registered</span>
+              <span className="text-emerald-500">{stats.ecosystem} ecosystem</span>
               <span>{stats.edges} endorsements</span>
               <span>{stats.skills} skills</span>
             </div>
@@ -537,8 +591,8 @@ export default function TrustGraph() {
             {/* Agent list */}
             {rawData && (
               <div className="bg-lukso-card border border-lukso-border rounded-xl p-3 flex-1">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Agents</p>
-                <div className="space-y-1">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Registered</p>
+                <div className="space-y-0.5 mb-3">
                   {rawData.agents
                     .sort((a, b) => (b.reputation + b.endorsementCount * 10) - (a.reputation + a.endorsementCount * 10))
                     .map((a) => {
@@ -561,6 +615,29 @@ export default function TrustGraph() {
                       );
                     })}
                 </div>
+                {ecosystemAgents.length > 0 && (
+                  <>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 pt-2 border-t border-lukso-border">Ecosystem</p>
+                    <div className="space-y-0.5">
+                      {ecosystemAgents.map((a) => {
+                        const name = upProfiles[a.address]?.name || a.name || a.address.slice(0, 8);
+                        const isSelected = selected === a.address;
+                        return (
+                          <button
+                            key={a.address}
+                            onClick={() => setSelected((p) => p === a.address ? null : a.address)}
+                            className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg transition text-xs ${
+                              isSelected ? "bg-lukso-darker" : "hover:bg-lukso-darker/50"
+                            }`}
+                          >
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: COLORS.ecosystem }} />
+                            <span className="truncate text-gray-400 flex-1">{name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -676,6 +753,46 @@ export default function TrustGraph() {
                   <button onClick={() => setSelected(selectedNode.agentAddr)} className="w-full text-center text-xs font-medium py-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition">
                     View Agent
                   </button>
+                </>
+              )}
+
+              {/* Ecosystem agent panel */}
+              {selectedNode.type === "ecosystem" && (
+                <>
+                  <div className="flex items-center gap-3">
+                    {upProfiles[selectedNode.id]?.profileImage ? (
+                      <img src={upProfiles[selectedNode.id].profileImage} alt="" className="w-10 h-10 rounded-full object-cover border-2" style={{borderColor: COLORS.ecosystem}} />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ background: `linear-gradient(135deg, ${COLORS.ecosystem}, #0891b2)` }}>
+                        {(selectedNode.label || "?")[0].toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-semibold text-white text-sm truncate">{selectedNode.label}</p>
+                      <p className="text-xs" style={{ color: COLORS.ecosystem }}>Ecosystem Agent</p>
+                    </div>
+                  </div>
+                  {selectedNode.description && (
+                    <p className="text-xs text-gray-400 line-clamp-4">{selectedNode.description}</p>
+                  )}
+                  {selectedEcoAgent?.twitter && (
+                    <p className="text-xs text-gray-500">Twitter: <span className="text-gray-300">{selectedEcoAgent.twitter}</span></p>
+                  )}
+                  <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-400">
+                    Not yet registered on Universal Trust
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <a
+                      href={`https://universalprofile.cloud/${selectedNode.id}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="w-full text-center text-xs font-medium py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition"
+                    >
+                      View UP Profile →
+                    </a>
+                    <Link to="/register" className="w-full text-center text-xs font-medium py-2 rounded-lg bg-lukso-pink/10 text-lukso-pink border border-lukso-pink/20 hover:bg-lukso-pink/20 transition">
+                      Register on Universal Trust
+                    </Link>
+                  </div>
                 </>
               )}
 
