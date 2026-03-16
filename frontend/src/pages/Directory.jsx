@@ -1,8 +1,31 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import AgentCard from "../components/AgentCard";
-import { getAllAgents, getAgentCount, verifyAgent } from "../useContract";
+import { verifyAgent } from "../useContract";
 import { fetchUPProfiles } from "../envio";
+
+async function loadAgentsFromAPI() {
+  const res = await fetch("/api/trust-graph");
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  const data = await res.json();
+  // Normalize to same shape as getAllAgents()
+  return {
+    agents: (data.nodes || []).map((n) => ({
+      address: n.id,
+      name: n.name,
+      description: n.description || "",
+      metadataURI: n.metadataURI || "",
+      reputation: n.reputation,
+      endorsementCount: n.endorsementCount,
+      trustScore: n.trustScore,
+      registeredAt: n.registeredAt,
+      lastActiveAt: n.lastActiveAt || 0,
+      isActive: n.isActive ?? true,
+      isUP: n.isUP ?? false,
+    })),
+    count: data.meta?.agentCount ?? 0,
+  };
+}
 
 export default function Directory() {
   const [agents, setAgents] = useState([]);
@@ -22,10 +45,7 @@ export default function Directory() {
     try {
       setLoading(true);
       setError(null);
-      const [agentList, totalCount] = await Promise.all([
-        getAllAgents(),
-        getAgentCount(),
-      ]);
+      const { agents: agentList, count: totalCount } = await loadAgentsFromAPI();
       setAgents(agentList);
       setCount(totalCount);
 
@@ -33,7 +53,7 @@ export default function Directory() {
       if (agentList.length > 0) {
         fetchUPProfiles(agentList.map((a) => a.address))
           .then((profiles) => setUpProfiles(profiles))
-          .catch(() => {}); // silently ignore
+          .catch(() => {});
       }
     } catch (err) {
       console.error("Failed to load agents:", err);
