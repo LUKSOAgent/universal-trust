@@ -199,13 +199,15 @@ export default function Endorse() {
       } else if (msg.includes("CannotEndorseSelf")) {
         msg = "You cannot endorse yourself.";
       } else if (msg.includes("NotRegistered")) {
-        msg = "This address is not a registered agent.";
+        msg = "This address is not a registered agent. They need to register first.";
       } else if (msg.includes("AgentNotActive")) {
         msg = "This agent is not currently active.";
+      } else if (msg.includes("EndorserMustBeUniversalProfile") || msg.includes("0x599ccf18")) {
+        msg = "Endorsements require a LUKSO Universal Profile. Connect via the LUKSO UP Browser Extension (not MetaMask). Your connected wallet must be a UP smart contract, not a plain EOA.";
       } else if (msg.includes("user rejected")) {
         msg = "Transaction rejected.";
-      } else if (msg.length > 120) {
-        msg = msg.slice(0, 120) + "...";
+      } else if (msg.length > 200) {
+        msg = msg.slice(0, 200) + "...";
       }
       addToast("error", msg);
       setStatus({ type: "error", msg });
@@ -337,7 +339,13 @@ export default function Endorse() {
           <svg className="w-4 h-4 mt-0.5 shrink-0 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>Requires a connected wallet (LUKSO UP Extension or MetaMask) with LUKSO Mainnet configured. The endorsement transaction costs a small amount of LYX gas.</span>
+          <span>
+            Requires the{" "}
+            <a href="https://chromewebstore.google.com/detail/universal-profiles/abpickdkkbnbcoepogfhkhennhfhehfn" target="_blank" rel="noopener noreferrer" className="text-lukso-purple hover:text-lukso-pink transition">
+              LUKSO UP Browser Extension
+            </a>
+            {" "}connected with your Universal Profile. Plain EOA wallets (MetaMask) cannot endorse — the contract requires a Universal Profile smart contract as the caller. Costs ~0.05 LYX gas.
+          </span>
         </div>
 
         <button
@@ -468,7 +476,40 @@ export default function Endorse() {
             <span className="text-lukso-pink mt-0.5">→</span>
             The target agent must be registered in the <span className="text-lukso-purple font-mono mx-1">AgentIdentityRegistry</span>.
           </li>
+          <li className="flex items-start gap-2">
+            <span className="text-lukso-pink mt-0.5">→</span>
+            <span>
+              <span className="text-white font-medium">Endorser must be a Universal Profile</span> — the contract verifies this on-chain.
+              Plain EOA wallets cannot endorse. Use the{" "}
+              <a href="https://chromewebstore.google.com/detail/universal-profiles/abpickdkkbnbcoepogfhkhennhfhehfn" target="_blank" rel="noopener noreferrer" className="text-lukso-purple hover:text-lukso-pink transition">
+                LUKSO UP Extension
+              </a>.
+            </span>
+          </li>
         </ul>
+      </div>
+
+      {/* Agent script section */}
+      <div className="mt-6 bg-lukso-card border border-lukso-border rounded-xl p-6 animate-fade-in" style={{ animationDelay: "0.25s" }}>
+        <h3 className="text-sm font-semibold text-white uppercase tracking-wide mb-1">Endorse via Script (agents)</h3>
+        <p className="text-xs text-gray-500 mb-4">If you're an AI agent endorsing from your UP programmatically:</p>
+        <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre">{`import { ethers } from 'ethers';
+
+const REGISTRY = '${CONTRACT_ADDRESS}';
+const YOUR_UP  = 'YOUR_UP_ADDRESS';
+const TARGET   = 'TARGET_AGENT_ADDRESS';
+
+const UP_ABI      = ['function execute(uint256,address,uint256,bytes) external payable returns (bytes memory)'];
+const REG_ABI     = ['function endorse(address endorsed, string reason) external'];
+const provider    = new ethers.JsonRpcProvider('https://rpc.mainnet.lukso.network');
+const signer      = new ethers.Wallet(process.env.AGENT_PRIVATE_KEY, provider);
+const up          = new ethers.Contract(YOUR_UP, UP_ABI, signer);
+const regIface    = new ethers.Interface(REG_ABI);
+
+const calldata = regIface.encodeFunctionData('endorse', [TARGET, 'reason']);
+const tx = await up.execute(0, REGISTRY, 0, calldata);
+await tx.wait();
+console.log('Endorsed:', tx.hash);`}</pre>
       </div>
     </div>
   );
