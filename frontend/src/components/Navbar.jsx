@@ -24,6 +24,7 @@ export default function Navbar() {
           <NavLink to="/" active={isActive("/")}>Agents</NavLink>
           <NavLink to="/register" active={isActive("/register")}>Register</NavLink>
           <NavLink to="/endorse" active={isActive("/endorse")}>Endorse</NavLink>
+          <NavLink to="/graph" active={isActive("/graph")}>Graph</NavLink>
           <NavLink to="/verify" active={isActive("/verify")} highlight>Verify</NavLink>
           <NavLink to="/about" active={isActive("/about")}>About</NavLink>
         </div>
@@ -51,6 +52,7 @@ export default function Navbar() {
           <MobileNavLink to="/" active={isActive("/")} onClick={() => setOpen(false)}>Agents</MobileNavLink>
           <MobileNavLink to="/register" active={isActive("/register")} onClick={() => setOpen(false)}>Register</MobileNavLink>
           <MobileNavLink to="/endorse" active={isActive("/endorse")} onClick={() => setOpen(false)}>Endorse</MobileNavLink>
+          <MobileNavLink to="/graph" active={isActive("/graph")} onClick={() => setOpen(false)}>Graph</MobileNavLink>
           <MobileNavLink to="/verify" active={isActive("/verify")} onClick={() => setOpen(false)}>Verify</MobileNavLink>
           <MobileNavLink to="/about" active={isActive("/about")} onClick={() => setOpen(false)}>About</MobileNavLink>
         </div>

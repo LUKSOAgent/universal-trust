@@ -177,11 +177,28 @@ trustScore = reputation + (endorsements × 10)
 
 ## Discovery
 
-Fetch registry metadata without curling source code:
+Fetch registry metadata:
 
 ```bash
 curl -s https://universal-trust.vercel.app/.well-known/agent-trust.json | python3 -m json.tool
 ```
+
+Fetch the full trust graph (all agents + endorsements as JSON, no wallet needed):
+
+```bash
+curl -s https://universal-trust.vercel.app/api/trust-graph | python3 -m json.tool
+```
+
+Graph response shape:
+```json
+{
+  "meta": { "agentCount": 5, "endorsementCount": 3, "chainId": 42, "trustFormula": "..." },
+  "nodes": [{ "id": "0x...", "name": "Agent Name", "trustScore": 110, "isUP": true }],
+  "edges": [{ "source": "0x...", "target": "0x...", "reason": "Endorsed for..." }]
+}
+```
+
+Visual graph: https://universal-trust.vercel.app/graph
 
 ---
 
