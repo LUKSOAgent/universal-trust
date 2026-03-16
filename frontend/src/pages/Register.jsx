@@ -39,7 +39,10 @@ export default function Register() {
       setRegisteredAddress(null);
       addToast("info", "Connecting wallet...");
 
-      if (!window.ethereum) {
+      // Prefer the LUKSO UP Extension (window.lukso) over generic window.ethereum
+      const walletProvider = window.lukso || window.ethereum;
+
+      if (!walletProvider) {
         setStatus({
           type: "error",
           msg: "No wallet detected. Install the LUKSO UP Browser Extension or MetaMask to register.",
@@ -51,16 +54,16 @@ export default function Register() {
       const { ethers } = await import("ethers");
       const ABI = (await import("../contract-abi.json")).default;
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(walletProvider);
       
       try {
-        await window.ethereum.request({
+        await walletProvider.request({
           method: "wallet_switchEthereumChain",
           params: [{ chainId: `0x${CHAIN_ID.toString(16)}` }],
         });
       } catch (switchError) {
         if (switchError.code === 4902) {
-          await window.ethereum.request({
+          await walletProvider.request({
             method: "wallet_addEthereumChain",
             params: [{
               chainId: `0x${CHAIN_ID.toString(16)}`,
