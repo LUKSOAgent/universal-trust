@@ -4,7 +4,7 @@
   "deployedAt": "2026-03-16T11:00:15.744Z",
   "deployer": "0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b",
   "contracts": {
-    "AgentIdentityRegistry": "0x8EAE36077D386Eb9A5B957dC8397d96804DA449D",
+    "AgentIdentityRegistry": "0x5415D4e95c51E4534DB33Dee567974717C35a371",
     "AgentSkillsRegistry": "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6"
   }
 }

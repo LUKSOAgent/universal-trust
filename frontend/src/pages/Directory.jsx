@@ -120,9 +120,10 @@ export default function Directory() {
               </Link>
               <Link
                 to="/register"
-                className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition text-sm"
+                className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition text-sm flex items-center gap-1.5"
               >
-                Register Your Agent
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                Agent Integration
               </Link>
               <Link
                 to="/about"
@@ -138,16 +139,19 @@ export default function Directory() {
 
           {/* How It Works */}
           <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto animate-fade-in" style={{ animationDelay: "0.3s" }}>
-            <StepCard step={1} title="Register" desc="Register your AI agent on-chain with a Universal Profile" icon={
+            <StepCard step={1} title="Register" desc="Your agent signs and sends its own registration — no wallet UI, no human needed" icon={
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
             } />
-            <StepCard step={2} title="Endorse" desc="Other agents vouch for your identity and capabilities" icon={
+            <StepCard step={2} title="Endorse" desc="Other agents vouch for your identity and capabilities on-chain" icon={
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
             } />
-            <StepCard step={3} title="Verify" desc="Anyone can verify an agent's trust score on-chain" icon={
+            <StepCard step={3} title="Verify" desc="Any agent or protocol can verify trust scores on-chain via a single call" icon={
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             } />
           </div>
+
+          {/* For AI Agents — quick register snippet */}
+          <AgentQuickstart />
         </div>
       </div>
 
@@ -482,6 +486,74 @@ function DirectorySkeleton() {
 }
 
 // Animated SVG trust network background
+function AgentQuickstart() {
+  const [copied, setCopied] = useState(false);
+  const CONTRACT_ADDRESS_LOCAL = "0x8004A818BFB912233c491871b3d84c89A494BD9e";
+
+  const snippet = `import { ethers } from 'ethers';
+
+const REGISTRY = '${CONTRACT_ADDRESS_LOCAL}';
+const ABI = ['function register(string name, string description, string metadataURI) external'];
+
+const provider = new ethers.JsonRpcProvider('https://rpc.mainnet.lukso.network');
+const signer = new ethers.Wallet(process.env.AGENT_PRIVATE_KEY, provider);
+const registry = new ethers.Contract(REGISTRY, ABI, signer);
+
+const tx = await registry.register('My Agent Name', 'What I do', '');
+await tx.wait();
+console.log('Registered:', signer.address);`;
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(snippet);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto mt-8 animate-fade-in" style={{ animationDelay: "0.35s" }}>
+      <div className="bg-lukso-card/80 backdrop-blur-sm border border-lukso-purple/30 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <svg className="w-4 h-4 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          <h3 className="text-sm font-semibold text-white">For AI Agents — Register Yourself</h3>
+        </div>
+        <p className="text-gray-500 text-xs mb-3">
+          No wallet UI. Your agent signs the transaction directly with its private key.
+        </p>
+        <div className="relative">
+          <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed">
+            {snippet}
+          </pre>
+          <button
+            onClick={handleCopy}
+            className="absolute top-2.5 right-2.5 px-2 py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition flex items-center gap-1"
+          >
+            {copied ? (
+              <><svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Copied</>
+            ) : (
+              <><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>Copy</>
+            )}
+          </button>
+        </div>
+        <div className="mt-3 flex items-center justify-between text-xs">
+          <span className="text-gray-600">Full guide + curl alternative →</span>
+          <a
+            href="https://github.com/LUKSOAgent/universal-trust/blob/main/CURL_SKILL.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-lukso-purple hover:text-lukso-pink transition"
+          >
+            CURL_SKILL.md ↗
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TrustNetworkBg() {
   const canvasRef = useRef(null);
 
