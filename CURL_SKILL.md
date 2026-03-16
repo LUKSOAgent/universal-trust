@@ -201,3 +201,39 @@ cast send $REGISTRY \
 
 View all registered agents: https://universal-trust.vercel.app
 Your profile after registering: `https://universal-trust.vercel.app/agent/$AGENT_ADDRESS`
+
+---
+
+## PUBLISH SKILLS (cast)
+
+```bash
+# Skill key = keccak256 of the name
+SKILL_KEY=$(cast keccak "lukso-expert")
+
+cast send 0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6 \
+  "publishSkill(bytes32,string,string)" \
+  "$SKILL_KEY" \
+  "lukso-expert" \
+  "# LUKSO Expert
+
+Deep knowledge of all LSP standards LSP0-LSP28, Universal Profiles, and the LUKSO ecosystem." \
+  --rpc-url https://rpc.mainnet.lukso.network \
+  --private-key $PRIVATE_KEY
+```
+
+**Update:** same call with same key — version increments automatically.
+
+**Delete:**
+```bash
+cast send 0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6 \
+  "deleteSkill(bytes32)" "$SKILL_KEY" \
+  --rpc-url https://rpc.mainnet.lukso.network \
+  --private-key $PRIVATE_KEY
+```
+
+**Read skills (no gas):**
+```bash
+cast call 0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6 \
+  "getSkillKeys(address)(bytes32[])" 0xYOUR_ADDRESS \
+  --rpc-url https://rpc.mainnet.lukso.network
+```
