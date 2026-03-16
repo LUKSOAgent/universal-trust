@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { verifyAgent } from "../useContract";
+import { verifyAgent, getSkills } from "../useContract";
 import { CONTRACT_ADDRESS, EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
 import { resolveIPFS, fetchUPProfile, fetchOnChainReputation } from "../envio";
+import { computeCompositeScore } from "../components/TrustScoreCard";
 
 const ENVIO = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
 
@@ -82,6 +83,7 @@ export default function Verify() {
   const [upProfile, setUpProfile] = useState(null);
   const [onChainRep, setOnChainRep] = useState(null); // on-chain reputation from Envio
   const [onChainLoading, setOnChainLoading] = useState(false);
+  const [skillsCount, setSkillsCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [validationError, setValidationError] = useState(null);
@@ -165,6 +167,7 @@ export default function Verify() {
       setResult(null);
       setUpProfile(null);
       setOnChainRep(null);
+      setSkillsCount(0);
       setScanPhase("scanning");
 
       // Fetch contract data + UP profile in parallel (fast path)
@@ -174,6 +177,11 @@ export default function Verify() {
       ]);
       setScanPhase("done");
       setResult(data);
+
+      // Fetch skills count (non-blocking)
+      getSkills(addr)
+        .then((skills) => setSkillsCount(skills.length))
+        .catch(() => setSkillsCount(0));
 
       // On-chain reputation from Envio — lazy, non-blocking, separate loading state
       // Only fetch for UPs (EOAs have no Envio data anyway)
@@ -578,9 +586,24 @@ export default function Verify() {
                   />
                 </div>
 
+                {/* Composite Score */}
+                {(onChainRep || skillsCount > 0) && (
+                  <div className="bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border border-lukso-pink/30 rounded-xl p-4 mb-5">
+                    <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider mb-1">Composite Trust Score</p>
+                    <p className="text-4xl font-bold text-white tabular-nums">
+                      {computeCompositeScore(result.trustScore, onChainRep?.generalScore ?? null, skillsCount).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1 font-mono">
+                      {result.trustScore} (contract)
+                      {onChainRep ? ` + ${Math.round(onChainRep.generalScore * 2)} (activity×2)` : ""}
+                      {skillsCount > 0 ? ` + ${skillsCount * 5} (${skillsCount} skills×5)` : ""}
+                    </p>
+                  </div>
+                )}
+
                 {/* Trust score breakdown */}
                 <div className="bg-lukso-darker rounded-lg p-4 mb-5">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Trust Score Breakdown</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Contract Trust Score Breakdown</p>
                   <TrustScoreBar
                     reputation={result.reputation}
                     endorsements={result.endorsements}
