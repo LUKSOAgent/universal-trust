@@ -136,6 +136,147 @@ export async function fetchUPProfile(address) {
 }
 
 /**
+ * In-memory cache for on-chain reputation (TTL: 5 minutes).
+ * Avoids hammering Envio on repeated lookups for the same address.
+ */
+const _reputationCache = new Map(); // addr → { data, expiry }
+const REPUTATION_TTL = 5 * 60 * 1000; // 5 min
+
+/**
+ * Logarithmic score helper — diminishing returns, same as universal-escrow.
+ * log(1 + value) / log(1 + reference) capped at 1, scaled to maxPoints.
+ */
+function logScore(value, reference, maxPoints) {
+  if (value <= 0) return 0;
+  return Math.min(Math.log(1 + value) / Math.log(1 + reference), 1) * maxPoints;
+}
+
+/**
+ * Fetch on-chain reputation for a single LUKSO address.
+ * One Envio GraphQL call → tx count, followers, assets issued/received, account age.
+ * Results are cached for 5 minutes to avoid repeated fetches.
+ *
+ * Score breakdown (0–100):
+ *   Transactions  35pts  (ref: 2000)
+ *   Followers     20pts  (ref: 500)
+ *   Assets issued 15pts  (ref: 30)
+ *   Assets held   10pts  (ref: 50)
+ *   Following      5pts  (ref: 100)
+ *   Account age   15pts  (ref: 730 days)
+ *
+ * @param {string} address
+ * @returns {Promise<{
+ *   transactionCount: number,
+ *   followersCount: number,
+ *   followingCount: number,
+ *   issuedAssetsCount: number,
+ *   receivedAssetsCount: number,
+ *   profileCreatedAt: string|null,
+ *   accountAge: string|null,
+ *   generalScore: number,
+ *   activityLevel: string,
+ * }|null>}
+ */
+export async function fetchOnChainReputation(address) {
+  if (!address) return null;
+  const addr = address.toLowerCase();
+
+  // Cache hit
+  const cached = _reputationCache.get(addr);
+  if (cached && cached.expiry > Date.now()) return cached.data;
+
+  const query = `
+    query OnChainRep($addr: String!) {
+      Profile(where: { id: { _eq: $addr } }) {
+        transactions_aggregate { aggregate { count } }
+        lsp12IssuedAssets_aggregate { aggregate { count } }
+        lsp5ReceivedAssets_aggregate { aggregate { count } }
+        followed_aggregate { aggregate { count } }
+        following_aggregate { aggregate { count } }
+        createdTimestamp
+      }
+    }
+  `;
+
+  try {
+    const res = await fetch(ENVIO_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, variables: { addr } }),
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return null;
+    const { data, errors } = await res.json();
+    if (errors || !data?.Profile) return null;
+
+    const p = data.Profile[0];
+    if (!p) {
+      // Address exists but no UP — return zeroed data
+      const empty = {
+        transactionCount: 0, followersCount: 0, followingCount: 0,
+        issuedAssetsCount: 0, receivedAssetsCount: 0,
+        profileCreatedAt: null, accountAge: null,
+        generalScore: 0, activityLevel: "No UP",
+      };
+      _reputationCache.set(addr, { data: empty, expiry: Date.now() + REPUTATION_TTL });
+      return empty;
+    }
+
+    const txCount    = p.transactions_aggregate?.aggregate?.count || 0;
+    const issued     = p.lsp12IssuedAssets_aggregate?.aggregate?.count || 0;
+    const received   = p.lsp5ReceivedAssets_aggregate?.aggregate?.count || 0;
+    const followers  = p.followed_aggregate?.aggregate?.count || 0;
+    const following  = p.following_aggregate?.aggregate?.count || 0;
+    const createdTs  = p.createdTimestamp || null;
+
+    let score = 0;
+    score += logScore(txCount,   2000, 35);
+    score += logScore(followers,  500, 20);
+    score += logScore(issued,      30, 15);
+    score += logScore(received,    50, 10);
+    score += logScore(following,  100,  5);
+
+    let accountAge = null;
+    let profileCreatedAt = null;
+    if (createdTs) {
+      profileCreatedAt = new Date(createdTs * 1000).toISOString();
+      const days = Math.floor((Date.now() - createdTs * 1000) / 86400000);
+      score += logScore(days, 730, 15);
+      if (days > 365)     accountAge = `${Math.floor(days / 365)}y ${Math.floor((days % 365) / 30)}m`;
+      else if (days > 30) accountAge = `${Math.floor(days / 30)} months`;
+      else                accountAge = `${days} days`;
+    }
+
+    score = Math.round(score);
+
+    let activityLevel;
+    if (score === 0)      activityLevel = "Inactive";
+    else if (score < 15)  activityLevel = "Newcomer";
+    else if (score < 35)  activityLevel = "Active";
+    else if (score < 60)  activityLevel = "Engaged";
+    else if (score < 80)  activityLevel = "Power User";
+    else                  activityLevel = "OG";
+
+    const result = {
+      transactionCount: txCount,
+      followersCount: followers,
+      followingCount: following,
+      issuedAssetsCount: issued,
+      receivedAssetsCount: received,
+      profileCreatedAt,
+      accountAge,
+      generalScore: score,
+      activityLevel,
+    };
+
+    _reputationCache.set(addr, { data: result, expiry: Date.now() + REPUTATION_TTL });
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Fetch all agents registered on the ERC-8004 Identity Registry on LUKSO.
  * Returns an array of { agentId, owner, agentURI, metadata } objects.
  * Falls back to empty array on any error.

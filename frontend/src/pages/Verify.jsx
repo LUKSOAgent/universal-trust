@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { verifyAgent } from "../useContract";
 import { CONTRACT_ADDRESS, EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
-import { resolveIPFS, fetchUPProfile } from "../envio";
+import { resolveIPFS, fetchUPProfile, fetchOnChainReputation } from "../envio";
 
 const ENVIO = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
 
@@ -80,6 +80,8 @@ export default function Verify() {
   const [inputValue, setInputValue] = useState(searchParams.get("address") || "");
   const [result, setResult] = useState(null);
   const [upProfile, setUpProfile] = useState(null);
+  const [onChainRep, setOnChainRep] = useState(null); // on-chain reputation from Envio
+  const [onChainLoading, setOnChainLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [validationError, setValidationError] = useState(null);
@@ -162,13 +164,24 @@ export default function Verify() {
       setError(null);
       setResult(null);
       setUpProfile(null);
+      setOnChainRep(null);
       setScanPhase("scanning");
+
+      // Fetch contract data + UP profile in parallel (fast path)
       const [data] = await Promise.all([
         verifyAgent(addr),
         fetchUPProfile(addr).then((p) => setUpProfile(p)).catch(() => {}),
       ]);
       setScanPhase("done");
       setResult(data);
+
+      // On-chain reputation from Envio — lazy, non-blocking, separate loading state
+      // Only fetch for UPs (EOAs have no Envio data anyway)
+      setOnChainLoading(true);
+      fetchOnChainReputation(addr)
+        .then((rep) => setOnChainRep(rep))
+        .catch(() => setOnChainRep(null))
+        .finally(() => setOnChainLoading(false));
     } catch (err) {
       setScanPhase(null);
       if (err.message?.includes("network") || err.message?.includes("fetch")) {
@@ -573,6 +586,73 @@ export default function Verify() {
                     endorsements={result.endorsements}
                     trustScore={result.trustScore}
                   />
+                </div>
+
+                {/* On-Chain Reputation (Envio) */}
+                <div className="bg-lukso-darker rounded-lg p-4 mb-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">On-Chain Activity</p>
+                    {onChainLoading && (
+                      <span className="text-xs text-gray-600 animate-pulse">fetching…</span>
+                    )}
+                    {!onChainLoading && onChainRep && (
+                      <span className="text-xs px-2 py-0.5 rounded-full border font-medium"
+                        style={{
+                          borderColor: onChainRep.generalScore >= 60 ? "#A78BFA" : onChainRep.generalScore >= 35 ? "#60A5FA" : "#6B7280",
+                          color:       onChainRep.generalScore >= 60 ? "#A78BFA" : onChainRep.generalScore >= 35 ? "#60A5FA" : "#9CA3AF",
+                        }}>
+                        {onChainRep.activityLevel}
+                      </span>
+                    )}
+                  </div>
+
+                  {!onChainLoading && !onChainRep && (
+                    <p className="text-xs text-gray-600">No Envio data — EOA or not indexed yet.</p>
+                  )}
+
+                  {(onChainLoading || onChainRep) && (
+                    <div className="space-y-2">
+                      {/* Score bar */}
+                      {onChainRep && (
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-gray-500">Activity Score</span>
+                            <span className="text-xs font-mono text-white">{onChainRep.generalScore}<span className="text-gray-600">/100</span></span>
+                          </div>
+                          <div className="h-1.5 bg-lukso-card rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-700"
+                              style={{
+                                width: `${onChainRep.generalScore}%`,
+                                background: onChainRep.generalScore >= 60
+                                  ? "linear-gradient(90deg, #7C3AED, #A78BFA)"
+                                  : onChainRep.generalScore >= 35
+                                  ? "linear-gradient(90deg, #1D4ED8, #60A5FA)"
+                                  : "linear-gradient(90deg, #374151, #6B7280)",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Stats grid */}
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { label: "Transactions",  value: onChainLoading ? "…" : onChainRep?.transactionCount ?? "–" },
+                          { label: "Followers",     value: onChainLoading ? "…" : onChainRep?.followersCount ?? "–" },
+                          { label: "Following",     value: onChainLoading ? "…" : onChainRep?.followingCount ?? "–" },
+                          { label: "Assets Issued", value: onChainLoading ? "…" : onChainRep?.issuedAssetsCount ?? "–" },
+                          { label: "Assets Held",   value: onChainLoading ? "…" : onChainRep?.receivedAssetsCount ?? "–" },
+                          { label: "Account Age",   value: onChainLoading ? "…" : onChainRep?.accountAge ?? "–" },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="bg-lukso-card rounded-lg p-2.5 text-center">
+                            <p className="text-base font-bold font-mono text-white">{value}</p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">{label}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}
