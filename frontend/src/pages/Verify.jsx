@@ -1,17 +1,60 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { verifyAgent } from "../useContract";
 import { CONTRACT_ADDRESS, EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
+import { resolveIPFS } from "../envio";
+
+const ENVIO = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
+
+async function searchProfiles(query) {
+  if (!query || query.length < 2) return [];
+  try {
+    const res = await fetch(ENVIO, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `query {
+          Profile(where: {name: {_ilike: "%${query.replace(/"/g, "")}%"}}, limit: 8) {
+            id name profileImage
+          }
+        }`,
+      }),
+      signal: AbortSignal.timeout(4000),
+    });
+    const { data } = await res.json();
+    return (data?.Profile || []).map((p) => ({
+      address: p.id,
+      name: p.name,
+      avatar: (() => {
+        if (Array.isArray(p.profileImage) && p.profileImage.length > 0) {
+          return resolveIPFS(p.profileImage[0]?.url || p.profileImage[0]?.src || null);
+        }
+        if (typeof p.profileImage === "string") return resolveIPFS(p.profileImage);
+        return null;
+      })(),
+    }));
+  } catch {
+    return [];
+  }
+}
 
 export default function Verify() {
   const [searchParams] = useSearchParams();
   const [address, setAddress] = useState(searchParams.get("address") || "");
+  const [inputValue, setInputValue] = useState(searchParams.get("address") || "");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [validationError, setValidationError] = useState(null);
   const [scanPhase, setScanPhase] = useState(null);
+
+  // UP name resolution
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const suggestTimer = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     document.title = "Trust Scanner — Universal Trust";
@@ -27,10 +70,7 @@ export default function Verify() {
   }, []);
 
   function validateAddress(value) {
-    if (!value) {
-      setValidationError(null);
-      return;
-    }
+    if (!value) { setValidationError(null); return; }
     if (!value.startsWith("0x")) {
       setValidationError("Address must start with 0x");
     } else if (value.length > 2 && !/^0x[0-9a-fA-F]*$/.test(value)) {
@@ -40,6 +80,44 @@ export default function Verify() {
     } else {
       setValidationError(null);
     }
+  }
+
+  function handleInputChange(value) {
+    setInputValue(value);
+    setValidationError(null);
+
+    const isAddr = /^0x[0-9a-fA-F]*$/.test(value);
+
+    if (isAddr) {
+      // Typing an address — no suggestions needed
+      setAddress(value);
+      setSuggestions([]);
+      setShowSuggestions(false);
+      clearTimeout(suggestTimer.current);
+      validateAddress(value);
+    } else if (value.length >= 2) {
+      // Typing a name — debounce Envio lookup
+      setAddress("");
+      clearTimeout(suggestTimer.current);
+      suggestTimer.current = setTimeout(async () => {
+        setResolving(true);
+        const results = await searchProfiles(value);
+        setSuggestions(results);
+        setShowSuggestions(results.length > 0);
+        setResolving(false);
+      }, 300);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }
+
+  function selectSuggestion(suggestion) {
+    setInputValue(suggestion.name);
+    setAddress(suggestion.address);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setValidationError(null);
   }
 
   async function doVerify(addr) {
@@ -67,14 +145,36 @@ export default function Verify() {
   async function handleVerify(e) {
     e.preventDefault();
 
-    const isAddr = /^0x[0-9a-fA-F]{40}$/.test(address);
+    let resolvedAddr = address;
+
+    // If we have a name but no resolved address yet, try to resolve
+    if (!resolvedAddr && inputValue && !inputValue.startsWith("0x")) {
+      setResolving(true);
+      const results = await searchProfiles(inputValue);
+      setResolving(false);
+      if (results.length === 1) {
+        resolvedAddr = results[0].address;
+        setAddress(resolvedAddr);
+        setInputValue(results[0].name);
+      } else if (results.length > 1) {
+        setSuggestions(results);
+        setShowSuggestions(true);
+        setValidationError("Multiple profiles found — select one below.");
+        return;
+      } else {
+        setValidationError(`No Universal Profile found for "${inputValue}"`);
+        return;
+      }
+    }
+
+    const isAddr = /^0x[0-9a-fA-F]{40}$/.test(resolvedAddr);
     if (!isAddr) {
-      setValidationError("Invalid address. Must be a valid 0x... address (42 characters).");
+      setValidationError("Invalid address. Must be a valid 0x... address (42 characters) or a UP name.");
       setResult(null);
       return;
     }
 
-    doVerify(address);
+    doVerify(resolvedAddr);
   }
 
   return (
@@ -98,31 +198,41 @@ export default function Verify() {
         <div className="flex gap-3">
           <div className="relative flex-1">
             <input
+              ref={inputRef}
               type="text"
-              value={address}
-              onChange={(e) => {
-                setAddress(e.target.value);
-                validateAddress(e.target.value);
-              }}
-              placeholder="0x... agent or Universal Profile address"
-              aria-label="Agent address to verify"
-              className={`w-full bg-lukso-card border rounded-lg px-4 py-3 text-white placeholder-gray-600 font-mono text-sm focus:outline-none focus:ring-1 transition ${
+              value={inputValue}
+              onChange={(e) => handleInputChange(e.target.value)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              placeholder="0x... address or UP name (e.g. luksoagent)"
+              aria-label="Agent address or name to verify"
+              autoComplete="off"
+              className={`w-full bg-lukso-card border rounded-lg px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:ring-1 transition ${
                 validationError
                   ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/50"
                   : "border-lukso-border focus:border-lukso-pink focus:ring-lukso-pink/50"
               }`}
             />
-            {address && !loading && (
+            {/* Resolving spinner */}
+            {resolving && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                <svg className="w-4 h-4 animate-spin text-lukso-purple" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              </span>
+            )}
+            {/* Clear button */}
+            {inputValue && !loading && !resolving && (
               <button
                 type="button"
                 onClick={() => {
-                  setAddress("");
-                  setResult(null);
-                  setError(null);
-                  setValidationError(null);
-                  setScanPhase(null);
+                  setInputValue(""); setAddress("");
+                  setResult(null); setError(null);
+                  setValidationError(null); setScanPhase(null);
+                  setSuggestions([]); setShowSuggestions(false);
                 }}
-                aria-label="Clear address"
+                aria-label="Clear"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -130,10 +240,36 @@ export default function Verify() {
                 </svg>
               </button>
             )}
+
+            {/* Autocomplete dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-lukso-card border border-lukso-border rounded-xl overflow-hidden shadow-xl z-50">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.address}
+                    type="button"
+                    onMouseDown={() => selectSuggestion(s)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-lukso-darker/60 transition text-left"
+                  >
+                    {s.avatar ? (
+                      <img src={s.avatar} alt="" className="w-7 h-7 rounded-full object-cover shrink-0 border border-lukso-border" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        {(s.name || "?")[0].toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm text-white font-medium truncate">{s.name}</p>
+                      <p className="text-xs text-gray-600 font-mono truncate">{s.address.slice(0, 14)}…</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || resolving}
             className="px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 disabled:opacity-50 transition whitespace-nowrap shrink-0"
           >
             {loading ? (
@@ -144,28 +280,27 @@ export default function Verify() {
                 </svg>
                 Scanning...
               </span>
-            ) : (
-              "Scan"
-            )}
+            ) : "Scan"}
           </button>
         </div>
         {validationError && (
           <p className="mt-2 text-sm text-red-400">{validationError}</p>
         )}
-        {!result && !loading && !address && (
+        {/* Resolved address indicator */}
+        {address && inputValue && !inputValue.startsWith("0x") && (
+          <p className="mt-2 text-xs text-green-400 flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Resolved to <span className="font-mono">{address.slice(0, 10)}…{address.slice(-6)}</span>
+          </p>
+        )}
+        {!result && !loading && !inputValue && (
           <p className="mt-3 text-xs text-gray-600">
-            Try it:{" "}
-            <button
-              type="button"
-              onClick={() => {
-                setAddress("0x293E96ebbf264ed7715cff2b67850517De70232a");
-                setValidationError(null);
-              }}
-              className="text-lukso-purple hover:text-lukso-pink transition font-mono"
-            >
-              0x293E...0232a
-            </button>
-            {" "}(registered agent)
+            Try:{" "}
+            <button type="button" onClick={() => { setInputValue("luksoagent"); handleInputChange("luksoagent"); }} className="text-lukso-purple hover:text-lukso-pink transition">luksoagent</button>
+            {" · "}
+            <button type="button" onClick={() => { const a = "0x293E96ebbf264ed7715cff2b67850517De70232a"; setInputValue(a); setAddress(a); setValidationError(null); }} className="text-lukso-purple hover:text-lukso-pink transition font-mono">0x293E...0232a</button>
           </p>
         )}
       </form>
