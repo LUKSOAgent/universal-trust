@@ -370,16 +370,48 @@ export default function TrustGraph() {
 
     simRef.current = sim;
 
+    // Detect mutual endorsements: A→B and B→A both exist
+    const endorseSet = new Set(
+      links.filter((l) => l.kind === "endorses")
+        .map((l) => `${l.source?.id || l.source}→${l.target?.id || l.target}`)
+    );
+    const isMutual = (l) => {
+      if (l.kind !== "endorses") return false;
+      const s = l.source?.id || l.source;
+      const t = l.target?.id || l.target;
+      return endorseSet.has(`${s}→${t}`) && endorseSet.has(`${t}→${s}`);
+    };
+
+    // Mutual arrowhead (gold)
+    defs.append("marker")
+      .attr("id", "arrow-mutual")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 24).attr("refY", 0)
+      .attr("markerWidth", 5).attr("markerHeight", 5)
+      .attr("orient", "auto")
+      .append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#F59E0B");
+
     // Links
     const link = g.append("g").selectAll("line")
       .data(links).join("line")
       .attr("class", "g-link")
       .attr("stroke", (d) => {
+        if (isMutual(d)) return "#F59E0B"; // gold for mutual
         const target = nodes.find((n) => n.id === (d.target?.id || d.target));
-        return target ? COLORS[target.type] + "55" : "#ffffff22";
+        return target ? COLORS[target.type] + "66" : "#ffffff22";
       })
-      .attr("stroke-width", (d) => d.kind === "endorses" ? 1.5 : 1)
+      .attr("stroke-width", (d) => {
+        if (isMutual(d)) return 2.5;
+        if (d.kind === "endorses") return 1.2;
+        return 1;
+      })
+      .attr("stroke-dasharray", (d) => {
+        if (isMutual(d)) return null; // solid for mutual
+        if (d.kind === "endorses") return "5,4"; // dashed for one-way
+        return null;
+      })
       .attr("marker-end", (d) => {
+        if (isMutual(d)) return "url(#arrow-mutual)";
         const target = nodes.find((n) => n.id === (d.target?.id || d.target));
         return target ? `url(#arrow-${target.type})` : "none";
       });
@@ -894,7 +926,17 @@ export default function TrustGraph() {
                   <span className="text-xs text-gray-400">{TYPE_LABELS[type]}</span>
                 </div>
               ))}
-              <p className="text-xs text-gray-600 mt-2 pt-2 border-t border-lukso-border">Node size = trust score</p>
+              <div className="mt-2 pt-2 border-t border-lukso-border space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" stroke="#F59E0B" strokeWidth="2.5"/></svg>
+                  <span className="text-xs text-gray-400">Mutual endorsement</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" stroke="#ffffff" strokeWidth="1.2" strokeDasharray="4,3" strokeOpacity="0.5"/></svg>
+                  <span className="text-xs text-gray-400">One-way endorsement</span>
+                </div>
+                <p className="text-xs text-gray-600">Node size = trust score</p>
+              </div>
             </div>
 
             {/* Agent list */}
