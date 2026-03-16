@@ -373,20 +373,33 @@ contract AgentIdentityRegistry {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * @notice Check if an address supports the LSP0 (Universal Profile) interface.
-     *         Uses ERC165 supportsInterface check.
+     * @notice Check if an address is a Universal Profile (ERC725Account).
+     *         Tries multiple detection strategies to support all deployed UP versions:
+     *         1. LSP0 interface ID 0x24871b3a (legacy / some versions)
+     *         2. ERC725Y interface ID 0x629aa694 (present on all LUKSO UPs)
+     *         3. Fallback: contract with code that responds to getData() (ERC725Y duck-typing)
      * @param account The address to check
-     * @return True if the address is a Universal Profile (supports LSP0)
+     * @return True if the address appears to be a Universal Profile
      */
     function isUniversalProfile(address account) public view returns (bool) {
         if (account.code.length == 0) return false; // EOAs are not UPs
 
-        // LSP0ERC725Account interfaceId = 0x24871b3a
+        // Strategy 1: LSP0ERC725Account interfaceId (0x24871b3a) — legacy UP versions
         try IERC165(account).supportsInterface(0x24871b3a) returns (bool supported) {
-            return supported;
-        } catch {
-            return false;
-        }
+            if (supported) return true;
+        } catch {}
+
+        // Strategy 2: ERC725Y interfaceId (0x629aa694) — present on all LUKSO UP deployments
+        try IERC165(account).supportsInterface(0x629aa694) returns (bool supported) {
+            if (supported) return true;
+        } catch {}
+
+        // Strategy 3: Duck-type ERC725Y — call getData(bytes32(0)) and accept any non-revert
+        try IERC725Y(account).getData(bytes32(0)) returns (bytes memory) {
+            return true;
+        } catch {}
+
+        return false;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -522,4 +535,8 @@ contract AgentIdentityRegistry {
 
 interface IERC165 {
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
+}
+
+interface IERC725Y {
+    function getData(bytes32 dataKey) external view returns (bytes memory dataValue);
 }
