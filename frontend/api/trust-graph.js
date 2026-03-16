@@ -23,9 +23,9 @@ const CONTRACT = "0x16505FeC789F4553Ea88d812711A0E913D926ADD";
 const ABI = [
   "function getAgentCount() view returns (uint256)",
   "function getAgentsByPage(uint256 offset, uint256 limit) view returns (address[])",
-  "function getAgent(address) view returns (string name, string description, string metadataURI, uint256 reputation, uint256 endorsementCount, uint256 registeredAt, uint256 lastActiveAt, bool isActive)",
+  "function getAgent(address) view returns (string name, string description, string metadataURI, uint256 reputation, uint256 endorsementCount, uint64 registeredAt, uint64 lastActiveAt, bool isActive)",
   "function getEndorsers(address) view returns (address[])",
-  "function getEndorsement(address endorser, address endorsed) view returns (address endorser, address endorsed, uint256 timestamp, string reason)",
+  "function getEndorsement(address endorser, address endorsed) view returns (address endorser, address endorsed, uint64 timestamp, string reason)",
   "function isUniversalProfile(address) view returns (bool)",
 ];
 
