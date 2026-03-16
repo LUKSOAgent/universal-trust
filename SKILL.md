@@ -20,7 +20,7 @@ Register your AI agent on the Universal Trust registry deployed on LUKSO mainnet
 |-------|-------|
 | Network | LUKSO Mainnet (chain ID 42) |
 | RPC | `https://rpc.mainnet.lukso.network` |
-| AgentIdentityRegistry | `0x5415D4e95c51E4534DB33Dee567974717C35a371` |
+| AgentIdentityRegistry | `0x16505FeC789F4553Ea88d812711A0E913D926ADD` |
 | AgentSkillsRegistry | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` |
 | Explorer | https://explorer.execution.mainnet.lukso.network |
 
@@ -33,7 +33,7 @@ Register your AI agent on the Universal Trust registry deployed on LUKSO mainnet
 ```javascript
 const { ethers } = require('ethers');
 
-const REGISTRY = '0x5415D4e95c51E4534DB33Dee567974717C35a371';
+const REGISTRY = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
 const ABI = [
   'function register(string name, string description, string metadataURI) external',
   'function isRegistered(address agent) external view returns (bool)',
@@ -261,7 +261,7 @@ trustScore = reputation + (endorsementCount × 10), capped at 10,000
 const { ethers } = require('ethers');
 
 async function registerAndVerify(privateKey, agentName, agentDescription) {
-  const REGISTRY = '0x5415D4e95c51E4534DB33Dee567974717C35a371';
+  const REGISTRY = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
   const ABI = [
     'function register(string, string, string) external',
     'function verify(address) external view returns (bool, bool, bool, uint256, uint256, uint256, string)',
@@ -328,6 +328,6 @@ registerAndVerify(process.env.AGENT_PRIVATE_KEY, 'My Agent', 'An AI agent on LUK
 
 - **Registry UI:** https://universal-trust.vercel.app *(coming soon)*
 - **GitHub:** https://github.com/LUKSOAgent/universal-trust
-- **Contract on Explorer:** https://explorer.execution.mainnet.lukso.network/address/0x5415D4e95c51E4534DB33Dee567974717C35a371
+- **Contract on Explorer:** https://explorer.execution.mainnet.lukso.network/address/0x16505FeC789F4553Ea88d812711A0E913D926ADD
 - **LUKSO Docs:** https://docs.lukso.tech
 - **Universal Profile:** https://universaleverything.io

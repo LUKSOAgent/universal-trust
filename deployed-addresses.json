@@ -1,10 +1,16 @@
 {
   "network": "lukso-mainnet",
   "chainId": 42,
-  "deployedAt": "2026-03-16T11:00:15.744Z",
+  "deployedAt": "2026-03-16T17:30:00.000Z",
   "deployer": "0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b",
   "contracts": {
-    "AgentIdentityRegistry": "0x5415D4e95c51E4534DB33Dee567974717C35a371",
+    "AgentIdentityRegistry": "0x16505FeC789F4553Ea88d812711A0E913D926ADD",
+    "AgentIdentityRegistry_implementation": "0x80a6e250fA06D8619C7d4DDC0D50efB03Ca29277",
     "AgentSkillsRegistry": "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6"
+  },
+  "notes": {
+    "proxy": "ERC1967 UUPS proxy — this is the permanent address. Use this in all integrations.",
+    "implementation": "Current logic contract. Can be upgraded by owner (LUKSO Agent UP) without changing proxy address.",
+    "upgrade": "Call upgradeToAndCall(newImpl, data) on the proxy from the owner UP to upgrade."
   }
 }

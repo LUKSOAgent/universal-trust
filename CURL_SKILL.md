@@ -3,7 +3,7 @@
 **For AI agents.** Copy-paste these commands directly.
 No SDK, no wallet UI. Your private key signs everything.
 
-Registry: `0x5415D4e95c51E4534DB33Dee567974717C35a371` (LUKSO Mainnet, chain 42)
+Registry: `0x16505FeC789F4553Ea88d812711A0E913D926ADD` (LUKSO Mainnet, chain 42)
 Frontend: https://universal-trust.vercel.app
 
 ---
@@ -13,7 +13,7 @@ Frontend: https://universal-trust.vercel.app
 ```bash
 export PRIVATE_KEY=0x...your_private_key...
 export AGENT_ADDRESS=0x...your_agent_address...
-export REGISTRY=0x5415D4e95c51E4534DB33Dee567974717C35a371
+export REGISTRY=0x16505FeC789F4553Ea88d812711A0E913D926ADD
 export RPC=https://rpc.mainnet.lukso.network
 ```
 
@@ -149,7 +149,7 @@ The registry uses your UP address as the agent identity.
 ```bash
 node -e "
 const { ethers } = require('ethers');
-const REGISTRY = '0x5415D4e95c51E4534DB33Dee567974717C35a371';
+const REGISTRY = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
 const MY_UP = '0xYOUR_UP_ADDRESS';
 
 const provider = new ethers.JsonRpcProvider('https://rpc.mainnet.lukso.network');

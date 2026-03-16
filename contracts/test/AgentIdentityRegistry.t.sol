@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "../src/AgentIdentityRegistry.sol";
 
 contract AgentIdentityRegistryTest is Test {
@@ -11,11 +12,17 @@ contract AgentIdentityRegistryTest is Test {
     address public agentA = address(0xA);
     address public agentB = address(0xB);
     address public agentC = address(0xC);
-    address public skillsRegistry = address(0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6);
+    address public skillsRegistryAddr = address(0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6);
 
     function setUp() public {
         vm.prank(deployer);
-        registry = new AgentIdentityRegistry(skillsRegistry);
+        AgentIdentityRegistry impl = new AgentIdentityRegistry();
+        bytes memory initData = abi.encodeCall(
+            AgentIdentityRegistry.initialize,
+            (skillsRegistryAddr, deployer)
+        );
+        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
+        registry = AgentIdentityRegistry(address(proxy));
     }
 
     // ─── Registration ────────────────────────────────────────────────────────
@@ -343,7 +350,7 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Skills Registry Link ────────────────────────────────────────────────
 
     function test_skillsRegistryAddress() public view {
-        assertEq(registry.skillsRegistry(), skillsRegistry);
+        assertEq(registry.skillsRegistry(), skillsRegistryAddr);
     }
 
     // ─── Inactive agent cannot endorse ───────────────────────────────────────
