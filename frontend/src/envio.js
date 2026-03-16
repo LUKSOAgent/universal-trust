@@ -69,10 +69,20 @@ export async function fetchUPProfiles(addresses) {
         id
         name
         isEOA
+        description
+        tags
         profileImages {
           url
           width
           height
+        }
+        backgroundImages {
+          url
+          width
+        }
+        links {
+          title
+          url
         }
       }
     }
@@ -95,9 +105,14 @@ export async function fetchUPProfiles(addresses) {
     for (const profile of data.Profile) {
       const addr = profile.id.toLowerCase();
       const imageUrl = pickBestImage(profile.profileImages);
+      const bgUrl = pickBestImage(profile.backgroundImages);
       result[addr] = {
         name: profile.name || null,
         profileImage: imageUrl,
+        backgroundImage: bgUrl,
+        description: profile.description || null,
+        tags: profile.tags || [],
+        links: profile.links || [],
         isUP: profile.isEOA === false, // explicit false = UP; null/true = EOA
       };
     }

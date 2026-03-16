@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { verifyAgent } from "../useContract";
 import { CONTRACT_ADDRESS, EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
-import { resolveIPFS } from "../envio";
+import { resolveIPFS, fetchUPProfile } from "../envio";
 
 const ENVIO = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
 
@@ -79,6 +79,7 @@ export default function Verify() {
   const [address, setAddress] = useState(searchParams.get("address") || "");
   const [inputValue, setInputValue] = useState(searchParams.get("address") || "");
   const [result, setResult] = useState(null);
+  const [upProfile, setUpProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [validationError, setValidationError] = useState(null);
@@ -160,8 +161,12 @@ export default function Verify() {
       setLoading(true);
       setError(null);
       setResult(null);
+      setUpProfile(null);
       setScanPhase("scanning");
-      const data = await verifyAgent(addr);
+      const [data] = await Promise.all([
+        verifyAgent(addr),
+        fetchUPProfile(addr).then((p) => setUpProfile(p)).catch(() => {}),
+      ]);
       setScanPhase("done");
       setResult(data);
     } catch (err) {
@@ -388,9 +393,18 @@ export default function Verify() {
                 </div>
                 <p className="text-xs uppercase tracking-widest text-red-400/70 mb-1">Scan Result</p>
                 <h2 className="text-3xl font-bold text-red-400 mb-2">NOT REGISTERED</h2>
+                {upProfile?.profileImage && (
+                  <img src={upProfile.profileImage} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-red-500/30 mx-auto mb-3" onError={(e) => e.target.style.display="none"} />
+                )}
+                {upProfile?.name && (
+                  <p className="text-lg font-semibold text-white mb-1">{upProfile.name}</p>
+                )}
                 <p className="text-gray-400 mb-1">
                   This address is not in the AgentIdentityRegistry.
                 </p>
+                {upProfile?.description && (
+                  <p className="text-sm text-gray-500 mb-3 max-w-sm mx-auto">{upProfile.description}</p>
+                )}
                 <p className="text-gray-600 text-sm font-mono mb-6">{address}</p>
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <Link
@@ -446,6 +460,78 @@ export default function Verify() {
                   <TrustBadge score={result.trustScore} size="lg" />
                 </div>
               </div>
+
+              {/* UP Profile Metadata */}
+              {upProfile && (upProfile.description || upProfile.backgroundImage || upProfile.tags?.length > 0 || upProfile.links?.length > 0) && (
+                <div className="relative z-10 border-b border-lukso-border overflow-hidden">
+                  {/* Background image banner */}
+                  {upProfile.backgroundImage && (
+                    <div className="relative h-24 overflow-hidden">
+                      <img
+                        src={upProfile.backgroundImage}
+                        alt=""
+                        className="w-full h-full object-cover opacity-40"
+                        onError={(e) => e.target.style.display = "none"}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-lukso-card" />
+                    </div>
+                  )}
+                  <div className={`px-6 pb-4 ${upProfile.backgroundImage ? "-mt-6 relative z-10" : "pt-4"}`}>
+                    {/* Avatar + name row (shows UP avatar if not already in header) */}
+                    {upProfile.profileImage && (
+                      <div className="flex items-center gap-3 mb-3">
+                        <img
+                          src={upProfile.profileImage}
+                          alt={upProfile.name || ""}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-lukso-border shrink-0"
+                          onError={(e) => e.target.style.display = "none"}
+                        />
+                        <div>
+                          {upProfile.name && <p className="font-semibold text-white">{upProfile.name}</p>}
+                          {upProfile.tags?.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-0.5">
+                              {upProfile.tags.map((tag, i) => (
+                                <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-lukso-purple/20 text-lukso-purple border border-lukso-purple/30">{tag}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {/* Description */}
+                    {upProfile.description && (
+                      <p className="text-sm text-gray-300 leading-relaxed mb-3">{upProfile.description}</p>
+                    )}
+                    {/* Tags (if no avatar shown above) */}
+                    {!upProfile.profileImage && upProfile.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {upProfile.tags.map((tag, i) => (
+                          <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-lukso-purple/20 text-lukso-purple border border-lukso-purple/30">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    {/* Links */}
+                    {upProfile.links?.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {upProfile.links.map((link, i) => (
+                          <a
+                            key={i}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-lukso-darker border border-lukso-border text-gray-300 hover:text-white hover:border-lukso-purple/50 transition"
+                          >
+                            <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            {link.title || link.url}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Stats Grid */}
               <div className="relative z-10 p-6">
