@@ -7,10 +7,12 @@
 import { describe, it, expect } from 'vitest';
 import { AgentTrust, AgentTrustError, AgentTrustErrorCode } from '../index';
 
-// Deployed contract on LUKSO mainnet
-const REGISTRY_ADDRESS = '0x8EAE36077D386Eb9A5B957dC8397d96804DA449D';
-const DEPLOYER_ADDRESS = '0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b';
-const UP_ADDRESS = '0x293E96ebbf264ed7715cff2b67850517De70232a';
+// Deployed contract on LUKSO mainnet (v4 UUPS proxy)
+const REGISTRY_ADDRESS = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
+// LUKSO Agent Universal Profile — registered as "LUKSO Agent"
+const DEPLOYER_ADDRESS = '0x293E96ebbf264ed7715cff2b67850517De70232a';
+// Emmet — registered agent, endorsed by LUKSO Agent
+const UP_ADDRESS = '0x1089E1c613Db8Cb91db72be4818632153E62557a';
 
 // Increase timeout for RPC calls
 const TEST_TIMEOUT = 30_000;
@@ -45,7 +47,7 @@ describe('AgentTrust SDK', () => {
         const result = await trust.verify(UP_ADDRESS);
         expect(result.registered).toBe(true);
         expect(result.active).toBe(true);
-        expect(result.name).toBe('LUKSO Agent');
+        expect(result.name).toBe('Emmet');
         expect(result.endorsements).toBeGreaterThanOrEqual(1);
         expect(result.trustScore).toBeGreaterThanOrEqual(110);
       },
@@ -244,12 +246,12 @@ describe('AgentTrust SDK', () => {
     );
 
     it(
-      'should return exists=false for non-existent endorsement',
+      'should return exists=true for Emmet → LUKSO Agent endorsement',
       async () => {
         const result = await trust.getEndorsement(UP_ADDRESS, DEPLOYER_ADDRESS);
-        // UP hasn't endorsed deployer (only deployer endorsed UP)
-        expect(result.exists).toBe(false);
-        expect(result.timestamp).toBe(0);
+        // Emmet has endorsed LUKSO Agent
+        expect(result.exists).toBe(true);
+        expect(result.timestamp).toBeGreaterThan(0);
       },
       TEST_TIMEOUT,
     );
@@ -598,7 +600,7 @@ describe('AgentTrust SDK', () => {
       'should return full profile for UP agent with endorsements',
       async () => {
         const profile = await trust.getProfile(UP_ADDRESS);
-        expect(profile.name).toBe('LUKSO Agent');
+        expect(profile.name).toBe('Emmet');
         expect(profile.isActive).toBe(true);
         expect(profile.endorsementCount).toBeGreaterThanOrEqual(1);
         expect(profile.endorsers.length).toBeGreaterThanOrEqual(1);
