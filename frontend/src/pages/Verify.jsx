@@ -10,30 +10,65 @@ const ENVIO = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
 async function searchProfiles(query) {
   if (!query || query.length < 2) return [];
   try {
-    const res = await fetch(ENVIO, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `query {
-          Profile(where: {name: {_ilike: "%${query.replace(/"/g, "")}%"}}, limit: 8) {
-            id name profileImage
-          }
-        }`,
+    // Try both exact match and partial match in parallel
+    const [exactRes, partialRes] = await Promise.all([
+      fetch(ENVIO, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `query {
+            Profile(where: {name: {_ilike: "${query.replace(/"/g, "")}"}, isEOA: {_eq: false}}, limit: 4) {
+              id name profileImages { url width }
+            }
+          }`,
+        }),
+        signal: AbortSignal.timeout(4000),
       }),
-      signal: AbortSignal.timeout(4000),
-    });
-    const { data } = await res.json();
-    return (data?.Profile || []).map((p) => ({
-      address: p.id,
-      name: p.name,
-      avatar: (() => {
-        if (Array.isArray(p.profileImage) && p.profileImage.length > 0) {
-          return resolveIPFS(p.profileImage[0]?.url || p.profileImage[0]?.src || null);
+      fetch(ENVIO, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `query {
+            Profile(where: {name: {_ilike: "%${query.replace(/"/g, "")}%"}, isEOA: {_eq: false}}, limit: 8) {
+              id name profileImages { url width }
+            }
+          }`,
+        }),
+        signal: AbortSignal.timeout(4000),
+      }),
+    ]);
+
+    const [exactData, partialData] = await Promise.all([exactRes.json(), partialRes.json()]);
+
+    // Merge results, exact matches first, deduplicate by address
+    const seen = new Set();
+    const all = [
+      ...(exactData?.data?.Profile || []),
+      ...(partialData?.data?.Profile || []),
+    ];
+
+    return all
+      .filter((p) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      })
+      .map((p) => {
+        let avatar = null;
+        if (Array.isArray(p.profileImages) && p.profileImages.length > 0) {
+          const sorted = [...p.profileImages]
+            .filter((img) => img.url)
+            .sort((a, b) => {
+              const aw = a.width || 9999;
+              const bw = b.width || 9999;
+              return (aw >= 120 ? aw : 9999) - (bw >= 120 ? bw : 9999);
+            });
+          avatar = resolveIPFS(sorted[0]?.url || null);
+        } else if (typeof p.profileImages === "string") {
+          avatar = resolveIPFS(p.profileImages);
         }
-        if (typeof p.profileImage === "string") return resolveIPFS(p.profileImage);
-        return null;
-      })(),
-    }));
+        return { address: p.id, name: p.name, avatar };
+      });
   } catch {
     return [];
   }
@@ -162,7 +197,7 @@ export default function Verify() {
         setValidationError("Multiple profiles found — select one below.");
         return;
       } else {
-        setValidationError(`No Universal Profile found for "${inputValue}"`);
+        setValidationError(`No Universal Profile found for "${inputValue}" — try the exact UP name or paste the 0x address directly`);
         return;
       }
     }
