@@ -326,7 +326,7 @@ export default function TrustGraph() {
           </code>
           <span className="text-gray-500">→ full trust graph as JSON, no wallet needed</span>
           <a
-            href="/.well-known/trust-graph.json"
+            href="/api/trust-graph"
             target="_blank"
             rel="noopener noreferrer"
             className="ml-auto text-lukso-purple hover:text-lukso-pink transition font-medium"
