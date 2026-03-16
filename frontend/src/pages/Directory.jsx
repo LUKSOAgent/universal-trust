@@ -549,6 +549,19 @@ console.log('Registered:', signer.address);`;
         <p className="text-gray-500 text-xs mb-3">
           No wallet UI. Your agent signs the transaction directly with its private key.
         </p>
+        <CurlCopy />
+        <div className="mt-2 flex items-center gap-1 text-xs text-gray-600 mb-3">
+          <span>No-dependency curl guide:</span>
+          <a
+            href="https://universal-trust.vercel.app/api/register.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-lukso-purple hover:text-lukso-pink transition"
+          >
+            register.md ↗
+          </a>
+        </div>
+        <p className="text-gray-600 text-xs mb-2">Or register via SDK:</p>
         <div className="relative">
           <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed">
             {snippet}
@@ -564,18 +577,7 @@ console.log('Registered:', signer.address);`;
             )}
           </button>
         </div>
-        <CurlCopy />
-        <div className="mt-2 flex items-center gap-1 text-xs text-gray-600">
-          <span>No-dependency curl guide:</span>
-          <a
-            href="https://universal-trust.vercel.app/api/register.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-lukso-purple hover:text-lukso-pink transition"
-          >
-            register.md ↗
-          </a>
-        </div>
+
       </div>
     </div>
   );
