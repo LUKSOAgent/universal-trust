@@ -13,24 +13,26 @@ function upLookup(upProfiles, address) {
 
 // ─── Color palette ────────────────────────────────────────────────────────────
 const COLORS = {
-  agent_up:        "#FF2975",   // pink   — registered UP on Universal Trust
-  agent_eoa:       "#8B5CF6",   // purple — registered EOA on Universal Trust
-  agent_8004:      "#F97316",   // orange — registered on ERC-8004 Identity Registry
-  ecosystem:       "#10B981",   // green  — known LUKSO agent, not yet registered
-  skill:           "#22D3EE",   // cyan   — skill node
-  endorsement:     "#F59E0B",   // amber  — endorsement event node
+  agent_up:          "#FF2975",   // pink   — registered UP on Universal Trust
+  agent_eoa:         "#8B5CF6",   // purple — registered EOA on Universal Trust
+  agent_8004:        "#F97316",   // orange — registered on ERC-8004 Identity Registry
+  ecosystem:         "#10B981",   // green  — known LUKSO agent, not yet registered
+  skill:             "#22D3EE",   // cyan   — skill node
+  endorsement:       "#F59E0B",   // amber  — endorsement event node
+  external_endorser: "#64748B",   // slate  — non-registered endorser (human UP, external)
 };
 
 const TYPE_LABELS = {
-  agent_up:    "Registered (UP)",
-  agent_eoa:   "Registered (EOA)",
-  agent_8004:  "ERC-8004 Agent",
-  ecosystem:   "LUKSO Ecosystem Agent",
-  skill:       "Skill",
-  endorsement: "Endorsement",
+  agent_up:          "Registered (UP)",
+  agent_eoa:         "Registered (EOA)",
+  agent_8004:        "ERC-8004 Agent",
+  ecosystem:         "LUKSO Ecosystem Agent",
+  skill:             "Skill",
+  endorsement:       "Endorsement",
+  external_endorser: "External Endorser",
 };
 
-const NODE_R = { agent_up: 16, agent_eoa: 13, agent_8004: 13, ecosystem: 11, skill: 9, endorsement: 7 };
+const NODE_R = { agent_up: 16, agent_eoa: 13, agent_8004: 13, ecosystem: 11, skill: 9, endorsement: 7, external_endorser: 11 };
 const SCORE_SCALE_MAX = 2.5; // max multiplier for trust score scaling
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -50,7 +52,7 @@ export default function TrustGraph() {
 
   const [search, setSearch]       = useState("");
   const [selected, setSelected]   = useState(null); // node id
-  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: true, ecosystem: true, skill: true, endorsement: false });
+  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: true, ecosystem: true, skill: true, endorsement: false, external_endorser: true });
   const [dims, setDims]           = useState({ w: 900, h: 600 });
 
   // AI Query
@@ -140,7 +142,21 @@ export default function TrustGraph() {
         }).catch(() => {});
 
         fetchUPProfiles(agentList.map((a) => a.address))
-          .then(setUpProfiles)
+          .then((profiles) => {
+            setUpProfiles(profiles);
+            // Also load UP profiles for external endorsers (non-registered endorsers)
+            const registeredAddresses = new Set(agentList.map((a) => a.address.toLowerCase()));
+            const externalEndorsers = [...new Set(
+              endorseEdges
+                .map((e) => e.source)
+                .filter((addr) => !registeredAddresses.has(addr.toLowerCase()))
+            )];
+            if (externalEndorsers.length > 0) {
+              fetchUPProfiles(externalEndorsers)
+                .then((extProfiles) => setUpProfiles((prev) => ({ ...prev, ...extProfiles })))
+                .catch(() => {});
+            }
+          })
           .catch(() => {});
 
         // Load ERC-8004 agents (non-blocking)
@@ -253,6 +269,26 @@ export default function TrustGraph() {
       }
     }
 
+    // External endorser nodes — endorsers not already in the graph
+    if (filters.external_endorser) {
+      for (const e of edges) {
+        if (nodeIds.has(e.source)) continue; // already in graph
+        if (!nodeIds.has(e.target)) continue; // target must exist
+        const upData = upLookup(upProfiles, e.source);
+        const label = upData?.name || (e.source.slice(0, 6) + "…" + e.source.slice(-4));
+        nodes.push({
+          id: e.source,
+          type: "external_endorser",
+          label,
+          address: e.source,
+          r: NODE_R.external_endorser,
+          registered: false,
+          avatar: upData?.avatar || null,
+        });
+        nodeIds.add(e.source);
+      }
+    }
+
     // Endorsement event nodes (optional)
     if (filters.endorsement) {
       for (const e of edges) {
@@ -272,7 +308,7 @@ export default function TrustGraph() {
         links.push({ source: eid, target: e.target, kind: "endorsed-by" });
       }
     } else {
-      // Direct edges
+      // Direct edges (includes external endorsers → registered agents)
       for (const e of edges) {
         if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue;
         links.push({ source: e.source, target: e.target, kind: "endorses", reason: e.reason });
@@ -365,7 +401,7 @@ export default function TrustGraph() {
     nodes.forEach((d) => {
       const key = (d.id || d.address || "").toLowerCase();
       const avatar = upProfiles[key]?.profileImage || upLookup(upProfiles, d.id)?.profileImage || upLookup(upProfiles, d.address)?.profileImage;
-      if (avatar && (d.type === "agent_up" || d.type === "agent_eoa" || d.type === "ecosystem")) {
+      if (avatar && (d.type === "agent_up" || d.type === "agent_eoa" || d.type === "ecosystem" || d.type === "external_endorser")) {
         d._avatar = avatar;
         defs.append("clipPath")
           .attr("id", `clip-${d.id.replace(/[^a-zA-Z0-9]/g, "_")}`)
@@ -694,6 +730,37 @@ export default function TrustGraph() {
             </div>
           </>
         )}
+
+        {/* External Endorser */}
+        {selectedNode.type === "external_endorser" && (() => {
+          const upData = upLookup(upProfiles, selectedNode.address);
+          const endorsedAgents = rawData?.edges
+            ?.filter((e) => e.source.toLowerCase() === selectedNode.address.toLowerCase())
+            .map((e) => {
+              const agent = rawData?.agents?.find((a) => a.address?.toLowerCase() === e.target.toLowerCase());
+              const up = upLookup(upProfiles, e.target);
+              return { address: e.target, name: up?.name || agent?.name || (e.target.slice(0,8) + "…"), avatar: up?.profileImage };
+            }) || [];
+          return (
+            <div className="space-y-3">
+              {upData?.description && <p className="text-xs text-gray-400 line-clamp-3">{upData.description}</p>}
+              <div className="p-2 bg-slate-500/10 border border-slate-500/20 rounded-lg text-xs text-slate-400">
+                Universal Profile — not registered as agent
+              </div>
+              {endorsedAgents.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-500 font-medium">Endorsed agents:</p>
+                  {endorsedAgents.map((a) => (
+                    <EndorserRow key={a.address} label="→" addr={a.address} name={a.name} avatar={a.avatar} color={COLORS.agent_up} onSelect={() => setSelected(a.address)} />
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-col gap-2">
+                <a href={`https://universaleverything.io/${selectedNode.address}`} target="_blank" rel="noopener noreferrer" className="w-full text-center text-xs font-medium py-2 rounded-lg bg-slate-500/10 text-slate-300 border border-slate-500/20 hover:bg-slate-500/20 transition">View UP on UE →</a>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Skill */}
         {selectedNode.type === "skill" && (
