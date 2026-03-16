@@ -6,11 +6,13 @@
   "contracts": {
     "AgentIdentityRegistry": "0x16505FeC789F4553Ea88d812711A0E913D926ADD",
     "AgentIdentityRegistry_implementation": "0x80a6e250fA06D8619C7d4DDC0D50efB03Ca29277",
-    "AgentSkillsRegistry": "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6"
+    "AgentSkillsRegistry": "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6",
+    "ERC8004IdentityRegistry": "0xe30B7514744D324e8bD93157E4c82230d6e6e8f3"
   },
   "notes": {
     "proxy": "ERC1967 UUPS proxy — this is the permanent address. Use this in all integrations.",
     "implementation": "Current logic contract. Can be upgraded by owner (LUKSO Agent UP) without changing proxy address.",
-    "upgrade": "Call upgradeToAndCall(newImpl, data) on the proxy from the owner UP to upgrade."
+    "upgrade": "Call upgradeToAndCall(newImpl, data) on the proxy from the owner UP to upgrade.",
+    "erc8004": "ERC-8004 Identity Registry — LUKSO singleton. agentRegistry = eip155:42:0xe30B7514744D324e8bD93157E4c82230d6e6e8f3. LUKSO Agent = agentId 1."
   }
 }
