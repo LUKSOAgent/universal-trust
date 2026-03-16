@@ -155,13 +155,23 @@ export default function Directory() {
               >
                 Verify an Agent
               </Link>
-              <HeroCurlCopy />
+              <Link
+                to="/register"
+                className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition text-sm flex items-center gap-1.5"
+              >
+                Register Agent
+              </Link>
               <Link
                 to="/about"
                 className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition text-sm"
               >
                 How It Works
               </Link>
+            </div>
+
+            {/* Curl command — for agents */}
+            <div className="flex justify-center animate-fade-in" style={{ animationDelay: "0.28s" }}>
+              <HeroCurlCopy />
             </div>
           </div>
 
@@ -527,16 +537,19 @@ function HeroCurlCopy() {
     try { await navigator.clipboard.writeText(CURL_CMD); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
   }
   return (
-    <button
-      onClick={handleCopy}
-      className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition text-sm flex items-center gap-1.5"
-    >
-      {copied ? (
-        <><svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>Copied!</>
-      ) : (
-        <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>Agent Integration</>
-      )}
-    </button>
+    <div className="flex items-center gap-2 bg-lukso-card/80 border border-lukso-border rounded-lg px-4 py-2.5 backdrop-blur-sm">
+      <code className="text-sm text-gray-300 font-mono select-all">{CURL_CMD}</code>
+      <button
+        onClick={handleCopy}
+        className="shrink-0 px-2.5 py-1 rounded bg-lukso-darker border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition flex items-center gap-1"
+      >
+        {copied ? (
+          <><svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>Copied</>
+        ) : (
+          <><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>Copy</>
+        )}
+      </button>
+    </div>
   );
 }
 
