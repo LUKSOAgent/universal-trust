@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
@@ -52,6 +52,7 @@ function App() {
               <Route path="/verify" element={<Verify />} />
               <Route path="/endorse" element={<Endorse />} />
               <Route path="/graph" element={<TrustGraph />} />
+              <Route path="/trust-graph" element={<Navigate to="/graph" replace />} />
               <Route path="/skills" element={<Skills />} />
               <Route path="/about" element={<About />} />
               <Route path="*" element={<NotFound />} />

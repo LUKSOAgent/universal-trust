@@ -12,16 +12,19 @@ async function searchProfiles(query) {
   if (!query || query.length < 2) return [];
   try {
     // Try both exact match and partial match in parallel
+    // Use GraphQL variables to prevent injection
+    const sanitized = query.replace(/[\\%_]/g, "");
     const [exactRes, partialRes] = await Promise.all([
       fetch(ENVIO, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          query: `query {
-            Profile(where: {name: {_ilike: "${query.replace(/"/g, "")}"}, isEOA: {_eq: false}}, limit: 4) {
+          query: `query SearchExact($name: String!) {
+            Profile(where: {name: {_ilike: $name}, isEOA: {_eq: false}}, limit: 4) {
               id name profileImages { url width }
             }
           }`,
+          variables: { name: sanitized },
         }),
         signal: AbortSignal.timeout(4000),
       }),
@@ -29,11 +32,12 @@ async function searchProfiles(query) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          query: `query {
-            Profile(where: {name: {_ilike: "%${query.replace(/"/g, "")}%"}, isEOA: {_eq: false}}, limit: 8) {
+          query: `query SearchPartial($name: String!) {
+            Profile(where: {name: {_ilike: $name}, isEOA: {_eq: false}}, limit: 8) {
               id name profileImages { url width }
             }
           }`,
+          variables: { name: `%${sanitized}%` },
         }),
         signal: AbortSignal.timeout(4000),
       }),

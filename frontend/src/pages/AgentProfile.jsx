@@ -193,8 +193,10 @@ export default function AgentProfile() {
     );
   }
 
-  const registeredDate = agent ? new Date(Number(agent.registeredAt) * 1000).toLocaleString() : "Unknown";
-  const lastActive = agent ? new Date(Number(agent.lastActiveAt) * 1000).toLocaleString() : "Unknown";
+  const registeredTs = agent ? Number(agent.registeredAt) : 0;
+  const lastActiveTs = agent ? Number(agent.lastActiveAt) : 0;
+  const registeredDate = registeredTs > 0 ? new Date(registeredTs * 1000).toLocaleString() : "Unknown";
+  const lastActive = lastActiveTs > 0 ? new Date(lastActiveTs * 1000).toLocaleString() : "Never";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -454,6 +456,74 @@ export default function AgentProfile() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function SkillCard({ skill }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Extract the description from the YAML frontmatter if present
+  let description = "";
+  if (skill.content) {
+    const fmMatch = skill.content.match(/^---\s*\n([\s\S]*?)\n---/);
+    if (fmMatch) {
+      const descMatch = fmMatch[1].match(/description:\s*(.+)/);
+      if (descMatch) description = descMatch[1].trim();
+    }
+    if (!description) {
+      // Fall back to first non-empty, non-heading line
+      const lines = skill.content.split("\n").filter((l) => l.trim() && !l.startsWith("#") && !l.startsWith("---"));
+      description = lines[0]?.trim() || "";
+    }
+  }
+
+  return (
+    <div className="bg-lukso-darker rounded-lg border border-lukso-border/50 hover:border-lukso-purple/40 transition">
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-lukso-purple text-sm">⚡</span>
+              <h3 className="text-white font-medium truncate">{skill.name}</h3>
+            </div>
+            {description && (
+              <p className="text-gray-400 text-sm mt-1 line-clamp-2">{description}</p>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <span className="px-2 py-0.5 text-xs rounded bg-lukso-purple/20 text-lukso-purple border border-lukso-purple/30">
+              v{skill.version}
+            </span>
+            <span className="text-xs text-gray-500">
+              {skill.updatedAt ? new Date(skill.updatedAt * 1000).toLocaleDateString() : "—"}
+            </span>
+          </div>
+        </div>
+      </div>
+      {skill.content && (
+        <>
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            className="w-full flex items-center justify-between px-4 py-2 border-t border-lukso-border/30 text-xs text-gray-500 hover:text-gray-300 transition"
+          >
+            <span>{expanded ? "Hide skill content" : "Show skill content"}</span>
+            <svg
+              className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {expanded && (
+            <div className="border-t border-lukso-border/30 px-4 py-3 max-h-80 overflow-y-auto">
+              <pre className="text-xs text-gray-400 font-mono whitespace-pre-wrap leading-relaxed">
+                {skill.content}
+              </pre>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

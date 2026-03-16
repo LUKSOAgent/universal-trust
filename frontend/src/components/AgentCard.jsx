@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { Link } from "react-router-dom";
 import TrustBadge from "./TrustBadge";
 import { getSkillCount } from "../useContract";
@@ -28,7 +28,7 @@ export default function AgentCard({ agent, upProfile }) {
   const trustScore = agent.trustScore ?? (agent.reputation + (agent.endorsementCount * 10));
   const compositeScore = computeCompositeScore(trustScore, null, skillCount ?? 0);
   const level = getTrustLevel(compositeScore);
-  const registeredDate = new Date(agent.registeredAt * 1000).toLocaleDateString();
+  const registeredDate = agent.registeredAt > 0 ? new Date(agent.registeredAt * 1000).toLocaleDateString() : "Unknown";
 
   // Use UP name if available and different from registered name
   const displayName = upProfile?.name || agent.name;
@@ -103,10 +103,19 @@ export default function AgentCard({ agent, upProfile }) {
           <MiniTrustBar score={compositeScore} />
         </div>
         
-        <div className="shrink-0 flex flex-col items-center gap-1">
+        <div className="shrink-0 flex flex-col items-center gap-1.5">
           <TrustBadge score={compositeScore} size="md" />
           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${level.bg} ${level.color}`}>
             {level.label}
+          </span>
+          <span className="hidden sm:block">
+            <Link
+              to={`/endorse?address=${agent.address}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] px-2 py-0.5 rounded-md border border-lukso-pink/20 text-lukso-pink hover:bg-lukso-pink/10 transition"
+            >
+              + Endorse
+            </Link>
           </span>
         </div>
       </div>
