@@ -30,14 +30,14 @@ function pickBestImage(profileImages) {
     .sort((a, b) => {
       const aw = a.width || 9999;
       const bw = b.width || 9999;
-      // Prefer images ≥ 120 wide, pick smallest of those
       const aOk = aw >= 120;
       const bOk = bw >= 120;
       if (aOk && !bOk) return -1;
       if (!aOk && bOk) return 1;
       return aw - bw;
     });
-  return sorted[0]?.url || null;
+  const url = sorted[0]?.url || null;
+  return resolveIPFS(url); // always resolve ipfs:// → https://
 }
 
 /**
