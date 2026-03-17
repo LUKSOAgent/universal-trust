@@ -33,6 +33,7 @@ export default async function handler(req, res) {
   // CORS — open for all agents
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
   res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=300");
 
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -60,16 +61,16 @@ export default async function handler(req, res) {
         const isUP = await contract.isUniversalProfile(addr);
         return {
           id: addr,
-          name: a.name,
-          description: a.description,
+          name: a.name || "",
+          description: a.description || "",
           metadataURI: a.metadataURI || "",
           reputation: Number(a.reputation),
           endorsementCount: Number(a.endorsementCount),
           trustScore: Number(a.reputation) + Number(a.endorsementCount) * 10,
           registeredAt: Number(a.registeredAt),
           lastActiveAt: Number(a.lastActiveAt),
-          isActive: a.isActive,
-          isUP,
+          isActive: Boolean(a.isActive),
+          isUP: Boolean(isUP),
         };
       })
     );
@@ -123,7 +124,8 @@ export default async function handler(req, res) {
       edges,
     });
   } catch (err) {
-    console.error("trust-graph error:", err);
-    return res.status(500).json({ error: "Internal server error — failed to fetch trust graph" });
+    // Log error server-side only — never expose stack traces or RPC details to clients
+    console.error("trust-graph error:", err?.message || "unknown");
+    return res.status(500).json({ error: "Failed to fetch trust graph — please try again" });
   }
 }

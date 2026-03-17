@@ -101,7 +101,10 @@ export default function Verify() {
 
   useEffect(() => {
     document.title = "Trust Scanner — Universal Trust";
-    return () => { document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO"; };
+    return () => {
+      document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO";
+      clearTimeout(suggestTimer.current);
+    };
   }, []);
 
   // Auto-verify if address provided via URL
@@ -437,7 +440,7 @@ export default function Verify() {
 
       {/* Result */}
       {result && !loading && (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in" style={{ animationDuration: "0.4s" }}>
           {!result.registered ? (
             /* NOT REGISTERED */
             <div className="bg-lukso-card border border-red-500/30 rounded-xl p-8 text-center relative overflow-hidden">
@@ -631,8 +634,8 @@ export default function Verify() {
                     </p>
                     <p className="text-xs text-gray-500 mt-1 font-mono">
                       {result.trustScore} (contract)
-                      {onChainRep ? ` + ${Math.round(onChainRep.generalScore * 2)} (activity×2)` : ""}
-                      {skillsCount > 0 ? ` + ${skillsCount * 5} (${skillsCount} skills×5)` : ""}
+                      {onChainRep ? ` + ${Math.round(onChainRep.generalScore * 3)} (activity×3)` : ""}
+                      {skillsCount > 0 ? ` + ${Math.min(skillsCount, 20) * 10} (${skillsCount} skills×10)` : ""}
                     </p>
                   </div>
                 )}

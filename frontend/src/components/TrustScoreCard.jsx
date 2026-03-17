@@ -161,7 +161,7 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
         <p className="text-5xl font-bold text-white tabular-nums">{compositeScore.toLocaleString()}</p>
         {onChainScore !== null ? (
           <p className="text-xs text-gray-500 mt-1 font-mono">
-            {trustScore} (contract) + {Math.round(onChainScore * 2)} (activity×2) + {(skillsCount ?? 0) * 5} (skills×5)
+            {trustScore} (contract) + {Math.round(onChainScore * 3)} (activity×3) + {Math.min(skillsCount ?? 0, 20) * 10} (skills×10)
           </p>
         ) : (
           <p className="text-xs text-gray-600 mt-1">Loading on-chain activity…</p>
@@ -295,7 +295,7 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
               <span className="text-xs text-gray-500">Activity Score</span>
               <span className="text-xs font-mono text-white">
                 {onChainRep.generalScore}<span className="text-gray-600">/100</span>
-                <span className="text-gray-500 ml-1">(+{Math.round(onChainRep.generalScore * 2)} composite pts)</span>
+                <span className="text-gray-500 ml-1">(+{Math.round(onChainRep.generalScore * 3)} composite pts)</span>
               </span>
             </div>
             <div className="h-1.5 bg-lukso-darker rounded-full overflow-hidden">

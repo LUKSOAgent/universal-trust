@@ -8,17 +8,26 @@ import { ethers } from "ethers";
 
 /**
  * Compute the composite trust score from all data sources.
- * compositeScore = contractTrustScore + Math.round(onChainScore * 2) + skillsCount * 5
  *
- * @param {number} trustScore - Contract-based trust score
+ * Formula:
+ *   contractTrustScore + Math.round(onChainScore × 3) + Math.min(skillsCount, 20) × 10
+ *
+ * Score ranges (approximate):
+ *   Contract trust: 0–10,000  (reputation + endorsements × 10)
+ *   On-chain activity: 0–300  (Envio score 0–100, ×3 multiplier)
+ *   Skills bonus: 0–200       (up to 20 skills × 10 pts each, capped)
+ *
+ * Total max ≈ 10,500 — displayed prominently on TrustScoreCard, Verify, Directory.
+ *
+ * @param {number} trustScore - Contract-based trust score (from verify())
  * @param {number|null} onChainScore - Envio on-chain activity score (0-100)
  * @param {number} skillsCount - Number of registered skills
  * @returns {number}
  */
 export function computeCompositeScore(trustScore, onChainScore, skillsCount) {
   const onChain = onChainScore ?? 0;
-  const skills = skillsCount ?? 0;
-  return trustScore + Math.round(onChain * 2) + skills * 5;
+  const skills = Math.min(skillsCount ?? 0, 20); // cap at 20 skills to prevent gaming
+  return trustScore + Math.round(onChain * 3) + skills * 10;
 }
 
 const ENVIO_ENDPOINT = "https://envio.lukso-mainnet.universal.tech/v1/graphql";

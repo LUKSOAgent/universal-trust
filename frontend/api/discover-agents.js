@@ -14,6 +14,7 @@ const ENVIO = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
 
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -57,6 +58,7 @@ export default async function handler(req, res) {
       note: "Agents with 'agent' in their UP name or 'ai agent' in description.",
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error("discover-agents error:", err?.message || "unknown");
+    return res.status(500).json({ error: "Failed to discover agents — please try again" });
   }
 }
