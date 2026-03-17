@@ -832,7 +832,7 @@ export default function TrustGraph() {
             {selectedAgent.description && <p className="text-xs text-gray-400 line-clamp-3">{selectedAgent.description}</p>}
             <div className="flex flex-col gap-2">
               <Link to={`/agent/${selectedAgent.address}`} className="w-full text-center text-xs font-medium py-2 rounded-lg bg-lukso-pink/10 text-lukso-pink border border-lukso-pink/20 hover:bg-lukso-pink/20 transition">View Profile</Link>
-              <Link to={`/endorse?target=${selectedAgent.address}`} className="w-full text-center text-xs font-medium py-2 rounded-lg bg-lukso-purple/10 text-lukso-purple border border-lukso-purple/20 hover:bg-lukso-purple/20 transition">Endorse</Link>
+              <Link to={`/endorse?address=${selectedAgent.address}`} className="w-full text-center text-xs font-medium py-2 rounded-lg bg-lukso-purple/10 text-lukso-purple border border-lukso-purple/20 hover:bg-lukso-purple/20 transition">Endorse</Link>
             </div>
           </>
         )}
