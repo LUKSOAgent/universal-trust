@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import * as d3 from "d3";
 import { getAllAgents, getEndorsers, getEndorsement, getSkills } from "../useContract";
@@ -585,15 +585,14 @@ export default function TrustGraph() {
     }
     svg.selectAll(".g-node").attr("opacity", (d) => {
       if (d.id === selected) return 1;
-      const { links } = buildGraph();
-      const connected = links.some((l) => {
+      const connected = graphLinks.some((l) => {
         const s = l.source?.id || l.source;
         const t = l.target?.id || l.target;
         return (s === selected && t === d.id) || (t === selected && s === d.id);
       });
       return connected ? 1 : 0.15;
     });
-  }, [selected, rawData, buildGraph, search]);
+  }, [selected, rawData, graphLinks, search]);
 
   // ── Simple local AI query (no external API — pure data analysis) ───────────
   async function handleAiQuery(e) {
@@ -668,7 +667,11 @@ export default function TrustGraph() {
   }
 
   // ── Selected node detail ───────────────────────────────────────────────────
-  const { nodes: graphNodes } = rawData ? buildGraph() : { nodes: [] };
+  // Memoize graph to avoid rebuilding the entire graph on every render
+  const { nodes: graphNodes, links: graphLinks } = useMemo(() => {
+    if (!rawData) return { nodes: [], links: [] };
+    return buildGraph();
+  }, [rawData, buildGraph]);
   const selectedNode = selected ? graphNodes.find((n) => n.id === selected) : null;
   const selectedAgent = selectedNode?.type?.startsWith("agent")
     ? rawData?.agents.find((a) => a.address === selectedNode.id)

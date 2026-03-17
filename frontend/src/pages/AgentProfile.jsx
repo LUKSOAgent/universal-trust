@@ -126,7 +126,7 @@ export default function AgentProfile() {
       }
     }
     load();
-  }, [address]);
+  }, [address, isValidAddress]);
 
   if (!isValidAddress) {
     return (
@@ -245,9 +245,11 @@ export default function AgentProfile() {
 
       {/* Profile Header */}
       <div className="bg-lukso-card border border-lukso-border rounded-xl overflow-hidden mb-6 animate-fade-in">
-        {/* Verification Banner */}
+        {/* Verification Banner — uses composite score for consistent trust level */}
         {(() => {
-          const lvl = getTrustLevel(verification.trustScore);
+          const onChainScore = onChainRep?.generalScore ?? null;
+          const composite = computeCompositeScore(verification.trustScore, onChainScore, skills.length);
+          const lvl = getTrustLevel(composite);
           return (
             <div className={`flex items-center justify-between px-6 py-2.5 border-b border-lukso-border ${lvl.bg}`}>
               <div className="flex items-center gap-2">
@@ -262,7 +264,7 @@ export default function AgentProfile() {
         })()}
         <div className="p-8">
         <div className="flex flex-col md:flex-row items-start gap-6">
-          <TrustBadge score={verification.trustScore} size="lg" />
+          <TrustBadge score={computeCompositeScore(verification.trustScore, onChainRep?.generalScore ?? null, skills.length)} size="lg" />
           
           <div className="flex-1 min-w-0">
             {/* UP avatar from Envio */}

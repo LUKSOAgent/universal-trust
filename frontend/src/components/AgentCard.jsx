@@ -157,9 +157,9 @@ function AgentCardInner({ agent, upProfile }) {
               compositeScore >= 500 ? "bg-green-500" : compositeScore >= 200 ? "bg-blue-500" : compositeScore >= 100 ? "bg-yellow-500" : "bg-gray-500"
             }`} style={{ zIndex: -1 }} />
           </div>
-          {/* Score tier badge (based on weightedTrustScore or trustScore) */}
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${weightedTier.badgeClass}`}>
-            {weightedTier.label}
+          {/* Trust level badge — consistent with profile page */}
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${level.bg} ${level.color}`}>
+            {level.label}
           </span>
           {/* Weighted trust score (only when it differs from regular trustScore) */}
           {showWeighted && (
@@ -170,10 +170,6 @@ function AgentCardInner({ agent, upProfile }) {
               Weighted: <span className="text-gray-300 font-semibold">{weightedTrustScore}</span>
             </span>
           )}
-          {/* Trust Score label */}
-          <span className="text-[10px] text-gray-600">
-            Score: <span className="text-gray-400">{trustScore}</span>
-          </span>
           <span className="hidden sm:block">
             <Link
               to={`/endorse?address=${agent.address}`}
