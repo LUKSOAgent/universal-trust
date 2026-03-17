@@ -1,0 +1,210 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "agent",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "name": "description",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "name": "timestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "AgentRegistered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "agent",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "name": "description",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "name": "metadataURI",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "name": "timestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "AgentUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "agent",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "timestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "AgentDeactivated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "agent",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "timestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "AgentReactivated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "agent",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "oldReputation",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "newReputation",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "name": "delta",
+        "type": "int256"
+      },
+      {
+        "indexed": false,
+        "name": "reason",
+        "type": "string"
+      }
+    ],
+    "name": "ReputationUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "endorser",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "endorsed",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "reason",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "name": "timestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "EndorsementAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "endorser",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "endorsed",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "timestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "EndorsementRemoved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "updater",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "authorized",
+        "type": "bool"
+      }
+    ],
+    "name": "ReputationUpdaterSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  }
+]

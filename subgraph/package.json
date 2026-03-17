@@ -1,0 +1,25 @@
+{
+  "name": "universal-trust-subgraph",
+  "version": "1.0.0",
+  "description": "The Graph subgraph for indexing AgentIdentityRegistry events on LUKSO",
+  "main": "index.js",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --studio universal-trust"
+  },
+  "keywords": [
+    "lukso",
+    "agent",
+    "identity",
+    "trust",
+    "subgraph",
+    "the-graph"
+  ],
+  "author": "LUKSO Agent",
+  "license": "MIT",
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.90.0",
+    "@graphprotocol/graph-ts": "^0.35.1"
+  }
+}

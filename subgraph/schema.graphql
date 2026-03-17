@@ -1,0 +1,42 @@
+type Agent @entity {
+  id: ID!                    # agent address
+  name: String!
+  description: String
+  metadataURI: String
+  reputation: BigInt!
+  endorsementCount: BigInt!
+  trustScore: BigInt!        # reputation + endorsementCount*10
+  isActive: Boolean!
+  registeredAt: BigInt!
+  lastActiveAt: BigInt!
+  endorsementsGiven: [Endorsement!]! @derivedFrom(field: "endorser")
+  endorsementsReceived: [Endorsement!]! @derivedFrom(field: "endorsed")
+  reputationHistory: [ReputationEvent!]! @derivedFrom(field: "agent")
+}
+
+type Endorsement @entity {
+  id: ID!                    # endorser-endorsed
+  endorser: Agent!
+  endorsed: Agent!
+  reason: String!
+  timestamp: BigInt!
+  active: Boolean!           # false if removed
+}
+
+type ReputationEvent @entity {
+  id: ID!                    # txHash-logIndex
+  agent: Agent!
+  oldReputation: BigInt!
+  newReputation: BigInt!
+  delta: BigInt!
+  reason: String!
+  timestamp: BigInt!
+  type: String!              # "update" | "decay"
+}
+
+type RegistryStats @entity {
+  id: ID!                    # "global"
+  totalAgents: BigInt!
+  totalEndorsements: BigInt!
+  activeAgents: BigInt!
+}
