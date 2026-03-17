@@ -34,8 +34,11 @@ export default async function handler(req, res) {
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(8000),
       });
-      const { data } = await r.json();
+      const json = await r.json();
+      const data = json?.data;
+      if (!data) return; // skip if Envio returned errors or empty response
       const key = Object.keys(data)[0];
+      if (!key) return;
       for (const p of data[key] || []) {
         if (p.id && p.name) {
           results.set(p.id.toLowerCase(), {
