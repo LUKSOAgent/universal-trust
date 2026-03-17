@@ -1,0 +1,47 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  - kind: ethereum
+    name: AgentIdentityRegistry
+    network: lukso
+    # NOTE: LUKSO may require custom node URL configuration in The Graph indexer.
+    # If deploying to The Graph hosted service, verify LUKSO support or use a custom Graph Node.
+    # Proxy address (permanent): 0x16505FeC789F4553Ea88d812711A0E913D926ADD on LUKSO mainnet (chain ID 42)
+    source:
+      address: "0x16505FeC789F4553Ea88d812711A0E913D926ADD"
+      abi: AgentIdentityRegistry
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Agent
+        - Endorsement
+        - ReputationEvent
+        - RegistryStats
+      abis:
+        - name: AgentIdentityRegistry
+          file: ./abis/AgentIdentityRegistry.json
+      eventHandlers:
+        - event: AgentRegistered(indexed address,string,string,uint64)
+          handler: handleAgentRegistered
+        - event: AgentUpdated(indexed address,string,string,string,uint64)
+          handler: handleAgentUpdated
+        - event: AgentDeactivated(indexed address,uint64)
+          handler: handleAgentDeactivated
+        - event: AgentReactivated(indexed address,uint64)
+          handler: handleAgentReactivated
+        - event: ReputationUpdated(indexed address,uint256,uint256,int256,string)
+          handler: handleReputationUpdated
+        - event: EndorsementAdded(indexed address,indexed address,string,uint64)
+          handler: handleEndorsementAdded
+        - event: EndorsementRemoved(indexed address,indexed address,uint64)
+          handler: handleEndorsementRemoved
+        - event: ReputationUpdaterSet(indexed address,bool)
+          handler: handleReputationUpdaterSet
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+      file: ./src/mapping.ts
