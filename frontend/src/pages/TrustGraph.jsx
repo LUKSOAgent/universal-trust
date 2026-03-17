@@ -154,7 +154,7 @@ export default function TrustGraph() {
           })
           .catch(() => {});
 
-        setRawData({ agents: agentList, edges: endorseEdges, skills: skillMap });
+        setRawData({ agents: agentList, edges: endorseEdges, lsp26Edges: [], skills: skillMap });
 
         // Load ecosystem agents from Envio (non-blocking)
         const registeredAddrs = new Set(agentList.map((a) => a.address.toLowerCase()));
