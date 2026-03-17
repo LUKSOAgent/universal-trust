@@ -113,11 +113,12 @@ export default function Verify() {
   }, []);
 
   // Auto-verify if address provided via URL
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const doVerifyRef = useRef(doVerify);
+  doVerifyRef.current = doVerify;
   useEffect(() => {
     const urlAddr = searchParams.get("address");
     if (urlAddr && /^0x[0-9a-fA-F]{40}$/.test(urlAddr)) {
-      doVerify(urlAddr);
+      doVerifyRef.current(urlAddr);
     }
   }, [searchParams]);
 
@@ -394,11 +395,11 @@ export default function Verify() {
           <div className="mt-3">
             <p className="text-xs text-gray-600 mb-3">
               Try a demo:{" "}
-              <button type="button" onClick={() => { setInputValue("luksoagent"); handleInputChange("luksoagent"); }} className="text-lukso-purple hover:text-lukso-pink transition font-medium">luksoagent</button>
+              <button type="button" onClick={async () => { setInputValue("luksoagent"); const results = await searchProfiles("luksoagent"); if (results.length > 0) { setAddress(results[0].address); setInputValue(results[0].name); doVerify(results[0].address); } }} className="text-lukso-purple hover:text-lukso-pink transition font-medium">luksoagent</button>
               {" · "}
-              <button type="button" onClick={() => { setInputValue("emmet"); handleInputChange("emmet"); }} className="text-lukso-purple hover:text-lukso-pink transition font-medium">emmet</button>
+              <button type="button" onClick={async () => { setInputValue("emmet"); const results = await searchProfiles("emmet"); if (results.length > 0) { setAddress(results[0].address); setInputValue(results[0].name); doVerify(results[0].address); } }} className="text-lukso-purple hover:text-lukso-pink transition font-medium">emmet</button>
               {" · "}
-              <button type="button" onClick={() => { const a = "0x293E96ebbf264ed7715cff2b67850517De70232a"; setInputValue(a); setAddress(a); setValidationError(null); }} className="text-lukso-purple hover:text-lukso-pink transition font-mono">0x293E...0232a</button>
+              <button type="button" onClick={() => { const a = "0x293E96ebbf264ed7715cff2b67850517De70232a"; setInputValue(a); setAddress(a); setValidationError(null); doVerify(a); }} className="text-lukso-purple hover:text-lukso-pink transition font-mono">0x293E...0232a</button>
             </p>
             {/* What you'll see preview — enhanced with data source badges */}
             <div className="bg-lukso-card/50 border border-lukso-border/50 rounded-xl p-5 text-center">
