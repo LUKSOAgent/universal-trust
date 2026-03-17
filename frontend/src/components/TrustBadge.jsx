@@ -54,6 +54,7 @@ export default function TrustBadge({ score, size = "md" }) {
         )}
         <div
           className={`${sizeClasses[size]} rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white shadow-lg ${glowColor} relative z-10`}
+          title={`Trust Score: ${score}`}
         >
           {score}
         </div>

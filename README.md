@@ -65,7 +65,7 @@ Real use cases enabled today:
   │                                                                    │
   │  ┌─────────────────────────────┐  ┌──────────────────────────┐  │
   │  │   AgentIdentityRegistry     │  │   AgentSkillsRegistry    │  │
-  │  │   0x1581BA9Fb480b72...      │  │   0x64B3AeCE25B73...     │  │
+  │  │   0x16505FeC789F4553...     │  │   0x64B3AeCE25B73...     │  │
   │  │                             │  │                           │  │
   │  │  register()                 │  │  publishSkill()          │  │
   │  │  verify()  ←── one call    │  │  getSkill()              │  │
@@ -92,18 +92,28 @@ Real use cases enabled today:
 ## Trust Score Formula
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                                                       │
-│   trustScore = reputation + (endorsementCount × 10)  │
-│                                                       │
-│   reputation:     starts at 100, range 0–10,000      │
-│   endorsements:   each peer endorsement adds +10      │
-│   Universal Profile: ERC165 check, no score bonus     │
-│                                                       │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                   │
+│   trustScore = reputation + (endorsementCount × 10)              │
+│                                                                   │
+│   weightedTrustScore = reputation                                 │
+│     + Σ clamp(endorserReputation / 10, 10, 50) per endorser      │
+│     (capped at 10,000)                                            │
+│                                                                   │
+│   lsp26Score = registeredFollowersCount × 5  (API only)          │
+│                                                                   │
+│   reputation:     starts at 100, range 0–10,000                  │
+│   endorsements:   each UP endorsement adds +10 (flat)            │
+│                   or up to +50 (weighted, based on endorser rep)  │
+│   Endorsers MUST be Universal Profiles (EOAs are rejected)        │
+│                                                                   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 Example: An agent with `reputation=200` endorsed by 8 peers has `trustScore = 200 + 80 = 280`.
+
+V2 weighted example: Same agent endorsed by 2 high-rep agents (rep=500) + 6 new agents (rep=100):
+`weightedTrustScore = 200 + (2×50) + (6×10) = 200 + 100 + 60 = 360`
 
 ---
 
@@ -111,7 +121,7 @@ Example: An agent with `reputation=200` endorsed by 8 peers has `trustScore = 20
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| AgentIdentityRegistry | `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7` | [View ✓ Verified →](https://explorer.execution.mainnet.lukso.network/address/0x1581BA9Fb480b72df3e54f51f851a644483c6ec7) |
+| AgentIdentityRegistry (proxy) | `0x16505FeC789F4553Ea88d812711A0E913D926ADD` | [View ✓ Verified →](https://explorer.execution.mainnet.lukso.network/address/0x16505FeC789F4553Ea88d812711A0E913D926ADD) |
 | AgentSkillsRegistry | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` | [View →](https://explorer.execution.mainnet.lukso.network/address/0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6) |
 
 ### Try it now (no wallet needed):
@@ -125,6 +135,9 @@ const t = new AgentTrust({});
 t.getAgentCount().then(n => console.log('Registered agents:', n));
 t.verify('0x293E96ebbf264ed7715cff2b67850517De70232a').then(v => console.log(v));
 "
+
+# Or via Trust Graph API (no SDK, no wallet):
+curl https://universal-trust.vercel.app/api/trust-graph | jq '.nodes[] | {name, id, trustScore, weightedTrustScore, lsp26Score}'
 ```
 
 ---
@@ -203,14 +216,40 @@ The `AgentIdentityRegistry` contract:
 |----------|-------------|
 | `register(name, description, metadataURI)` | Register as an agent |
 | `verify(address)` | Get complete trust summary (1 call) |
-| `endorse(address, reason)` | Endorse another registered agent |
-| `getTrustScore(address)` | Get composite trust score |
+| `verifyV2(address)` | V2: like verify() but also returns weightedTrustScore |
+| `endorse(address, reason)` | Endorse another agent (caller must be a Universal Profile) |
+| `removeEndorsement(address)` | Revoke a previously-given endorsement |
+| `getTrustScore(address)` | Flat trust score: reputation + endorsements×10 |
+| `getWeightedTrustScore(address)` | V2: endorser-reputation-weighted trust score |
 | `getAgent(address)` | Get full agent identity data |
 | `getEndorsers(address)` | Get all agents who endorsed this one |
 | `isUniversalProfile(address)` | Check if address is a LUKSO UP |
 | `getAgentsByPage(offset, limit)` | Paginate the agent registry |
+| `linkBaseAddress(address)` | Link Base chain EOA (one-time; +50 rep via keeper if 50M tokens held) |
+| `clearBaseAddress(address)` | Owner-only: clear a linked Base address |
+| `getBaseAddress(address)` | Get the linked Base address for an agent |
+| `applyDecay(address)` | Apply inactivity decay (permissionless, anyone can call) |
+| `setDecayParams(rate, gracePeriod)` | Owner-only: configure decay rate and grace period |
+| `deactivate()` / `reactivate()` | Toggle agent active status |
 
 ---
+
+## V2 Features
+
+The contract is a UUPS upgradeable proxy at `0x16505FeC789F4553Ea88d812711A0E913D926ADD`. V2 added:
+
+| Feature | Description |
+|---------|-------------|
+| **Weighted trust score** | `getWeightedTrustScore()` / `verifyV2()` — endorsements from high-rep agents count more |
+| **Base token gating** | `linkBaseAddress()` — link Base EOA; keeper grants +50 rep for 50M+ $LUKSO token holders |
+| **Reputation decay** | `applyDecay()` — inactive agents lose 1 rep/day after 30-day grace (enabled by default) |
+| **Remove endorsement** | `removeEndorsement()` — revoke an endorsement you gave |
+| **LSP26 social score** | Trust Graph API computes `lsp26Score = registeredFollowersCount × 5` |
+| **TrustedAgentGate** | Solidity helper for gating contract functions by trust score |
+
+**Endorser restriction (V2):** `endorse()` now requires the caller to be a Universal Profile. EOA wallets are rejected with `EndorserMustBeUniversalProfile`.
+
+**Decay is live:** `decayRate=1`, `decayGracePeriod=30 days`. Anyone can call `applyDecay(agent)` to enforce it.
 
 ## Phase 3 — Agent-to-Agent Trust Demo
 
@@ -342,7 +381,7 @@ LUKSO's Universal Profiles are the ideal identity primitive for AI agents:
 
 1. **Native identity**: UPs have built-in metadata, permissions, and key management
 2. **Permission system**: LSP6 KeyManager lets agents delegate actions safely
-3. **Social graph**: LSP26 Followers creates a pre-existing trust network
+3. **Social graph**: LSP26 Followers is integrated — the Trust Graph API queries LSP26 to compute a social score from registered followers
 4. **Metadata standards**: LSP3 Profile Metadata provides structured identity
 5. **EVM compatible**: Works with all existing Ethereum tooling
 

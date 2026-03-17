@@ -1,9 +1,38 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, memo, useRef } from "react";
 import { Link } from "react-router-dom";
 import TrustBadge from "./TrustBadge";
 import { getSkillCount, getContract, getProvider } from "../useContract";
 import { computeCompositeScore } from "../envio";
 import { getTrustLevel } from "./TrustScoreCard";
+
+/**
+ * Score breakdown tooltip — shows on hover over the trust score badge.
+ * Displays: Contract | Activity | Skills | Social factors.
+ */
+function ScoreTooltip({ trustScore, onChainScore, skillCount, lsp26Score, compositeScore, visible }) {
+  if (!visible) return null;
+  const activityPts = onChainScore !== null && onChainScore !== undefined ? Math.round(onChainScore * 3) : null;
+  const skillPts = Math.min(skillCount ?? 0, 20) * 10;
+  return (
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none animate-fade-in">
+      <div className="bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 shadow-xl whitespace-nowrap">
+        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-semibold">Score Breakdown</p>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-lukso-purple">Contract: <span className="text-white font-semibold">{trustScore}</span></span>
+          <span className="text-gray-600">|</span>
+          <span className="text-blue-400">Activity: <span className="text-white font-semibold">{activityPts !== null ? activityPts : "…"}</span></span>
+          <span className="text-gray-600">|</span>
+          <span className="text-amber-400">Skills: <span className="text-white font-semibold">{skillPts}</span></span>
+          <span className="text-gray-600">|</span>
+          <span className="text-emerald-400">Social: <span className="text-white font-semibold">{lsp26Score ?? 0}</span></span>
+        </div>
+        <p className="text-[10px] text-gray-600 mt-1">Total: {compositeScore}</p>
+      </div>
+      {/* Arrow */}
+      <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-lukso-darker border-r border-b border-lukso-border rotate-45" />
+    </div>
+  );
+}
 
 /**
  * Improved trust tier mapping with distinct colors and access levels.
@@ -106,14 +135,19 @@ function MiniTrustBar({ score }) {
 function AgentCardInner({ agent, upProfile }) {
   const [skillCount, setSkillCount] = useState(null);
   const [decayLoading, setDecayLoading] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
   const trustScore = agent.trustScore ?? (agent.reputation + (agent.endorsementCount * 10));
   const weightedTrustScore = agent.weightedTrustScore ?? null;
   // Use pre-computed composite from Directory if available (includes Envio activity score)
-  const compositeScore = agent.composite ?? computeCompositeScore(trustScore, agent.onChainScore ?? null, skillCount ?? agent.skillCount ?? 0, agent.lsp26Score ?? 0);
+  const effectiveSkillCount = skillCount ?? agent.skillCount ?? 0;
+  const effectiveLsp26Score = agent.lsp26Score ?? 0;
+  const compositeScore = agent.composite ?? computeCompositeScore(trustScore, agent.onChainScore ?? null, effectiveSkillCount, effectiveLsp26Score);
   const level = getTrustLevel(compositeScore);
   const improvedTier = getImprovedTrustTier(compositeScore);
   const showWeighted = weightedTrustScore !== null && weightedTrustScore !== trustScore;
   const registeredDate = agent.registeredAt > 0 ? new Date(agent.registeredAt * 1000).toLocaleDateString() : "Unknown";
+  // Loading state: composite data hasn't arrived yet
+  const isCompositeLoading = agent.composite === undefined && agent.onChainScore === undefined;
 
   // Use UP name if available and different from registered name
   const displayName = upProfile?.name || agent.name;
@@ -166,8 +200,8 @@ function AgentCardInner({ agent, upProfile }) {
       to={`/agent/${agent.address}`}
       className="block bg-lukso-card border border-lukso-border rounded-xl p-5 hover:border-lukso-pink/50 hover:glow-pink transition-all duration-300 group hover:-translate-y-0.5"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
+      <div className="flex items-start justify-between gap-3 sm:gap-4">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-2 mb-1">
             {/* UP avatar */}
             {avatarUrl && (
@@ -196,6 +230,12 @@ function AgentCardInner({ agent, upProfile }) {
                 Inactive
               </span>
             )}
+            {/* LSP26 social signal badge */}
+            {(agent.lsp26FollowerCount ?? 0) > 0 && (
+              <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0 font-medium">
+                👥 {agent.lsp26FollowerCount} agent{agent.lsp26FollowerCount === 1 ? " follows" : "s follow"}
+              </span>
+            )}
           </div>
           
           <p className="text-sm text-gray-400 mb-3 line-clamp-2">
@@ -218,12 +258,6 @@ function AgentCardInner({ agent, upProfile }) {
               <span className="flex items-center gap-1">
                 <span className="text-lukso-purple">⚡</span>
                 <span className="text-lukso-purple font-medium">{skillCount}</span> skill{skillCount === 1 ? "" : "s"}
-              </span>
-            )}
-            {(agent.lsp26FollowerCount ?? 0) > 0 && (
-              <span className="flex items-center gap-1">
-                <span className="text-emerald-400">👥</span>
-                <span className="text-emerald-400 font-medium">{agent.lsp26FollowerCount}</span> registered follower{agent.lsp26FollowerCount === 1 ? "" : "s"}
               </span>
             )}
             <span>Joined {registeredDate}</span>
@@ -274,9 +308,28 @@ function AgentCardInner({ agent, upProfile }) {
         </div>
         
         <div className="shrink-0 flex flex-col items-center gap-1.5">
-          <div className="relative">
-            <TrustBadge score={compositeScore} size="md" />
-            {/* Trust tier glow ring — updated colors for improved tiers */}
+          {/* Score with tooltip on hover */}
+          <div
+            className="relative cursor-help"
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+          >
+            <ScoreTooltip
+              trustScore={trustScore}
+              onChainScore={agent.onChainScore ?? null}
+              skillCount={effectiveSkillCount}
+              lsp26Score={effectiveLsp26Score}
+              compositeScore={compositeScore}
+              visible={showTooltip}
+            />
+            {isCompositeLoading ? (
+              <div className="w-16 h-16 rounded-full bg-lukso-border/50 animate-pulse flex items-center justify-center">
+                <span className="text-xs text-gray-500">…</span>
+              </div>
+            ) : (
+              <TrustBadge score={compositeScore} size="md" />
+            )}
+            {/* Trust tier glow ring */}
             <div
               className={`absolute -inset-1 rounded-full opacity-20 blur-sm ${
                 compositeScore >= 1000
@@ -292,6 +345,8 @@ function AgentCardInner({ agent, upProfile }) {
               style={{ zIndex: -1 }}
             />
           </div>
+          {/* Label: "Trust Score" */}
+          <span className="text-[10px] text-gray-500 font-medium">Trust Score</span>
           {/* Improved trust tier badge */}
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${improvedTier.badgeClass}`}>
             {improvedTier.label}

@@ -178,7 +178,10 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
               {trustScore} (contract) + {Math.round(onChainScore * 3)} (activity×3) + {Math.min(skillsCount ?? 0, 20) * 10} (skills×10){lsp26Score > 0 ? ` + ${lsp26Score} (LSP26 follows×5)` : ""}
             </p>
           ) : (
-            <p className="text-xs text-gray-600 mt-1">Loading on-chain activity…</p>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="w-3 h-3 border-2 border-lukso-border border-t-lukso-pink rounded-full animate-spin" />
+              <p className="text-xs text-gray-600">Loading on-chain activity…</p>
+            </div>
           )}
         </div>
       )}
@@ -186,7 +189,7 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
       {/* Contract trust score */}
       <div className="flex items-end gap-4">
         <div>
-          <p className="text-xs text-gray-500 mb-0.5">Contract Score</p>
+          <p className="text-xs text-gray-500 mb-0.5">On-chain Score <span className="text-gray-600">(from contract)</span></p>
           <p className="text-3xl font-bold text-white tabular-nums">{trustScore.toLocaleString()}</p>
           <p className="text-xs text-gray-500 mt-0.5">/ {MAX_SCORE.toLocaleString()} max</p>
         </div>
@@ -318,6 +321,19 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
       )}
 
       {/* On-Chain Activity from Envio */}
+      {!onChainRep && (
+        <div className="space-y-3 animate-pulse">
+          <p className="text-xs text-gray-500 uppercase tracking-wide">On-Chain Activity</p>
+          <div className="grid grid-cols-3 gap-2">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-lukso-darker rounded-lg p-2.5 text-center border border-lukso-border/30">
+                <div className="h-5 w-10 bg-lukso-border/50 rounded mx-auto mb-1" />
+                <div className="h-3 w-14 bg-lukso-border/30 rounded mx-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {onChainRep && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">

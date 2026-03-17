@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import AgentCard from "../components/AgentCard";
-import { getAllAgents, getAgentCount, getSkills } from "../useContract";
+import { getAllAgents, getAgentCount, getSkills, verifyAgent } from "../useContract";
 import { fetchUPProfiles, fetchOnChainReputation, fetchLSP26RegisteredFollowers, computeCompositeScore } from "../envio";
 
 async function loadAgentsFromAPI() {
@@ -558,7 +558,7 @@ function TryVerify({ agents = [], upProfiles = {} }) {
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="text-center">
-                    <p className="text-gray-500">Rep</p>
+                    <p className="text-gray-500">Reputation</p>
                     <p className="text-lukso-purple font-semibold">{result.reputation}</p>
                   </div>
                   <div className="text-center">
@@ -566,7 +566,7 @@ function TryVerify({ agents = [], upProfiles = {} }) {
                     <p className="text-lukso-pink font-semibold">{result.endorsements}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-gray-500">Trust</p>
+                    <p className="text-gray-500">On-chain Score</p>
                     <p className="text-white font-bold">{result.trustScore}</p>
                   </div>
                 </div>
