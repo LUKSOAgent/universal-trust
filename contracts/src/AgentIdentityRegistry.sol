@@ -26,6 +26,7 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     uint256 public constant MAX_REPUTATION = 10000;
     uint256 public constant MIN_ENDORSEMENT_WEIGHT = 10;
     uint256 public constant MAX_ENDORSEMENT_WEIGHT = 50;
+    uint256 public constant MIN_BASE_TOKEN_BALANCE = 50_000_000e18; // 50 million tokens
 
     // ─────────────────────────────────────────────────────────────────────────
     // Storage
