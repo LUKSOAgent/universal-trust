@@ -19,6 +19,7 @@ import { ethers } from "ethers";
 
 const RPC = "https://rpc.mainnet.lukso.network";
 const CONTRACT = "0x16505FeC789F4553Ea88d812711A0E913D926ADD";
+const ENVIO_ENDPOINT = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
 
 const ABI = [
   "function getAgentCount() view returns (uint256)",
@@ -30,6 +31,37 @@ const ABI = [
 ];
 
 
+
+/**
+ * Fetch LSP26 followers for an address from Envio, return only those in registeredSet.
+ */
+async function fetchLSP26Followers(address, registeredSet) {
+  const addr = address.toLowerCase();
+  try {
+    const query = `
+      query LSP26Followers($addr: String!) {
+        Follow(where: { followee_id: { _eq: $addr } }, limit: 500) {
+          follower_id
+        }
+      }
+    `;
+    const res = await fetch(ENVIO_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, variables: { addr } }),
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return { count: 0, addresses: [] };
+    const { data, errors } = await res.json();
+    if (errors || !data?.Follow) return { count: 0, addresses: [] };
+    const registered = data.Follow
+      .map((f) => f.follower_id.toLowerCase())
+      .filter((f) => registeredSet.has(f));
+    return { count: registered.length, addresses: registered };
+  } catch {
+    return { count: 0, addresses: [] };
+  }
+}
 
 export default async function handler(req, res) {
   // CORS — open for all agents
@@ -151,6 +183,19 @@ export default async function handler(req, res) {
       node.weightedTrustScore = Math.min(10000, node.reputation + endorsementBonus);
     }
 
+    // Fetch LSP26 registered followers for all agents (parallel, best-effort)
+    const registeredSet = new Set(nodes.map((n) => n.id.toLowerCase()));
+    const lsp26Results = await Promise.allSettled(
+      nodes.map((n) => fetchLSP26Followers(n.id, registeredSet))
+    );
+    for (let i = 0; i < nodes.length; i++) {
+      const lsp26 = lsp26Results[i].status === "fulfilled"
+        ? lsp26Results[i].value
+        : { count: 0, addresses: [] };
+      nodes[i].lsp26FollowerCount = lsp26.count;
+      nodes[i].lsp26Score = lsp26.count * 5;
+    }
+
     return res.status(200).json({
       meta: {
         generatedAt: new Date().toISOString(),
@@ -159,6 +204,8 @@ export default async function handler(req, res) {
         agentCount: nodes.length,
         endorsementCount: edges.length,
         trustFormula: "trustScore = reputation + (endorsements × 10)",
+        compositeFormula: "compositeScore = trustScore + Math.round(onChainScore × 3) + Math.min(skillsCount, 20) × 10 + lsp26Score",
+        lsp26Formula: "lsp26Score = registeredFollowersCount × 5 (soft endorsement signal from LSP26 social graph)",
         weightedTrustFormula: "weightedTrustScore = reputation + sum(min(50, max(10, floor(endorserReputation / 10)))) per endorser, capped at 10000",
         sdk: "npm install @universal-trust/sdk",
         docs: "https://universal-trust.vercel.app/.well-known/agent-trust.json",

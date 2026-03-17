@@ -91,16 +91,16 @@ function daysSince(timestampSeconds) {
   return Math.max(0, Math.floor(seconds / 86400));
 }
 
-export default function TrustScoreCard({ verification, agent, address, allAgents, onChainRep, skillsCount, hideComposite = false }) {
+export default function TrustScoreCard({ verification, agent, address, allAgents, onChainRep, skillsCount, lsp26Score = 0, lsp26FollowerCount = 0, hideComposite = false }) {
   if (!verification) return null;
 
   const { reputation, endorsements, trustScore, isUP } = verification;
   const endorsementPoints = endorsements * 10;
   const level = getTrustLevel(trustScore);
 
-  // Composite Trust Score: contract score + on-chain activity + skills
+  // Composite Trust Score: contract score + on-chain activity + skills + LSP26
   const onChainScore = onChainRep?.generalScore ?? null;
-  const compositeScore = computeCompositeScore(trustScore, onChainScore, skillsCount ?? 0);
+  const compositeScore = computeCompositeScore(trustScore, onChainScore, skillsCount ?? 0, lsp26Score);
 
   // Rank: position among all agents sorted by trustScore descending
   let rank = null;
@@ -175,7 +175,7 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
           <p className="text-5xl font-bold text-white tabular-nums">{compositeScore.toLocaleString()}</p>
           {onChainScore !== null ? (
             <p className="text-xs text-gray-500 mt-1 font-mono">
-              {trustScore} (contract) + {Math.round(onChainScore * 3)} (activity×3) + {Math.min(skillsCount ?? 0, 20) * 10} (skills×10)
+              {trustScore} (contract) + {Math.round(onChainScore * 3)} (activity×3) + {Math.min(skillsCount ?? 0, 20) * 10} (skills×10){lsp26Score > 0 ? ` + ${lsp26Score} (LSP26 follows×5)` : ""}
             </p>
           ) : (
             <p className="text-xs text-gray-600 mt-1">Loading on-chain activity…</p>
@@ -290,6 +290,32 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
           </p>
         )}
       </div>
+
+      {/* LSP26 Social Graph */}
+      {lsp26Score > 0 && (
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">LSP26 Social Graph</p>
+            <span className="text-xs px-2 py-0.5 rounded-full border border-emerald-500/40 text-emerald-400 font-medium">
+              +{lsp26Score} pts
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-400">
+              Registered followers{" "}
+              <span className="text-gray-600">
+                ({lsp26FollowerCount} × 5)
+              </span>
+            </span>
+            <span className="text-xs font-semibold text-emerald-400 tabular-nums">
+              +{lsp26Score}
+            </span>
+          </div>
+          <p className="text-[10px] text-gray-600">
+            Soft endorsement signal — other registered agents following this profile on LUKSO
+          </p>
+        </div>
+      )}
 
       {/* On-Chain Activity from Envio */}
       {onChainRep && (
