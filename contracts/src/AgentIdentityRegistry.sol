@@ -70,6 +70,11 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     /// @notice Seconds before decay starts counting (default: 30 days)
     uint256 public decayGracePeriod;
 
+    /// @notice Maps agent UP address → their Base chain EOA
+    /// @dev Set voluntarily by the agent. Used for cross-chain token verification.
+    /// UPGRADE SAFETY: append-only after this line
+    mapping(address => address) private _baseAddresses;
+
     // ─────────────────────────────────────────────────────────────────────────
     // Structs
     // ─────────────────────────────────────────────────────────────────────────
@@ -106,6 +111,7 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     event ReputationUpdaterSet(address indexed updater, bool authorized);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event ReputationDecayed(address indexed agent, uint256 oldReputation, uint256 newReputation, uint256 daysInactive);
+    event BaseAddressLinked(address indexed agent, address indexed baseAddress);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Errors
@@ -123,6 +129,7 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     error EndorserMustBeUniversalProfile(address endorser);
     error AgentAlreadyActive(address agent);
     error NotEligibleForDecay(address agent);
+    error BaseAddressAlreadySet(address agent, address existing);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Modifiers
@@ -173,6 +180,34 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
 
         emit OwnershipTransferred(address(0), _owner);
         emit ReputationUpdaterSet(_owner, true);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Base Address Linking (cross-chain token verification)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// @notice Link your Base chain EOA to your registered UP.
+    /// @dev Caller must be a registered agent. Can only be set once (to prevent reassignment abuse).
+    ///      To change, owner can clear via clearBaseAddress().
+    function linkBaseAddress(address baseAddress) external onlyRegistered(msg.sender) {
+        if (_baseAddresses[msg.sender] != address(0)) {
+            revert BaseAddressAlreadySet(msg.sender, _baseAddresses[msg.sender]);
+        }
+        if (baseAddress == address(0)) revert ZeroAddress();
+        _baseAddresses[msg.sender] = baseAddress;
+        emit BaseAddressLinked(msg.sender, baseAddress);
+    }
+
+    /// @notice Owner can clear a linked Base address (e.g. if compromised).
+    function clearBaseAddress(address agent) external onlyOwner onlyRegistered(agent) {
+        _baseAddresses[agent] = address(0);
+        emit BaseAddressLinked(agent, address(0));
+    }
+
+    /// @notice Get the Base chain address linked to an agent UP.
+    /// @return The linked Base address, or address(0) if not set.
+    function getBaseAddress(address agent) external view returns (address) {
+        return _baseAddresses[agent];
     }
 
     // ─────────────────────────────────────────────────────────────────────────

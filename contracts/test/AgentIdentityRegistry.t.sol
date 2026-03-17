@@ -1929,6 +1929,106 @@ contract AgentIdentityRegistryTest is Test {
         assertEq(registry.decayGracePeriod(), 30 days);
     }
 
+    // ═════════════════════════════════════════════════════════════════════════
+    // Base Address Linking Tests
+    // ═════════════════════════════════════════════════════════════════════════
+
+    function test_linkBaseAddress_success() public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "uri");
+
+        address baseAddr = makeAddr("agentABase");
+        vm.prank(agentA);
+        registry.linkBaseAddress(baseAddr);
+
+        assertEq(registry.getBaseAddress(agentA), baseAddr);
+    }
+
+    function test_linkBaseAddress_emitsEvent() public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "uri");
+
+        address baseAddr = makeAddr("agentABase");
+        vm.prank(agentA);
+        vm.expectEmit(true, true, false, false);
+        emit AgentIdentityRegistry.BaseAddressLinked(agentA, baseAddr);
+        registry.linkBaseAddress(baseAddr);
+    }
+
+    function test_linkBaseAddress_onlyOnce() public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "uri");
+
+        address baseAddr = makeAddr("agentABase");
+        vm.prank(agentA);
+        registry.linkBaseAddress(baseAddr);
+
+        vm.prank(agentA);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.BaseAddressAlreadySet.selector, agentA, baseAddr));
+        registry.linkBaseAddress(makeAddr("agentABase2"));
+    }
+
+    function test_linkBaseAddress_zeroAddressReverts() public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "uri");
+
+        vm.prank(agentA);
+        vm.expectRevert(AgentIdentityRegistry.ZeroAddress.selector);
+        registry.linkBaseAddress(address(0));
+    }
+
+    function test_linkBaseAddress_notRegisteredReverts() public {
+        vm.prank(agentA);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotRegistered.selector, agentA));
+        registry.linkBaseAddress(makeAddr("agentABase"));
+    }
+
+    function test_clearBaseAddress_ownerCanClear() public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "uri");
+        address baseAddr = makeAddr("agentABase");
+        vm.prank(agentA);
+        registry.linkBaseAddress(baseAddr);
+
+        vm.prank(deployer);
+        registry.clearBaseAddress(agentA);
+
+        assertEq(registry.getBaseAddress(agentA), address(0));
+    }
+
+    function test_clearBaseAddress_nonOwnerReverts() public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "uri");
+        address baseAddr = makeAddr("agentABase");
+        vm.prank(agentA);
+        registry.linkBaseAddress(baseAddr);
+
+        vm.prank(agentA);
+        vm.expectRevert(AgentIdentityRegistry.NotAuthorized.selector);
+        registry.clearBaseAddress(agentA);
+    }
+
+    function test_clearBaseAddress_thenRelinkAllowed() public {
+        vm.prank(agentA);
+        registry.register("Agent Alpha", "desc", "uri");
+        address baseAddr1 = makeAddr("agentABase1");
+        vm.prank(agentA);
+        registry.linkBaseAddress(baseAddr1);
+
+        vm.prank(deployer);
+        registry.clearBaseAddress(agentA);
+
+        // After clearing, agent can link a new address
+        address baseAddr2 = makeAddr("agentABase2");
+        vm.prank(agentA);
+        registry.linkBaseAddress(baseAddr2);
+        assertEq(registry.getBaseAddress(agentA), baseAddr2);
+    }
+
+    function test_getBaseAddress_defaultsToZero() public view {
+        assertEq(registry.getBaseAddress(agentA), address(0));
+    }
+
     // ─── Helper: repeat a character ──────────────────────────────────────
 
     function _repeat(string memory char, uint256 count) internal pure returns (string memory) {
