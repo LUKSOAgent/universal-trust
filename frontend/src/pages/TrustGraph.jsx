@@ -81,10 +81,12 @@ export default function TrustGraph() {
 
   // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
+    let cancelled = false;
     async function load() {
       try {
         setLoading(true);
         const agentList = await getAllAgents();
+        if (cancelled) return;
 
         // Endorsement edges
         const edgeSet = new Set();
@@ -106,6 +108,7 @@ export default function TrustGraph() {
             }
           } catch {}
         }));
+        if (cancelled) return;
 
         // Skills
         const skillMap = {}; // agentAddr → [skillName, ...]
@@ -115,6 +118,7 @@ export default function TrustGraph() {
             if (skills.length > 0) skillMap[agent.address] = skills;
           } catch {}
         }));
+        if (cancelled) return;
 
         // Enrich agents with Envio activity scores + LSP26 followers for composite score (non-blocking)
         const agentAddrsLower = agentList.map((a) => a.address.toLowerCase());
@@ -122,6 +126,7 @@ export default function TrustGraph() {
           Promise.allSettled(agentList.map((a) => fetchOnChainReputation(a.address))),
           Promise.allSettled(agentList.map((a) => fetchLSP26RegisteredFollowers(a.address, agentAddrsLower))),
         ]).then(([repResults, lsp26Results]) => {
+            if (cancelled) return;
             const enriched = agentList.map((agent, i) => {
               const onChainScore = repResults.value?.[i]?.status === "fulfilled"
                 ? (repResults.value[i].value?.generalScore ?? null)
@@ -161,10 +166,11 @@ export default function TrustGraph() {
 
         // Start with known curated list immediately
         const filtered = KNOWN_AGENTS.filter((a) => !registeredAddrs.has(a.address.toLowerCase()));
-        setEcosystemAgents(filtered);
+        if (!cancelled) setEcosystemAgents(filtered);
 
         // Then enrich with live Envio discovery
         discoverAgentsFromEnvio().then((discovered) => {
+          if (cancelled) return;
           const unique = discovered.filter((a) => !registeredAddrs.has(a.address.toLowerCase()));
           // Merge with curated (curated takes precedence for known addresses)
           const curatedAddrs = new Set(KNOWN_AGENTS.map((a) => a.address.toLowerCase()));
@@ -185,12 +191,13 @@ export default function TrustGraph() {
 
           // Fetch UP profiles for ecosystem agents too
           fetchUPProfiles(merged.map((a) => a.address))
-            .then((eco) => setUpProfiles((prev) => ({ ...prev, ...eco })))
+            .then((eco) => { if (!cancelled) setUpProfiles((prev) => ({ ...prev, ...eco })); })
             .catch(() => {});
         }).catch(() => {});
 
         fetchUPProfiles(agentList.map((a) => a.address))
           .then((profiles) => {
+            if (cancelled) return;
             setUpProfiles(profiles);
             // Also load UP profiles for external endorsers (non-registered endorsers)
             const registeredAddresses = new Set(agentList.map((a) => a.address.toLowerCase()));
@@ -201,7 +208,7 @@ export default function TrustGraph() {
             )];
             if (externalEndorsers.length > 0) {
               fetchUPProfiles(externalEndorsers)
-                .then((extProfiles) => setUpProfiles((prev) => ({ ...prev, ...extProfiles })))
+                .then((extProfiles) => { if (!cancelled) setUpProfiles((prev) => ({ ...prev, ...extProfiles })); })
                 .catch(() => {});
             }
           })
@@ -209,20 +216,23 @@ export default function TrustGraph() {
 
         // Load ERC-8004 agents (non-blocking)
         fetchERC8004Agents().then((agents8004) => {
+          if (cancelled) return;
           setErc8004Agents(agents8004);
           // Enrich UP profiles for ERC-8004 owners too
           fetchUPProfiles(agents8004.map((a) => a.owner))
-            .then((profiles) => setUpProfiles((prev) => ({ ...prev, ...profiles })))
+            .then((profiles) => { if (!cancelled) setUpProfiles((prev) => ({ ...prev, ...profiles })); })
             .catch(() => {});
         }).catch(() => {});
 
       } catch (err) {
+        if (cancelled) return;
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     load();
+    return () => { cancelled = true; };
   }, []);
 
   // ── Build graph nodes/links from rawData + filters ─────────────────────────
