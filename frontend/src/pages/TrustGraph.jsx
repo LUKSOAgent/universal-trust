@@ -53,7 +53,7 @@ export default function TrustGraph() {
 
   const [search, setSearch]       = useState("");
   const [selected, setSelected]   = useState(null); // node id
-  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: true, ecosystem: true, skill: true, endorsement: false, external_endorser: true });
+  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: true, ecosystem: true, skill: true, endorsement: false, external_endorser: true, lsp26_follow: true });
   const [dims, setDims]           = useState({ w: 900, h: 600 });
 
   // AI Query
@@ -137,9 +137,20 @@ export default function TrustGraph() {
                 skillCount,
                 lsp26Score
               );
-              return { ...agent, onChainScore, skillCount, lsp26FollowerCount: lsp26Data.count, lsp26Score, composite };
+              return { ...agent, onChainScore, skillCount, lsp26FollowerCount: lsp26Data.count, lsp26Followers: lsp26Data.addresses, lsp26Score, composite };
             });
-            setRawData({ agents: enriched, edges: endorseEdges, skills: skillMap });
+            // Build LSP26 follow edges from stored follower addresses
+            const lsp26Edges = [];
+            for (const agent of enriched) {
+              for (const followerAddr of (agent.lsp26Followers ?? [])) {
+                lsp26Edges.push({
+                  source: followerAddr,
+                  target: agent.address,
+                  kind: "lsp26-follow",
+                });
+              }
+            }
+            setRawData({ agents: enriched, edges: endorseEdges, lsp26Edges, skills: skillMap });
           })
           .catch(() => {});
 
@@ -217,7 +228,7 @@ export default function TrustGraph() {
   // ── Build graph nodes/links from rawData + filters ─────────────────────────
   const buildGraph = useCallback(() => {
     if (!rawData) return { nodes: [], links: [] };
-    const { agents, edges, skills } = rawData;
+    const { agents, edges, skills, lsp26Edges = [] } = rawData;
 
     const nodes = [];
     const links = [];
@@ -353,6 +364,15 @@ export default function TrustGraph() {
       }
     }
 
+    // LSP26 soft endorsement edges (only between nodes already in the graph)
+    if (filters.lsp26_follow) {
+      for (const e of lsp26Edges) {
+        if (nodeIds.has(e.source) && nodeIds.has(e.target)) {
+          links.push({ source: e.source, target: e.target, kind: "lsp26-follow" });
+        }
+      }
+    }
+
     return { nodes, links };
   }, [rawData, upProfiles, filters, ecosystemAgents, erc8004Agents]);
 
@@ -400,6 +420,7 @@ export default function TrustGraph() {
       .force("link", d3.forceLink(links).id((d) => d.id).distance((l) => {
         if (l.kind === "has-skill") return 60;
         if (l.kind === "endorses" || l.kind === "endorsed-by") return 100;
+        if (l.kind === "lsp26-follow") return 140;
         return 120;
       }).strength(0.6))
       .force("charge", d3.forceManyBody().strength((d) => d.type === "agent_up" || d.type === "agent_eoa" ? -350 : -120))
@@ -429,26 +450,43 @@ export default function TrustGraph() {
       .attr("orient", "auto")
       .append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#F59E0B");
 
+    // LSP26 follow arrowhead (emerald)
+    defs.append("marker")
+      .attr("id", "arrow-lsp26")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 24).attr("refY", 0)
+      .attr("markerWidth", 4).attr("markerHeight", 4)
+      .attr("orient", "auto")
+      .append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#10B981");
+
     // Links
     const link = g.append("g").selectAll("line")
       .data(links).join("line")
       .attr("class", "g-link")
       .attr("stroke", (d) => {
+        if (d.kind === "lsp26-follow") return "#10B981";
         if (isMutual(d)) return "#F59E0B"; // gold for mutual
         const target = nodes.find((n) => n.id === (d.target?.id || d.target));
         return target ? COLORS[target.type] + "66" : "#ffffff22";
       })
+      .attr("stroke-opacity", (d) => {
+        if (d.kind === "lsp26-follow") return 0.4;
+        return 1;
+      })
       .attr("stroke-width", (d) => {
+        if (d.kind === "lsp26-follow") return 0.8;
         if (isMutual(d)) return 2.5;
         if (d.kind === "endorses") return 1.2;
         return 1;
       })
       .attr("stroke-dasharray", (d) => {
+        if (d.kind === "lsp26-follow") return "3,5";
         if (isMutual(d)) return null; // solid for mutual
         if (d.kind === "endorses") return "5,4"; // dashed for one-way
         return null;
       })
       .attr("marker-end", (d) => {
+        if (d.kind === "lsp26-follow") return "url(#arrow-lsp26)";
         if (isMutual(d)) return "url(#arrow-mutual)";
         const target = nodes.find((n) => n.id === (d.target?.id || d.target));
         return target ? `url(#arrow-${target.type})` : "none";
@@ -943,6 +981,17 @@ export default function TrustGraph() {
                 <span className="sm:hidden">{type.replace("agent_", "").replace("ecosystem", "eco")}</span>
               </button>
             ))}
+            <button
+              onClick={() => setFilters((f) => ({ ...f, lsp26_follow: !f.lsp26_follow }))}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border whitespace-nowrap transition ${
+                filters.lsp26_follow ? "opacity-100" : "opacity-30"
+              }`}
+              style={{ color: "#10B981", borderColor: "#10B98166" }}
+            >
+              <svg width="12" height="6" className="shrink-0"><line x1="0" y1="3" x2="12" y2="3" stroke="#10B981" strokeWidth="1.5" strokeDasharray="2,3"/></svg>
+              <span className="hidden sm:inline">LSP26 Follows</span>
+              <span className="sm:hidden">LSP26</span>
+            </button>
           </div>
 
           {/* Stats — desktop only */}
@@ -991,6 +1040,10 @@ export default function TrustGraph() {
                 <div className="flex items-center gap-2">
                   <svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" stroke="#ffffff" strokeWidth="1.2" strokeDasharray="4,3" strokeOpacity="0.5"/></svg>
                   <span className="text-xs text-gray-400">One-way endorsement</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" stroke="#10B981" strokeWidth="1.5" strokeDasharray="3,5" strokeOpacity="0.6"/></svg>
+                  <span className="text-xs text-gray-400">LSP26 Follow (social)</span>
                 </div>
                 <p className="text-xs text-gray-600">Node size = trust score</p>
               </div>
