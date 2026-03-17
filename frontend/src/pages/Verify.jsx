@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { verifyAgent, getSkills } from "../useContract";
 import { CONTRACT_ADDRESS, EXPLORER_URL } from "../config";
@@ -99,11 +99,14 @@ export default function Verify() {
   const [resolving, setResolving] = useState(false);
   const suggestTimer = useRef(null);
   const inputRef = useRef(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
     document.title = "Trust Scanner — Universal Trust";
+    mountedRef.current = true;
     const timerRef = suggestTimer;
     return () => {
+      mountedRef.current = false;
       document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO";
       clearTimeout(timerRef.current);
     };
@@ -189,10 +192,10 @@ export default function Verify() {
       setScanPhase("done");
       setResult(data);
 
-      // Fetch skills count (non-blocking)
+      // Fetch skills count (non-blocking, guarded against unmount)
       getSkills(addr)
-        .then((skills) => setSkillsCount(skills.length))
-        .catch(() => setSkillsCount(0));
+        .then((skills) => { if (mountedRef.current) setSkillsCount(skills.length); })
+        .catch(() => { if (mountedRef.current) setSkillsCount(0); });
 
       // LSP26 registered followers — fetch registered agent addresses, then intersect
       fetch("/api/trust-graph")
@@ -202,16 +205,16 @@ export default function Verify() {
           const registeredAddrs = graphData.nodes.map((n) => n.id.toLowerCase());
           return fetchLSP26RegisteredFollowers(addr, registeredAddrs);
         })
-        .then((data) => { if (data) setLsp26Score(data.count * 5); })
+        .then((data) => { if (data && mountedRef.current) setLsp26Score(data.count * 5); })
         .catch(() => {});
 
       // On-chain reputation from Envio — lazy, non-blocking, separate loading state
       // Only fetch for UPs (EOAs have no Envio data anyway)
       setOnChainLoading(true);
       fetchOnChainReputation(addr)
-        .then((rep) => setOnChainRep(rep))
-        .catch(() => setOnChainRep(null))
-        .finally(() => setOnChainLoading(false));
+        .then((rep) => { if (mountedRef.current) setOnChainRep(rep); })
+        .catch(() => { if (mountedRef.current) setOnChainRep(null); })
+        .finally(() => { if (mountedRef.current) setOnChainLoading(false); });
     } catch (err) {
       setScanPhase(null);
       if (err.message?.includes("network") || err.message?.includes("fetch")) {
