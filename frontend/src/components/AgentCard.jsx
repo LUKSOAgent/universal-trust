@@ -24,7 +24,7 @@ function MiniTrustBar({ score }) {
   );
 }
 
-export default function AgentCard({ agent, upProfile }) {
+function AgentCardInner({ agent, upProfile }) {
   const [skillCount, setSkillCount] = useState(null);
   const trustScore = agent.trustScore ?? (agent.reputation + (agent.endorsementCount * 10));
   const compositeScore = computeCompositeScore(trustScore, null, skillCount ?? 0);
@@ -132,3 +132,6 @@ export default function AgentCard({ agent, upProfile }) {
     </Link>
   );
 }
+
+const AgentCard = memo(AgentCardInner);
+export default AgentCard;

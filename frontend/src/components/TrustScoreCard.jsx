@@ -78,7 +78,7 @@ function daysSince(timestampSeconds) {
   return Math.max(0, Math.floor(seconds / 86400));
 }
 
-export default function TrustScoreCard({ verification, agent, address, allAgents, onChainRep, skillsCount }) {
+export default function TrustScoreCard({ verification, agent, address, allAgents, onChainRep, skillsCount, hideComposite = false }) {
   if (!verification) return null;
 
   const { reputation, endorsements, trustScore, isUP } = verification;
@@ -148,25 +148,27 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
         </div>
       </div>
 
-      {/* Composite Score — primary display */}
-      <div className="bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border border-lukso-pink/30 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider">Composite Trust Score</p>
-          {rank !== null && totalAgents !== null && (
-            <p className="text-xs text-gray-500">
-              <span className="text-lukso-pink font-bold">#{rank}</span> of {totalAgents}
+      {/* Composite Score — primary display (hidden when parent already shows it) */}
+      {!hideComposite && (
+        <div className="bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border border-lukso-pink/30 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider">Composite Trust Score</p>
+            {rank !== null && totalAgents !== null && (
+              <p className="text-xs text-gray-500">
+                <span className="text-lukso-pink font-bold">#{rank}</span> of {totalAgents}
+              </p>
+            )}
+          </div>
+          <p className="text-5xl font-bold text-white tabular-nums">{compositeScore.toLocaleString()}</p>
+          {onChainScore !== null ? (
+            <p className="text-xs text-gray-500 mt-1 font-mono">
+              {trustScore} (contract) + {Math.round(onChainScore * 3)} (activity×3) + {Math.min(skillsCount ?? 0, 20) * 10} (skills×10)
             </p>
+          ) : (
+            <p className="text-xs text-gray-600 mt-1">Loading on-chain activity…</p>
           )}
         </div>
-        <p className="text-5xl font-bold text-white tabular-nums">{compositeScore.toLocaleString()}</p>
-        {onChainScore !== null ? (
-          <p className="text-xs text-gray-500 mt-1 font-mono">
-            {trustScore} (contract) + {Math.round(onChainScore * 3)} (activity×3) + {Math.min(skillsCount ?? 0, 20) * 10} (skills×10)
-          </p>
-        ) : (
-          <p className="text-xs text-gray-600 mt-1">Loading on-chain activity…</p>
-        )}
-      </div>
+      )}
 
       {/* Contract trust score */}
       <div className="flex items-end gap-4">

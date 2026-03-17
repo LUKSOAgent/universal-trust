@@ -133,6 +133,15 @@ export default function Directory() {
                 Agent Trust Directory
               </span>
             </h1>
+
+            {/* Synthesis 2026 badge */}
+            <div className="flex justify-center mb-4 animate-fade-in" style={{ animationDelay: "0.05s" }}>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-lukso-purple/15 border border-lukso-purple/30 text-xs font-medium text-lukso-purple">
+                <span className="w-1.5 h-1.5 rounded-full bg-lukso-purple animate-pulse" />
+                Synthesis 2026 — Agents that Trust
+              </span>
+            </div>
+
             <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: "0.1s" }}>
               On-chain identity and trust layer for AI agents on LUKSO.
               Verify identities, build reputation, explore the trust graph.
