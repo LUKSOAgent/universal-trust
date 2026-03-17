@@ -692,14 +692,16 @@ export default function TrustGraph() {
   }, [selected, rawData, graphLinks, search]);
 
   // ── Simple local AI query (no external API — pure data analysis) ───────────
-  async function handleAiQuery(e) {
-    e.preventDefault();
-    if (!aiQuery.trim() || !rawData) return;
+  async function handleAiQuery(e, directQuery) {
+    if (e?.preventDefault) e.preventDefault();
+    const queryText = directQuery || aiQuery;
+    if (!queryText.trim() || !rawData) return;
+    if (directQuery) setAiQuery(directQuery);
     setAiLoading(true);
     setAiAnswer(null);
 
     const { agents, edges, skills } = rawData;
-    const q = aiQuery.toLowerCase();
+    const q = queryText.toLowerCase();
 
     // Basic pattern matching over graph data — runs fully client-side
     await new Promise((r) => setTimeout(r, 300)); // feel of computation
@@ -1198,7 +1200,7 @@ export default function TrustGraph() {
                     <button
                       key={q}
                       type="button"
-                      onClick={() => { setAiQuery(q); }}
+                      onClick={() => handleAiQuery(null, q)}
                       className="text-[11px] px-2.5 py-1 rounded-full bg-lukso-darker border border-lukso-border text-gray-500 hover:text-lukso-pink hover:border-lukso-pink/30 transition"
                     >
                       {q}
