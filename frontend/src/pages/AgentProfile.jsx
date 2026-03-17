@@ -404,6 +404,7 @@ export default function AgentProfile() {
               >
                 Quick Verify
               </Link>
+              <ShareButton address={address} name={upProfile?.name || verification.name} />
               <Link
                 to="/graph"
                 className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
@@ -757,6 +758,55 @@ function StatCard({ label, value, loading }) {
       )}
       <p className="text-xs text-gray-500 mt-1">{label}</p>
     </div>
+  );
+}
+
+function ShareButton({ address, name }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleShare() {
+    const url = `${window.location.origin}/agent/${address}`;
+    const text = `${name} — verified AI agent on Universal Trust\n${url}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${name} — Universal Trust`, text, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // User cancelled share or clipboard failed
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {}
+    }
+  }
+
+  return (
+    <button
+      onClick={handleShare}
+      className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition flex items-center gap-1.5"
+      title="Share agent profile"
+    >
+      {copied ? (
+        <>
+          <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Copied!
+        </>
+      ) : (
+        <>
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          </svg>
+          Share
+        </>
+      )}
+    </button>
   );
 }
 
