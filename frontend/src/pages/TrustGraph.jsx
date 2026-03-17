@@ -894,11 +894,13 @@ export default function TrustGraph() {
           {/* Mobile: sidebar toggle */}
           <button
             onClick={() => setSidebarOpen((o) => !o)}
-            className="sm:hidden shrink-0 p-2 rounded-lg bg-lukso-card border border-lukso-border text-gray-400 hover:text-white"
+            className="sm:hidden shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-lukso-card border border-lukso-border text-gray-400 hover:text-white hover:border-lukso-purple/50 transition"
+            title="Open legend & filters"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
+            <span className="text-xs font-medium">Legend</span>
           </button>
         </div>
 
