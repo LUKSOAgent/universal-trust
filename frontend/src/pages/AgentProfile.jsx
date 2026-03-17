@@ -58,6 +58,8 @@ export default function AgentProfile() {
       return;
     }
 
+    let cancelled = false;
+
     async function load() {
       try {
         setLoading(true);
@@ -68,29 +70,31 @@ export default function AgentProfile() {
           getEndorsers(address).catch(() => []),
           getSkills(address).catch(() => []),
         ]);
+        if (cancelled) return;
         setVerification(verifyResult);
         setAgent(agentData);
         setEndorsers(endorserList);
         setSkills(skillList);
 
-        // Fetch UP profile + on-chain reputation from Envio (optional, non-blocking)
-        fetchUPProfile(address).then((p) => setUpProfile(p)).catch(() => {});
-        fetchOnChainReputation(address).then((r) => setOnChainRep(r)).catch(() => {});
+        // Fetch UP profile + on-chain reputation from Envio (optional, non-blocking, guarded)
+        fetchUPProfile(address).then((p) => { if (!cancelled) setUpProfile(p); }).catch(() => {});
+        fetchOnChainReputation(address).then((r) => { if (!cancelled) setOnChainRep(r); }).catch(() => {});
 
         // Fetch all agents for rank computation + LSP26 follower intersection (optional, non-blocking)
         getAllAgents().then((list) => {
+          if (cancelled) return;
           setAllAgents(list);
           // Now that we have all registered addresses, fetch LSP26 registered followers
           const registeredAddrs = list.map((a) => a.address.toLowerCase());
           fetchLSP26RegisteredFollowers(address, registeredAddrs)
-            .then((data) => setLsp26Data(data))
+            .then((data) => { if (!cancelled) setLsp26Data(data); })
             .catch(() => {});
         }).catch(() => {});
 
         // Fetch endorser UP profiles (non-blocking, for avatars)
         if (endorserList.length > 0) {
           fetchUPProfiles(endorserList)
-            .then((profiles) => setEndorserProfiles(profiles))
+            .then((profiles) => { if (!cancelled) setEndorserProfiles(profiles); })
             .catch(() => {});
         }
 
@@ -121,19 +125,21 @@ export default function AgentProfile() {
               }
             })
           );
-          setEndorsementDetails(details);
+          if (!cancelled) setEndorsementDetails(details);
         }
       } catch (err) {
+        if (cancelled) return;
         if (err.message?.includes("network") || err.message?.includes("fetch")) {
           setError("Failed to connect to LUKSO network. Please try again.");
         } else {
           setError(err.message);
         }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     load();
+    return () => { cancelled = true; };
   }, [address, isValidAddress]);
 
   if (!isValidAddress) {

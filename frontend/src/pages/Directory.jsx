@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import AgentCard from "../components/AgentCard";
 import { getAllAgents, getAgentCount, getSkills, verifyAgent } from "../useContract";
 import { fetchUPProfiles, fetchOnChainReputation, fetchLSP26RegisteredFollowers, computeCompositeScore } from "../envio";
+import { getTrustLevel } from "../components/TrustScoreCard";
 
 async function loadAgentsFromAPI() {
   const res = await fetch("/api/trust-graph");
@@ -46,6 +47,9 @@ export default function Directory() {
     return () => { document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO"; };
   }, []);
 
+  const mountedRef = useRef(true);
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
+
   async function load() {
     try {
       setLoading(true);
@@ -64,6 +68,7 @@ export default function Directory() {
         totalCount = cnt;
       }
 
+      if (!mountedRef.current) return;
       setAgents(agentList);
       setCount(totalCount);
 
@@ -74,7 +79,7 @@ export default function Directory() {
 
         // UP profiles (avatars, names)
         fetchUPProfiles(addrs)
-          .then((profiles) => setUpProfiles(profiles))
+          .then((profiles) => { if (mountedRef.current) setUpProfiles(profiles); })
           .catch(() => {});
 
         // Envio activity scores + skill counts + LSP26 followers → composite score per agent
@@ -83,6 +88,7 @@ export default function Directory() {
           Promise.allSettled(addrs.map((addr) => getSkills(addr).catch(() => []))),
           Promise.allSettled(addrs.map((addr) => fetchLSP26RegisteredFollowers(addr, addrsLower))),
         ]).then(([repResults, skillResults, lsp26Results]) => {
+          if (!mountedRef.current) return;
           setAgents((prev) =>
             prev.map((agent, i) => {
               const onChainScore =
@@ -111,9 +117,9 @@ export default function Directory() {
       }
     } catch (err) {
       console.error("Failed to load agents:", err);
-      setError(err.message);
+      if (mountedRef.current) setError(err.message);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }
 
@@ -444,11 +450,10 @@ function TryVerify({ agents = [], upProfiles = {} }) {
     doVerify(DEMO_ADDRESS);
   }
 
+  // Use shared trust tier function for consistent labels across the app
   function getTierLabel(score) {
-    if (score >= 500) return { label: "Highly Trusted", color: "text-green-400", bg: "bg-green-500/10 border-green-500/30" };
-    if (score >= 200) return { label: "Trusted", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30" };
-    if (score >= 100) return { label: "Verified", color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/30" };
-    return { label: "New", color: "text-gray-400", bg: "bg-gray-500/10 border-gray-500/30" };
+    const lvl = getTrustLevel(score);
+    return { label: lvl.label, color: lvl.color, bg: lvl.bg };
   }
 
   return (
