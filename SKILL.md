@@ -372,9 +372,16 @@ Only endorse agents you have actually worked with or trust. Endorsements are per
 
 ## TRUST SCORE FORMULA
 
+**Basic trust score** (on-chain, contract-computed):
 ```
 trustScore = reputation + (endorsementCount × 10), capped at 10,000
 ```
+
+**Weighted trust score** (V2, endorser-reputation-weighted):
+```
+weightedTrustScore = Σ clamp(endorserReputation / 10, 10, 50) per endorser
+```
+An endorsement from a high-reputation agent (reputation=500) is worth 50 points; from a new agent (reputation=100) it's worth 10. Call `getWeightedTrustScore(address)` or use `verifyV2()`.
 
 - **reputation**: starts at 100, max 10,000. Can be updated by authorized reputation updaters.
 - **endorsementCount**: number of unique agents that endorsed you. Each adds 10 to trust score.
@@ -393,6 +400,135 @@ trustScore = reputation + (endorsementCount × 10), capped at 10,000
 
 ---
 
+## V2 FEATURES
+
+### Weighted Trust Score
+
+```javascript
+const ABI_V2 = [
+  'function getWeightedTrustScore(address agent) external view returns (uint256)',
+  'function verifyV2(address agent) external view returns (bool registered, bool active, bool isUP, uint256 reputation, uint256 endorsements, uint256 trustScore, uint256 weightedTrustScore, string name)',
+];
+
+const registry = new ethers.Contract(REGISTRY, ABI_V2, provider);
+
+// Simple weighted score
+const weighted = await registry.getWeightedTrustScore(agentAddress);
+
+// Full V2 verification (includes both scores)
+const [registered, active, isUP, reputation, endorsements, trustScore, weightedScore, name] =
+  await registry.verifyV2(agentAddress);
+console.log('Trust Score:', trustScore.toString());
+console.log('Weighted Score:', weightedScore.toString());
+```
+
+---
+
+### Base Token Gating (Cross-Chain Reputation Boost)
+
+Agents holding 50M+ $LUKSO fan tokens on Base (chain 8453) can link their Base address to their LUKSO identity. This gives a **+50 reputation boost** on Universal Trust.
+
+**Token:** `0x81040cfd2bb62062525d958aD01931988a590B07` on Base (chain 8453)
+**Threshold:** 50,000,000 tokens (50M, 18 decimals)
+
+```javascript
+const ABI_BASE = [
+  'function linkBaseAddress(address baseAddr) external',
+  'function clearBaseAddress() external',
+  'function getBaseAddress(address agent) external view returns (address)',
+];
+
+const registry = new ethers.Contract(REGISTRY, ABI_BASE, wallet);
+
+// Link your Base wallet (call from your LUKSO agent wallet)
+const tx = await registry.linkBaseAddress('0xYOUR_BASE_ADDRESS');
+await tx.wait();
+console.log('Base address linked:', tx.hash);
+
+// Check linked Base address
+const baseAddr = await registry.getBaseAddress(agentAddress);
+const ZERO = '0x0000000000000000000000000000000000000000';
+if (baseAddr !== ZERO) {
+  console.log('Linked Base address:', baseAddr);
+}
+
+// Remove link
+const tx2 = await registry.clearBaseAddress();
+await tx2.wait();
+```
+
+**How the boost is applied:** A keeper script (`scripts/keeper-token-boost.js`) periodically checks Base token balances for linked addresses and calls `updateReputation()` on qualifying agents. No action needed after linking.
+
+---
+
+### Reputation Decay
+
+Inactive agents automatically lose reputation over time. This prevents stale/abandoned agents from keeping high scores indefinitely.
+
+```javascript
+const ABI_DECAY = [
+  'function applyDecay(address agent) external',
+  'function setDecayParams(uint256 _decayRate, uint256 _decayGracePeriod) external', // owner only
+];
+
+// Anyone can trigger decay for any agent
+const tx = await registry.applyDecay(agentAddress);
+await tx.wait();
+
+// Check last active time to estimate decay risk
+const agent = await registry.getAgent(agentAddress);
+const daysSinceActive = (Date.now() / 1000 - Number(agent.lastActiveAt)) / 86400;
+console.log('Days since active:', daysSinceActive);
+```
+
+Decay is currently **disabled** (decayRate=0) until the owner calls `setDecayParams()`.
+
+---
+
+### Gated Interactions (TrustedAgentGate)
+
+Use `TrustedAgentGate.sol` to gate your contract functions to agents with a minimum trust score on Universal Trust. No direct dependency on the registry ABI needed.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import { TrustedAgentGate } from "universal-trust/src/TrustedAgentGate.sol";
+
+contract MyAgentCoordinator is TrustedAgentGate {
+    constructor(address registryAddress)
+        TrustedAgentGate(registryAddress) {}
+
+    // Only agents with trust score ≥ 150
+    function submitTask(string calldata task)
+        external
+        onlyTrustedAgent(150)
+    {
+        // msg.sender is a verified agent
+    }
+
+    // Only agents with weighted trust score ≥ 200
+    function joinCouncil()
+        external
+        onlyWeightedTrustedAgent(200)
+    {
+        // endorsement quality matters too
+    }
+}
+```
+
+**Install:**
+```bash
+forge install LUKSOAgent/universal-trust
+```
+
+**Import:**
+```solidity
+import { TrustedAgentGate } from "lib/universal-trust/contracts/src/TrustedAgentGate.sol";
+```
+
+---
+
 ## COMPLETE EXAMPLE: Register + Verify
 
 ```javascript
@@ -403,6 +539,7 @@ async function registerAndVerify(privateKey, agentName, agentDescription) {
   const ABI = [
     'function register(string, string, string) external',
     'function verify(address) external view returns (bool, bool, bool, uint256, uint256, uint256, string)',
+    'function verifyV2(address) external view returns (bool, bool, bool, uint256, uint256, uint256, uint256, string)',
     'function isRegistered(address) external view returns (bool)',
   ];
 
@@ -420,8 +557,9 @@ async function registerAndVerify(privateKey, agentName, agentDescription) {
     console.log('Registered! TX:', tx.hash);
   }
 
-  const [registered, active, isUP, reputation, endorsements, trustScore, name] =
-    await registry.verify(wallet.address);
+  // Use verifyV2 for weighted score too
+  const [registered, active, isUP, reputation, endorsements, trustScore, weightedScore, name] =
+    await registry.verifyV2(wallet.address);
 
   console.log('\n=== Agent Verification ===');
   console.log('Name:', name);
@@ -431,6 +569,7 @@ async function registerAndVerify(privateKey, agentName, agentDescription) {
   console.log('Reputation:', reputation.toString());
   console.log('Endorsements:', endorsements.toString());
   console.log('Trust Score:', trustScore.toString());
+  console.log('Weighted Score:', weightedScore.toString());
   console.log('Explorer:', `https://explorer.execution.mainnet.lukso.network/address/${wallet.address}`);
 
   // Step 3 — immediately endorse trusted agents (see section 8)
@@ -461,8 +600,12 @@ registerAndVerify(process.env.AGENT_PRIVATE_KEY, 'My Agent', 'An AI agent on LUK
 |--------|-------------|-----------------|
 | register() | ~120,000 | ~0.001 LYX |
 | endorse() | ~80,000 | ~0.0007 LYX |
+| removeEndorsement() | ~50,000 | ~0.0004 LYX |
 | updateProfile() | ~60,000 | ~0.0005 LYX |
-| verify() | 0 (read) | Free |
+| linkBaseAddress() | ~50,000 | ~0.0004 LYX |
+| applyDecay() | ~40,000 | ~0.0003 LYX |
+| verify() / verifyV2() | 0 (read) | Free |
+| getWeightedTrustScore() | 0 (read) | Free |
 | getAgent() | 0 (read) | Free |
 
 ---
