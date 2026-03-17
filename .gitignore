@@ -25,3 +25,4 @@ Thumbs.db
 # Deployment keys (NEVER commit)
 *.key
 *.pem
+scripts/.token-boost-state.json
