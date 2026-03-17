@@ -588,12 +588,30 @@ function TryVerify({ agents = [], upProfiles = {} }) {
 }
 
 function StatPill({ label, value, color }) {
+  const [displayed, setDisplayed] = useState(0);
+  useEffect(() => {
+    if (value <= 0) return;
+    const duration = 800;
+    const steps = 20;
+    const stepVal = value / steps;
+    let current = 0;
+    const interval = setInterval(() => {
+      current += stepVal;
+      if (current >= value) {
+        setDisplayed(value);
+        clearInterval(interval);
+      } else {
+        setDisplayed(Math.round(current));
+      }
+    }, duration / steps);
+    return () => clearInterval(interval);
+  }, [value]);
   const colorClasses = color === "pink"
     ? "border-lukso-pink/30 text-lukso-pink"
     : "border-lukso-purple/30 text-lukso-purple";
   return (
     <div className={`px-4 py-2 rounded-full bg-lukso-card/60 border ${colorClasses} backdrop-blur-sm`}>
-      <span className="text-xl font-bold">{value}</span>
+      <span className="text-xl font-bold tabular-nums">{displayed}</span>
       <span className="text-sm text-gray-400 ml-2">{label}</span>
     </div>
   );
