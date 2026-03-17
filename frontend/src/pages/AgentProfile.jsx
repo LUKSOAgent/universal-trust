@@ -360,20 +360,35 @@ export default function AgentProfile() {
         return (
           <div className="mb-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
             {/* Composite Score — prominent hero */}
-            <div className={`bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border rounded-xl p-5 mb-4 ${lvl.bg}`}>
-              <div className="flex items-center justify-between">
+            <div className={`relative overflow-hidden border rounded-xl p-5 mb-4 ${lvl.bg}`}>
+              {/* Animated gradient background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-lukso-pink/10 via-lukso-purple/5 to-lukso-pink/10 bg-[length:200%_200%] animate-gradient" />
+              <div className="relative z-10 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider mb-1">Composite Trust Score</p>
                   <p className="text-5xl font-bold text-white tabular-nums">{composite.toLocaleString()}</p>
                   <p className="text-xs text-gray-500 mt-1 font-mono">
                     {verification.trustScore} (contract)
-                    {onChainScore !== null ? ` + ${Math.round(onChainScore * 2)} (activity×2)` : ""}
-                    {skills.length > 0 ? ` + ${skills.length * 5} (${skills.length} skills×5)` : ""}
+                    {onChainScore !== null ? ` + ${Math.round(onChainScore * 3)} (activity×3)` : ""}
+                    {skills.length > 0 ? ` + ${Math.min(skills.length, 20) * 10} (${skills.length} skills×10)` : ""}
                   </p>
                 </div>
-                <span className={`text-lg font-semibold px-3 py-1.5 rounded-full border ${lvl.bg} ${lvl.color}`}>
-                  {lvl.label}
-                </span>
+                <div className="flex flex-col items-center gap-1">
+                  <span className={`text-lg font-semibold px-3 py-1.5 rounded-full border ${lvl.bg} ${lvl.color}`}>
+                    {lvl.label}
+                  </span>
+                  {allAgents.length > 0 && (() => {
+                    const sorted = [...allAgents]
+                      .map(a => ({ addr: a.address, score: a.reputation + a.endorsementCount * 10 }))
+                      .sort((a, b) => b.score - a.score);
+                    const idx = sorted.findIndex(a => a.addr.toLowerCase() === address?.toLowerCase());
+                    return idx >= 0 ? (
+                      <span className="text-xs text-gray-500">
+                        Rank <span className="text-lukso-pink font-bold">#{idx + 1}</span> of {allAgents.length}
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
               </div>
             </div>
             {/* Detail stats */}
