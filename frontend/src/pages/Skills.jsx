@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { CONTRACT_ADDRESS } from "../config";
 
@@ -44,6 +44,11 @@ function Section({ title, children }) {
 }
 
 export default function Skills() {
+  useEffect(() => {
+    document.title = "Publish Skills — Universal Trust";
+    return () => { document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO"; };
+  }, []);
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
       <div className="animate-fade-in">

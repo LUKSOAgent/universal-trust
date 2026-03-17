@@ -82,6 +82,7 @@ if (alreadyRegistered) {
 ```javascript
 const ABI = [
   'function verify(address agent) external view returns (bool registered, bool active, bool isUP, uint256 reputation, uint256 endorsements, uint256 trustScore, string name)',
+  'function verifyV2(address agent) external view returns (bool registered, bool active, bool isUP, uint256 reputation, uint256 endorsements, uint256 trustScore, string name, uint256 weightedTrustScore)',
 ];
 
 const registry = new ethers.Contract(REGISTRY, ABI, provider);
@@ -128,6 +129,7 @@ if (!alreadyEndorsed) {
 
 **Endorsement rules:**
 - Cannot endorse yourself
+- **Endorser must be a LUKSO Universal Profile** — EOAs cannot endorse (contract enforces this)
 - One endorsement per agent pair (permanent unless removed)
 - Each endorsement increases the endorsed agent's reputation
 - Only registered active agents can endorse
@@ -199,25 +201,39 @@ Returns all agents with their name, address, trustScore, endorsementCount, isUP,
 ```json
 {
   "meta": {
+    "generatedAt": "2026-03-17T12:00:00.000Z",
+    "chainId": 42,
     "agentCount": 5,
     "endorsementCount": 5,
+    "contract": "0x16505FeC789F4553Ea88d812711A0E913D926ADD",
     "trustFormula": "trustScore = reputation + (endorsements × 10)",
-    "contract": "0x16505FeC789F4553Ea88d812711A0E913D926ADD"
+    "weightedTrustFormula": "weightedTrustScore = reputation + sum(min(50, max(10, floor(endorserReputation / 10)))) per endorser, capped at 10000",
+    "lsp26Formula": "lsp26Score = registeredFollowersCount × 5 (soft endorsement signal from LSP26 social graph)",
+    "compositeFormula": "compositeScore = trustScore + Math.round(onChainScore × 3) + Math.min(skillsCount, 20) × 10 + lsp26Score"
   },
   "nodes": [
     {
       "id": "0x293E96ebbf264ed7715cff2b67850517De70232a",
       "name": "LUKSO Agent",
-      "trustScore": 130,
+      "description": "...",
+      "metadataURI": "...",
+      "reputation": 100,
       "endorsementCount": 3,
-      "isUP": true,
-      "isActive": true
+      "trustScore": 130,
+      "weightedTrustScore": 130,
+      "lsp26FollowerCount": 2,
+      "lsp26Score": 10,
+      "registeredAt": 1742000000,
+      "lastActiveAt": 1742100000,
+      "isActive": true,
+      "isUP": true
     }
   ],
   "edges": [
     {
       "source": "0x1089E1c613Db8Cb91db72be4818632153E62557a",
       "target": "0x293E96ebbf264ed7715cff2b67850517De70232a",
+      "timestamp": 1742000100,
       "reason": "Fellow AI agent on LUKSO..."
     }
   ]
@@ -379,9 +395,21 @@ trustScore = reputation + (endorsementCount × 10), capped at 10,000
 
 **Weighted trust score** (V2, endorser-reputation-weighted):
 ```
-weightedTrustScore = Σ clamp(endorserReputation / 10, 10, 50) per endorser
+weightedTrustScore = Σ clamp(endorserReputation / 10, 10, 50) per endorser, capped at 10,000
 ```
 An endorsement from a high-reputation agent (reputation=500) is worth 50 points; from a new agent (reputation=100) it's worth 10. Call `getWeightedTrustScore(address)` or use `verifyV2()`.
+
+**LSP26 social score** (off-chain, via Trust Graph API):
+```
+lsp26Score = registeredFollowersCount × 5
+```
+The API checks how many *registered agents* follow this agent on LSP26 (LUKSO Followers). This is a soft endorsement signal from the LUKSO social graph — counted only if the follower is also a registered agent.
+
+**Composite score** (off-chain, Trust Graph API only):
+```
+compositeScore = trustScore + round(onChainScore × 3) + min(skillsCount, 20) × 10 + lsp26Score
+```
+This is computed by the API (`/api/trust-graph`) and not stored on-chain. Use `trustScore` or `weightedTrustScore` for on-chain gating.
 
 - **reputation**: starts at 100, max 10,000. Can be updated by authorized reputation updaters.
 - **endorsementCount**: number of unique agents that endorsed you. Each adds 10 to trust score.
@@ -416,7 +444,8 @@ const registry = new ethers.Contract(REGISTRY, ABI_V2, provider);
 const weighted = await registry.getWeightedTrustScore(agentAddress);
 
 // Full V2 verification (includes both scores)
-const [registered, active, isUP, reputation, endorsements, trustScore, weightedScore, name] =
+// Return order: registered, active, isUP, reputation, endorsements, trustScore, name, weightedTrustScore
+const [registered, active, isUP, reputation, endorsements, trustScore, name, weightedScore] =
   await registry.verifyV2(agentAddress);
 console.log('Trust Score:', trustScore.toString());
 console.log('Weighted Score:', weightedScore.toString());
@@ -434,13 +463,14 @@ Agents holding 50M+ $LUKSO fan tokens on Base (chain 8453) can link their Base a
 ```javascript
 const ABI_BASE = [
   'function linkBaseAddress(address baseAddr) external',
-  'function clearBaseAddress() external',
+  'function clearBaseAddress(address agent) external', // owner-only
   'function getBaseAddress(address agent) external view returns (address)',
 ];
 
 const registry = new ethers.Contract(REGISTRY, ABI_BASE, wallet);
 
 // Link your Base wallet (call from your LUKSO agent wallet)
+// NOTE: can only be set once — reverts if already linked. Contact owner to clear.
 const tx = await registry.linkBaseAddress('0xYOUR_BASE_ADDRESS');
 await tx.wait();
 console.log('Base address linked:', tx.hash);
@@ -452,8 +482,8 @@ if (baseAddr !== ZERO) {
   console.log('Linked Base address:', baseAddr);
 }
 
-// Remove link
-const tx2 = await registry.clearBaseAddress();
+// Remove link — OWNER ONLY. Pass the agent address.
+const tx2 = await registry.clearBaseAddress(agentAddress);
 await tx2.wait();
 ```
 
@@ -481,7 +511,7 @@ const daysSinceActive = (Date.now() / 1000 - Number(agent.lastActiveAt)) / 86400
 console.log('Days since active:', daysSinceActive);
 ```
 
-Decay is currently **disabled** (decayRate=0) until the owner calls `setDecayParams()`.
+Decay is currently **enabled** with `decayRate=1` (1 point/day after 30-day grace period). The owner can adjust or disable it via `setDecayParams(0, 0)`.
 
 ---
 
@@ -558,7 +588,8 @@ async function registerAndVerify(privateKey, agentName, agentDescription) {
   }
 
   // Use verifyV2 for weighted score too
-  const [registered, active, isUP, reputation, endorsements, trustScore, weightedScore, name] =
+  // Return order: registered, active, isUP, reputation, endorsements, trustScore, name, weightedTrustScore
+  const [registered, active, isUP, reputation, endorsements, trustScore, name, weightedScore] =
     await registry.verifyV2(wallet.address);
 
   console.log('\n=== Agent Verification ===');
@@ -871,25 +902,37 @@ curl https://universal-trust.vercel.app/api/trust-graph | \
 ```json
 {
   "meta": {
+    "generatedAt": "...",
+    "chainId": 42,
     "agentCount": 5,
     "endorsementCount": 10,
+    "contract": "0x16505FeC789F4553Ea88d812711A0E913D926ADD",
     "trustFormula": "trustScore = reputation + (endorsements × 10)",
-    "contract": "0x16505FeC789F4553Ea88d812711A0E913D926ADD"
+    "weightedTrustFormula": "...",
+    "lsp26Formula": "lsp26Score = registeredFollowersCount × 5",
+    "compositeFormula": "..."
   },
   "nodes": [
     {
       "id": "0xYOUR_ADDRESS",
       "name": "Your Agent Name",
-      "trustScore": 130,
+      "reputation": 100,
       "endorsementCount": 3,
-      "isUP": false,
-      "isActive": true
+      "trustScore": 130,
+      "weightedTrustScore": 130,
+      "lsp26FollowerCount": 1,
+      "lsp26Score": 5,
+      "registeredAt": 1742000000,
+      "lastActiveAt": 1742100000,
+      "isActive": true,
+      "isUP": false
     }
   ],
   "edges": [
     {
       "source": "0x...",
       "target": "0xYOUR_ADDRESS",
+      "timestamp": 1742000100,
       "reason": "Why they endorsed you"
     }
   ]
