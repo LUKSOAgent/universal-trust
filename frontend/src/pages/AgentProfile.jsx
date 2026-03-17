@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { verifyV2, getBaseAddress, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered, getAllAgents } from "../useContract";
+import { verifyAgent, getBaseAddress, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered, getAllAgents } from "../useContract";
 import { EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
 import TrustScoreCard, { computeCompositeScore, getTrustLevel } from "../components/TrustScoreCard";
@@ -439,7 +439,7 @@ export default function AgentProfile() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard label="Reputation" value={verification.reputation} />
               <StatCard label="Endorsements" value={verification.endorsements} />
-              <StatCard label="Contract Score" value={verification.trustScore} />
+              <StatCard label="On-chain Score" value={verification.trustScore} />
               <StatCard label="Skills" value={skills.length} />
             </div>
           </div>
@@ -662,10 +662,14 @@ function SkillCard({ skill }) {
   );
 }
 
-function StatCard({ label, value }) {
+function StatCard({ label, value, loading }) {
   return (
     <div className="bg-lukso-card border border-lukso-border rounded-xl p-4 text-center hover:border-lukso-pink/30 transition">
-      <p className="text-2xl font-bold text-white">{value}</p>
+      {loading ? (
+        <div className="h-8 w-12 bg-lukso-border/50 rounded mx-auto animate-pulse" />
+      ) : (
+        <p className="text-2xl font-bold text-white">{value}</p>
+      )}
       <p className="text-xs text-gray-500 mt-1">{label}</p>
     </div>
   );
