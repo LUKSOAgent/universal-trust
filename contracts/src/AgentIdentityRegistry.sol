@@ -97,6 +97,7 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     // Errors
     // ─────────────────────────────────────────────────────────────────────────
 
+    error ZeroAddress();
     error AlreadyRegistered(address agent);
     error NotRegistered(address agent);
     error EmptyName();
@@ -146,6 +147,8 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
      * @param _owner          Initial owner (should be the agent UP)
      */
     function initialize(address _skillsRegistry, address _owner) external initializer {
+        if (_skillsRegistry == address(0)) revert ZeroAddress();
+        if (_owner == address(0)) revert ZeroAddress();
         skillsRegistry = _skillsRegistry;
         owner = _owner;
         _reputationUpdaters[_owner] = true;
@@ -372,6 +375,7 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     // ─────────────────────────────────────────────────────────────────────────
 
     function transferOwnership(address newOwner) external onlyOwner {
+        if (newOwner == address(0)) revert ZeroAddress();
         emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
     }
