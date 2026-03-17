@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { verifyAgent, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered, getAllAgents } from "../useContract";
 import { EXPLORER_URL } from "../config";
-import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
+import TrustBadge from "../components/TrustBadge";
 import TrustScoreCard, { computeCompositeScore, getTrustLevel } from "../components/TrustScoreCard";
 import { fetchUPProfile, fetchUPProfiles, fetchOnChainReputation, fetchLSP26RegisteredFollowers } from "../envio";
 
@@ -101,9 +101,10 @@ export default function AgentProfile() {
         }).catch(() => {});
 
         // Fetch endorser UP profiles (non-blocking, for avatars)
+        // Use merge pattern to avoid overwriting LSP26 follower profiles from parallel fetch
         if (endorserList.length > 0) {
           fetchUPProfiles(endorserList)
-            .then((profiles) => { if (!cancelled) setEndorserProfiles(profiles); })
+            .then((profiles) => { if (!cancelled) setEndorserProfiles((prev) => ({ ...prev, ...profiles })); })
             .catch(() => {});
         }
 
@@ -569,8 +570,10 @@ export default function AgentProfile() {
                   {avatar ? (
                     <img src={avatar} alt={name} className="w-6 h-6 rounded-full object-cover border border-emerald-500/30 shrink-0" onError={(e) => e.target.style.display="none"} />
                   ) : (
-                    <span className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-[10px] font-bold text-emerald-400 shrink-0">
-                      {name[0].toUpperCase()}
+                    <span className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                      <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
                     </span>
                   )}
                   <span className="text-sm text-gray-300 group-hover:text-emerald-400 transition font-medium">{name}</span>

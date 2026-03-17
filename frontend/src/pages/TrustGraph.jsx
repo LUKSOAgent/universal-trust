@@ -975,6 +975,7 @@ export default function TrustGraph() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search…"
+              aria-label="Search trust graph nodes"
               className="w-full bg-lukso-card border border-lukso-border rounded-lg pl-8 pr-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-lukso-pink/50"
             />
           </div>
@@ -1133,7 +1134,7 @@ export default function TrustGraph() {
                   <p className="text-red-400 text-sm">Error: {error}</p>
                 </div>
               )}
-              <svg ref={svgRef} width={dims.w} height={dims.h} className="w-full touch-none" style={{ display: "block" }} />
+              <svg ref={svgRef} width={dims.w} height={dims.h} className="w-full touch-none" style={{ display: "block" }} role="img" aria-label="Interactive trust graph visualization showing agent endorsement relationships on LUKSO" />
               {/* API badge */}
               <div className="absolute bottom-2 left-2 hidden sm:flex items-center gap-2 bg-lukso-darker/90 border border-lukso-border rounded-lg px-2.5 py-1.5 text-xs">
                 <span className="text-lukso-pink">🤖</span>

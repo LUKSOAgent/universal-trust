@@ -171,19 +171,29 @@ function AgentCardInner({ agent, upProfile }) {
   return (
     <Link
       to={`/agent/${agent.address}`}
-      className="block bg-lukso-card border border-lukso-border rounded-xl p-5 hover:border-lukso-pink/50 hover:glow-pink transition-all duration-300 group hover:-translate-y-0.5"
+      className={`block bg-lukso-card border rounded-xl p-5 hover:border-lukso-pink/50 hover:glow-pink transition-all duration-300 group hover:-translate-y-0.5 border-l-2 ${
+        compositeScore >= 1000 ? "border-l-amber-500 border-lukso-border" :
+        compositeScore >= 500 ? "border-l-purple-500 border-lukso-border" :
+        compositeScore >= 200 ? "border-l-emerald-500 border-lukso-border" :
+        compositeScore >= 100 ? "border-l-blue-500 border-lukso-border" :
+        "border-l-gray-600 border-lukso-border"
+      }`}
     >
       <div className="flex items-start justify-between gap-3 sm:gap-4">
         <div className="flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-2 mb-1">
-            {/* UP avatar */}
-            {avatarUrl && (
+            {/* UP avatar or gradient fallback */}
+            {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={displayName}
                 className="w-7 h-7 rounded-full object-cover border border-lukso-border shrink-0"
                 onError={(e) => { e.target.style.display = "none"; }}
               />
+            ) : (
+              <span className="w-7 h-7 rounded-full bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                {(displayName || "?")[0].toUpperCase()}
+              </span>
             )}
             <h3 className="text-lg font-semibold text-white group-hover:text-lukso-pink transition truncate">
               {displayName}

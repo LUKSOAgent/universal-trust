@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { verifyAgent, getSkills } from "../useContract";
 import { CONTRACT_ADDRESS, EXPLORER_URL } from "../config";
