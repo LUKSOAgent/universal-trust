@@ -96,11 +96,15 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
 
   const { reputation, endorsements, trustScore, isUP } = verification;
   const endorsementPoints = endorsements * 10;
-  const level = getTrustLevel(trustScore);
 
   // Composite Trust Score: contract score + on-chain activity + skills + LSP26
   const onChainScore = onChainRep?.generalScore ?? null;
   const compositeScore = computeCompositeScore(trustScore, onChainScore, skillsCount ?? 0, lsp26Score);
+
+  // Use composite score for the overall trust tier label (consistent with Directory/AgentCard),
+  // but keep contract-based coloring for the contract score bar
+  const level = getTrustLevel(compositeScore);
+  const contractLevel = getTrustLevel(trustScore);
 
   // Rank: position among all agents sorted by trustScore descending
   let rank = null;
@@ -199,7 +203,7 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
       <div>
         <div className="w-full h-2.5 bg-lukso-darker rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full bg-gradient-to-r ${level.bar} transition-all duration-700`}
+            className={`h-full rounded-full bg-gradient-to-r ${contractLevel.bar} transition-all duration-700`}
             style={{ width: `${Math.max(totalPct, totalPct > 0 ? 1 : 0)}%` }}
           />
         </div>
