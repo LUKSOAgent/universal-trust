@@ -24,6 +24,8 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
 
     uint256 public constant INITIAL_REPUTATION = 100;
     uint256 public constant MAX_REPUTATION = 10000;
+    uint256 public constant MIN_ENDORSEMENT_WEIGHT = 10;
+    uint256 public constant MAX_ENDORSEMENT_WEIGHT = 50;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Storage
@@ -56,6 +58,17 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
 
     /// @dev Addresses authorized to update reputation
     mapping(address => bool) private _reputationUpdaters;
+
+    // ─── V2 Storage (append-only below this line) ────────────────────────
+    // ⚠️ UPGRADE SAFETY: New state variables MUST be appended after this
+    // comment. Never insert, reorder, or remove variables above this line.
+    // Doing so will corrupt the storage layout for the UUPS proxy.
+
+    /// @notice Points of reputation lost per day of inactivity (default: 1)
+    uint256 public decayRate;
+
+    /// @notice Seconds before decay starts counting (default: 30 days)
+    uint256 public decayGracePeriod;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Structs
@@ -92,6 +105,7 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     event EndorsementRemoved(address indexed endorser, address indexed endorsed, uint64 timestamp);
     event ReputationUpdaterSet(address indexed updater, bool authorized);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event ReputationDecayed(address indexed agent, uint256 oldReputation, uint256 newReputation, uint256 daysInactive);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Errors
@@ -107,6 +121,8 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     error NotAuthorized();
     error AgentNotActive(address agent);
     error EndorserMustBeUniversalProfile(address endorser);
+    error AgentAlreadyActive(address agent);
+    error NotEligibleForDecay(address agent);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Modifiers
@@ -152,6 +168,11 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
         skillsRegistry = _skillsRegistry;
         owner = _owner;
         _reputationUpdaters[_owner] = true;
+        decayRate = 1;
+        decayGracePeriod = 30 days;
+
+        emit OwnershipTransferred(address(0), _owner);
+        emit ReputationUpdaterSet(_owner, true);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -210,11 +231,13 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     }
 
     function deactivate() external onlyRegistered(msg.sender) {
+        if (!_agents[msg.sender].isActive) revert AgentNotActive(msg.sender);
         _agents[msg.sender].isActive = false;
         emit AgentDeactivated(msg.sender, uint64(block.timestamp));
     }
 
     function reactivate() external onlyRegistered(msg.sender) {
+        if (_agents[msg.sender].isActive) revert AgentAlreadyActive(msg.sender);
         _agents[msg.sender].isActive = true;
         _agents[msg.sender].lastActiveAt = uint64(block.timestamp);
         emit AgentReactivated(msg.sender, uint64(block.timestamp));
@@ -259,6 +282,7 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
         address endorsed,
         string calldata reason
     ) external onlyRegistered(endorsed) onlyActive(endorsed) {
+        if (_agentIndex[msg.sender] != 0 && !_agents[msg.sender].isActive) revert AgentNotActive(msg.sender);
         if (!isUniversalProfile(msg.sender)) revert EndorserMustBeUniversalProfile(msg.sender);
         if (msg.sender == endorsed) revert CannotEndorseSelf();
         if (_endorserIndex[endorsed][msg.sender] != 0) revert AlreadyEndorsed(msg.sender, endorsed);
@@ -307,7 +331,11 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     // ─────────────────────────────────────────────────────────────────────────
 
     function getTrustScore(address agent) external view onlyRegistered(agent) returns (uint256) {
-        AgentIdentity storage a = _agents[agent];
+        return _computeFlatTrustScore(_agents[agent]);
+    }
+
+    /// @dev Internal flat trust score: reputation + (endorsementCount * 10), capped at MAX_REPUTATION
+    function _computeFlatTrustScore(AgentIdentity storage a) internal view returns (uint256) {
         uint256 score = a.reputation + (a.endorsementCount * 10);
         return score > MAX_REPUTATION ? MAX_REPUTATION : score;
     }
@@ -333,8 +361,8 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
             address endorser = endorsers[i];
             uint256 endorserRep = _agents[endorser].reputation;
             uint256 weight = endorserRep / 10;
-            if (weight < 10) weight = 10;
-            if (weight > 50) weight = 50;
+            if (weight < MIN_ENDORSEMENT_WEIGHT) weight = MIN_ENDORSEMENT_WEIGHT;
+            if (weight > MAX_ENDORSEMENT_WEIGHT) weight = MAX_ENDORSEMENT_WEIGHT;
             score += weight;
         }
 
@@ -347,10 +375,9 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
 
     /**
      * @notice Detect if an address is a LUKSO Universal Profile.
-     *         Multi-strategy to support all deployed UP versions:
+     *         Two-strategy check:
      *         1. LSP0 interface ID 0x24871b3a
-     *         2. ERC725Y interface ID 0x629aa694
-     *         3. Duck-type: getData(bytes32(0)) doesn't revert
+     *         2. ERC725Account interface ID 0x629aa694
      */
     function isUniversalProfile(address account) public view returns (bool) {
         if (account.code.length == 0) return false;
@@ -363,10 +390,6 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
             if (supported) return true;
         } catch {}
 
-        try IERC725Y(account).getData(bytes32(0)) returns (bytes memory) {
-            return true;
-        } catch {}
-
         return false;
     }
 
@@ -374,10 +397,57 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     // Admin
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * @notice Transfer ownership to a new address.
+     * @dev Also revokes the old owner's reputation updater status and grants
+     *      it to the new owner, keeping updater privileges aligned with ownership.
+     * @param newOwner The address to transfer ownership to
+     */
     function transferOwnership(address newOwner) external onlyOwner {
         if (newOwner == address(0)) revert ZeroAddress();
-        emit OwnershipTransferred(owner, newOwner);
+        address oldOwner = owner;
+        _reputationUpdaters[oldOwner] = false;
+        _reputationUpdaters[newOwner] = true;
         owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
+        emit ReputationUpdaterSet(oldOwner, false);
+        emit ReputationUpdaterSet(newOwner, true);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Reputation Decay
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * @notice Apply reputation decay to an agent based on inactivity.
+     *         Permissionless — anyone can call this to enforce upkeep.
+     * @param agent The agent address to apply decay to
+     */
+    function applyDecay(address agent) external onlyRegistered(agent) onlyActive(agent) {
+        AgentIdentity storage a = _agents[agent];
+        uint256 inactiveSeconds = block.timestamp - a.lastActiveAt;
+
+        if (inactiveSeconds <= decayGracePeriod) revert NotEligibleForDecay(agent);
+
+        uint256 daysInactive = (inactiveSeconds - decayGracePeriod) / 1 days;
+        if (daysInactive == 0) revert NotEligibleForDecay(agent);
+
+        uint256 decay = daysInactive * decayRate;
+        uint256 oldRep = a.reputation;
+        a.reputation = decay >= a.reputation ? 0 : a.reputation - decay;
+        a.lastActiveAt = uint64(block.timestamp); // reset timer after decay applied
+
+        emit ReputationDecayed(agent, oldRep, a.reputation, daysInactive);
+    }
+
+    /**
+     * @notice Set decay parameters. Only callable by the owner.
+     * @param _decayRate Points lost per day of inactivity
+     * @param _gracePeriod Seconds before decay starts
+     */
+    function setDecayParams(uint256 _decayRate, uint256 _gracePeriod) external onlyOwner {
+        decayRate = _decayRate;
+        decayGracePeriod = _gracePeriod;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -446,8 +516,7 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
         isUP = isUniversalProfile(agent);
         reputation = a.reputation;
         endorsements = a.endorsementCount;
-        trustScore = reputation + (endorsements * 10);
-        if (trustScore > MAX_REPUTATION) trustScore = MAX_REPUTATION;
+        trustScore = _computeFlatTrustScore(a);
         name = a.name;
     }
 
@@ -469,8 +538,7 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
         isUP = isUniversalProfile(agent);
         reputation = a.reputation;
         endorsements = a.endorsementCount;
-        trustScore = reputation + (endorsements * 10);
-        if (trustScore > MAX_REPUTATION) trustScore = MAX_REPUTATION;
+        trustScore = _computeFlatTrustScore(a);
         name = a.name;
         weightedTrustScore = _computeWeightedTrustScore(agent);
     }
