@@ -93,9 +93,9 @@ export default function Directory() {
       const q = search.toLowerCase().trim();
       result = result.filter(
         (a) =>
-          a.name.toLowerCase().includes(q) ||
-          a.address.toLowerCase().includes(q) ||
-          (a.description && a.description.toLowerCase().includes(q))
+          (a.name || "").toLowerCase().includes(q) ||
+          (a.address || "").toLowerCase().includes(q) ||
+          (a.description || "").toLowerCase().includes(q)
       );
     }
 
