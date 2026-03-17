@@ -129,9 +129,18 @@ export default function TrustGraph() {
           const unique = discovered.filter((a) => !registeredAddrs.has(a.address.toLowerCase()));
           // Merge with curated (curated takes precedence for known addresses)
           const curatedAddrs = new Set(KNOWN_AGENTS.map((a) => a.address.toLowerCase()));
+          const curatedBase = KNOWN_AGENTS.filter((a) => !registeredAddrs.has(a.address.toLowerCase()));
+          const seenNames = new Set(curatedBase.map((a) => (a.name || "").toLowerCase()));
           const merged = [
-            ...KNOWN_AGENTS.filter((a) => !registeredAddrs.has(a.address.toLowerCase())),
-            ...unique.filter((a) => !curatedAddrs.has(a.address.toLowerCase())),
+            ...curatedBase,
+            ...unique.filter((a) => {
+              if (curatedAddrs.has(a.address.toLowerCase())) return false;
+              // Deduplicate by name to avoid "Agents on LUKSO" appearing twice
+              const nameLower = (a.name || "").toLowerCase();
+              if (nameLower && seenNames.has(nameLower)) return false;
+              seenNames.add(nameLower);
+              return true;
+            }),
           ];
           setEcosystemAgents(merged);
 

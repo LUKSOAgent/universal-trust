@@ -166,6 +166,7 @@ export default function Verify() {
 
   async function doVerify(addr) {
     try {
+      setAddress(addr); // ensure address state matches what we're scanning
       setLoading(true);
       setError(null);
       setResult(null);
