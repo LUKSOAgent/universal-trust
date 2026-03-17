@@ -1003,9 +1003,14 @@ export default function TrustGraph() {
             {/* Graph canvas */}
             <div ref={containerRef} className="bg-lukso-card border border-lukso-border rounded-2xl overflow-hidden relative flex-1 min-h-[300px]">
               {loading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                  <div className="w-10 h-10 border-4 border-lukso-border border-t-lukso-pink rounded-full animate-spin mb-3" />
-                  <p className="text-gray-400 text-sm">Loading from chain…</p>
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-lukso-card/80 backdrop-blur-sm">
+                  <div className="w-14 h-14 relative mb-4">
+                    <div className="absolute inset-0 rounded-full border-2 border-lukso-pink/30 animate-ping" />
+                    <div className="absolute inset-2 rounded-full border-2 border-lukso-purple/40 animate-pulse" />
+                    <div className="absolute inset-0 rounded-full border-2 border-lukso-pink border-t-transparent animate-spin" />
+                  </div>
+                  <p className="text-gray-300 text-sm font-medium">Loading trust network…</p>
+                  <p className="text-gray-500 text-xs mt-1">Fetching agents, endorsements & skills from LUKSO</p>
                 </div>
               )}
               {error && (

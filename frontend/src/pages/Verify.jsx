@@ -361,12 +361,44 @@ export default function Verify() {
           </p>
         )}
         {!result && !loading && !inputValue && (
-          <p className="mt-3 text-xs text-gray-600">
-            Try:{" "}
-            <button type="button" onClick={() => { setInputValue("luksoagent"); handleInputChange("luksoagent"); }} className="text-lukso-purple hover:text-lukso-pink transition">luksoagent</button>
-            {" · "}
-            <button type="button" onClick={() => { const a = "0x293E96ebbf264ed7715cff2b67850517De70232a"; setInputValue(a); setAddress(a); setValidationError(null); }} className="text-lukso-purple hover:text-lukso-pink transition font-mono">0x293E...0232a</button>
-          </p>
+          <div className="mt-3">
+            <p className="text-xs text-gray-600 mb-3">
+              Try:{" "}
+              <button type="button" onClick={() => { setInputValue("luksoagent"); handleInputChange("luksoagent"); }} className="text-lukso-purple hover:text-lukso-pink transition">luksoagent</button>
+              {" · "}
+              <button type="button" onClick={() => { const a = "0x293E96ebbf264ed7715cff2b67850517De70232a"; setInputValue(a); setAddress(a); setValidationError(null); }} className="text-lukso-purple hover:text-lukso-pink transition font-mono">0x293E...0232a</button>
+            </p>
+            {/* What you'll see preview */}
+            <div className="bg-lukso-card/50 border border-lukso-border/50 rounded-xl p-4 text-center">
+              <div className="flex items-center justify-center gap-6 text-xs text-gray-500">
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-8 h-8 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  </div>
+                  <span>Identity</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-8 h-8 rounded-full bg-lukso-purple/10 border border-lukso-purple/20 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                  </div>
+                  <span>Reputation</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-8 h-8 rounded-full bg-lukso-pink/10 border border-lukso-pink/20 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-lukso-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                  </div>
+                  <span>Trust Score</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-8 h-8 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  </div>
+                  <span>On-Chain Activity</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-gray-600 mt-3">Scan any address to see full on-chain trust data</p>
+            </div>
+          </div>
         )}
       </form>
 
