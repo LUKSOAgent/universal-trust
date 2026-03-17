@@ -360,21 +360,21 @@ export default function AgentProfile() {
         return (
           <div className="mb-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
             {/* Composite Score — prominent hero */}
-            <div className={`relative overflow-hidden border rounded-xl p-5 mb-4 ${lvl.bg}`}>
+            <div className={`relative overflow-hidden border rounded-xl p-6 mb-4 ${lvl.bg}`}>
               {/* Animated gradient background */}
               <div className="absolute inset-0 bg-gradient-to-br from-lukso-pink/10 via-lukso-purple/5 to-lukso-pink/10 bg-[length:200%_200%] animate-gradient" />
-              <div className="relative z-10 flex items-center justify-between">
+              <div className="relative z-10 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider mb-1">Composite Trust Score</p>
-                  <p className="text-5xl font-bold text-white tabular-nums">{composite.toLocaleString()}</p>
-                  <p className="text-xs text-gray-500 mt-1 font-mono">
-                    {verification.trustScore} (contract)
-                    {onChainScore !== null ? ` + ${Math.round(onChainScore * 3)} (activity×3)` : ""}
-                    {skills.length > 0 ? ` + ${Math.min(skills.length, 20) * 10} (${skills.length} skills×10)` : ""}
+                  <p className="text-5xl sm:text-6xl font-bold text-white tabular-nums">{composite.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-2 font-mono">
+                    {verification.trustScore} <span className="text-gray-600">(contract)</span>
+                    {onChainScore !== null ? <>{" + "}{Math.round(onChainScore * 3)} <span className="text-gray-600">(activity×3)</span></> : ""}
+                    {skills.length > 0 ? <>{" + "}{Math.min(skills.length, 20) * 10} <span className="text-gray-600">({skills.length} skills×10)</span></> : ""}
                   </p>
                 </div>
-                <div className="flex flex-col items-center gap-1">
-                  <span className={`text-lg font-semibold px-3 py-1.5 rounded-full border ${lvl.bg} ${lvl.color}`}>
+                <div className="flex flex-col items-center gap-2 shrink-0">
+                  <span className={`text-lg font-semibold px-4 py-2 rounded-full border ${lvl.bg} ${lvl.color}`}>
                     {lvl.label}
                   </span>
                   {allAgents.length > 0 && (() => {
@@ -383,8 +383,8 @@ export default function AgentProfile() {
                       .sort((a, b) => b.score - a.score);
                     const idx = sorted.findIndex(a => a.addr.toLowerCase() === address?.toLowerCase());
                     return idx >= 0 ? (
-                      <span className="text-xs text-gray-500">
-                        Rank <span className="text-lukso-pink font-bold">#{idx + 1}</span> of {allAgents.length}
+                      <span className="text-sm text-gray-400">
+                        Rank <span className="text-lukso-pink font-bold text-base">#{idx + 1}</span> <span className="text-gray-600">of {allAgents.length}</span>
                       </span>
                     ) : null;
                   })()}
@@ -411,6 +411,7 @@ export default function AgentProfile() {
           allAgents={allAgents}
           onChainRep={onChainRep}
           skillsCount={skills.length}
+          hideComposite={true}
         />
       </div>
 

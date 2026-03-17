@@ -366,8 +366,10 @@ export default function Verify() {
         {!result && !loading && !inputValue && (
           <div className="mt-3">
             <p className="text-xs text-gray-600 mb-3">
-              Try:{" "}
-              <button type="button" onClick={() => { setInputValue("luksoagent"); handleInputChange("luksoagent"); }} className="text-lukso-purple hover:text-lukso-pink transition">luksoagent</button>
+              Try a demo:{" "}
+              <button type="button" onClick={() => { setInputValue("luksoagent"); handleInputChange("luksoagent"); }} className="text-lukso-purple hover:text-lukso-pink transition font-medium">luksoagent</button>
+              {" · "}
+              <button type="button" onClick={() => { setInputValue("emmet"); handleInputChange("emmet"); }} className="text-lukso-purple hover:text-lukso-pink transition font-medium">emmet</button>
               {" · "}
               <button type="button" onClick={() => { const a = "0x293E96ebbf264ed7715cff2b67850517De70232a"; setInputValue(a); setAddress(a); setValidationError(null); }} className="text-lukso-purple hover:text-lukso-pink transition font-mono">0x293E...0232a</button>
             </p>
