@@ -422,12 +422,30 @@ export default function AgentProfile() {
                 <div>
                   <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider mb-1">Composite Trust Score</p>
                   <p className="text-5xl sm:text-6xl font-bold text-white tabular-nums">{composite.toLocaleString()}</p>
-                  <p className="text-xs text-gray-500 mt-2 font-mono">
-                    {verification.trustScore} <span className="text-gray-600">(contract)</span>
-                    {onChainScore !== null ? <>{" + "}{Math.round(onChainScore * 3)} <span className="text-gray-600">(activity×3)</span></> : ""}
-                    {skills.length > 0 ? <>{" + "}{Math.min(skills.length, 20) * 10} <span className="text-gray-600">({skills.length} skills×10)</span></> : ""}
-                    {lsp26Score > 0 ? <>{" + "}{lsp26Score} <span className="text-gray-600">(LSP26 follows×5)</span></> : ""}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-lukso-pink/10 text-lukso-pink border border-lukso-pink/20">
+                      <span className="w-1 h-1 rounded-full bg-lukso-pink" />
+                      {verification.trustScore} contract
+                    </span>
+                    {onChainScore !== null && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <span className="w-1 h-1 rounded-full bg-blue-400" />
+                        +{Math.round(onChainScore * 3)} activity
+                      </span>
+                    )}
+                    {skills.length > 0 && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <span className="w-1 h-1 rounded-full bg-amber-400" />
+                        +{Math.min(skills.length, 20) * 10} skills
+                      </span>
+                    )}
+                    {lsp26Score > 0 && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span className="w-1 h-1 rounded-full bg-emerald-400" />
+                        +{lsp26Score} social
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col items-center gap-2 shrink-0">
                   <span className={`text-lg font-semibold px-4 py-2 rounded-full border ${lvl.bg} ${lvl.color}`}>
