@@ -88,15 +88,18 @@ export default function AgentCard({ agent, upProfile }) {
             <span className="font-mono">
               {agent.address.slice(0, 6)}...{agent.address.slice(-4)}
             </span>
-            <span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-lukso-purple inline-block" />
               <span className="text-lukso-purple font-medium">{agent.reputation}</span> rep
             </span>
-            <span>
-              <span className="text-lukso-pink font-medium">{agent.endorsementCount}</span> endorsements
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-lukso-pink inline-block" />
+              <span className="text-lukso-pink font-medium">{agent.endorsementCount}</span> endorsement{agent.endorsementCount === 1 ? "" : "s"}
             </span>
             {skillCount !== null && skillCount > 0 && (
-              <span>
-                <span className="text-lukso-purple font-medium">{skillCount}</span> skills
+              <span className="flex items-center gap-1">
+                <span className="text-lukso-purple">⚡</span>
+                <span className="text-lukso-purple font-medium">{skillCount}</span> skill{skillCount === 1 ? "" : "s"}
               </span>
             )}
             <span>Joined {registeredDate}</span>
