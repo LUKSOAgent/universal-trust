@@ -95,8 +95,8 @@ export async function verifyV2(address) {
     reputation: Number(result[3]),
     endorsements: Number(result[4]),
     trustScore: Number(result[5]),
-    weightedTrustScore: Number(result[6]),
-    name: result[7],
+    name: result[6],
+    weightedTrustScore: Number(result[7]),
   };
 }
 
