@@ -380,9 +380,7 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Inactive agent cannot endorse ───────────────────────────────────────
 
     function test_endorse_revert_inactiveEndorser() public {
-        // Since the UP constraint replaced the registered/active endorser checks,
-        // a deactivated UP endorser CAN still endorse (only endorsed must be active).
-        // An EOA endorser hits EndorserMustBeUniversalProfile before any active check.
+        // M-4 fix: deactivated registered agents cannot endorse
         _makeUP(agentA);
         vm.prank(agentA);
         registry.register("Agent Alpha", "desc", "");
@@ -392,10 +390,10 @@ contract AgentIdentityRegistryTest is Test {
         vm.prank(agentA);
         registry.deactivate();
 
-        // Deactivated UP can still endorse — contract only checks onlyActive(endorsed)
+        // Deactivated registered UP should revert with AgentNotActive
         vm.prank(agentA);
-        registry.endorse(agentB, "still works");
-        assertTrue(registry.hasEndorsed(agentA, agentB));
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.AgentNotActive.selector, agentA));
+        registry.endorse(agentB, "should fail");
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -820,22 +818,18 @@ contract AgentIdentityRegistryTest is Test {
 
     // ─── Reactivate already active agent (no-op) ─────────────────────────────
 
-    function test_reactivate_alreadyActive() public {
+    function test_reactivate_alreadyActive_reverts() public {
         vm.prank(agentA);
         registry.register("A", "desc", "");
 
-        vm.warp(2000);
         vm.prank(agentA);
-        registry.reactivate(); // should not revert, just update lastActiveAt
-
-        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
-        assertTrue(agent.isActive);
-        assertEq(agent.lastActiveAt, 2000);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.AgentAlreadyActive.selector, agentA));
+        registry.reactivate(); // idempotency: should revert
     }
 
     // ─── Deactivate already deactivated agent (no-op) ────────────────────────
 
-    function test_deactivate_alreadyDeactivated() public {
+    function test_deactivate_alreadyDeactivated_reverts() public {
         vm.prank(agentA);
         registry.register("A", "desc", "");
 
@@ -843,9 +837,8 @@ contract AgentIdentityRegistryTest is Test {
         registry.deactivate();
 
         vm.prank(agentA);
-        registry.deactivate(); // should not revert
-
-        assertFalse(registry.getAgent(agentA).isActive);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.AgentNotActive.selector, agentA));
+        registry.deactivate(); // idempotency: should revert
     }
 
     // ─── isReputationUpdater check ───────────────────────────────────────────
@@ -1258,7 +1251,7 @@ contract AgentIdentityRegistryTest is Test {
 
     // ─── Ownership transfer preserves reputation updaters ────────────────
 
-    function test_ownerTransfer_preservesUpdaters() public {
+    function test_ownerTransfer_updaterBehavior() public {
         vm.prank(agentA);
         registry.register("A", "", "");
 
@@ -1270,7 +1263,7 @@ contract AgentIdentityRegistryTest is Test {
         vm.prank(deployer);
         registry.transferOwnership(agentC);
 
-        // agentB should still be an updater (updater list is independent of owner)
+        // agentB should still be an updater (independent of ownership)
         assertTrue(registry.isReputationUpdater(agentB));
 
         // agentB can still update reputation
@@ -1278,9 +1271,11 @@ contract AgentIdentityRegistryTest is Test {
         registry.updateReputation(agentA, 25, "still authorized");
         assertEq(registry.getAgent(agentA).reputation, 125);
 
-        // Old owner (deployer) is still a reputation updater via the mapping
-        // (was set in constructor), but is no longer owner
-        assertTrue(registry.isReputationUpdater(deployer));
+        // L-5 fix: old owner (deployer) loses updater status on transfer
+        assertFalse(registry.isReputationUpdater(deployer));
+
+        // New owner has updater status
+        assertTrue(registry.isReputationUpdater(agentC));
 
         // New owner can revoke old updaters
         vm.prank(agentC);
@@ -1697,6 +1692,241 @@ contract AgentIdentityRegistryTest is Test {
         emit log_named_uint("Gas: getWeightedTrustScore (50 endorsers)", gasUsed);
         // Should complete within reasonable gas (< 500k for 50 endorsers)
         assertLt(gasUsed, 500000);
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // V2 Audit Fixes & Reputation Decay Tests
+    // ═════════════════════════════════════════════════════════════════════════
+
+    // ─── Decay: applied correctly after grace period ─────────────────────
+
+    function test_decay_appliedAfterGracePeriod() public {
+        vm.warp(1000);
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        // Default grace period is 30 days. Warp 35 days ahead.
+        // 35 days = 30 days grace + 5 days of decay
+        // With decayRate=1, decay = 5 * 1 = 5
+        vm.warp(1000 + 35 days);
+        registry.applyDecay(agentA);
+
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
+        assertEq(agent.reputation, 95); // 100 - 5
+    }
+
+    // ─── Decay: not applicable during grace period ───────────────────────
+
+    function test_decay_revert_duringGracePeriod() public {
+        vm.warp(1000);
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        // Only 20 days — within 30-day grace period
+        vm.warp(1000 + 20 days);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotEligibleForDecay.selector, agentA));
+        registry.applyDecay(agentA);
+    }
+
+    // ─── Decay: not applicable at exactly grace period boundary ──────────
+
+    function test_decay_revert_exactlyAtGracePeriod() public {
+        vm.warp(1000);
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        // Exactly 30 days — at boundary, daysInactive = 0, should revert
+        vm.warp(1000 + 30 days);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotEligibleForDecay.selector, agentA));
+        registry.applyDecay(agentA);
+    }
+
+    // ─── Decay: resets lastActiveAt ──────────────────────────────────────
+
+    function test_decay_resetsLastActiveAt() public {
+        vm.warp(1000);
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        uint256 decayTime = 1000 + 35 days;
+        vm.warp(decayTime);
+        registry.applyDecay(agentA);
+
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
+        assertEq(agent.lastActiveAt, uint64(decayTime));
+    }
+
+    // ─── Decay: emits ReputationDecayed event ────────────────────────────
+
+    function test_decay_emitsEvent() public {
+        vm.warp(1000);
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        // 40 days: 30 grace + 10 days of decay → decay = 10
+        vm.warp(1000 + 40 days);
+
+        vm.expectEmit(true, false, false, true);
+        emit AgentIdentityRegistry.ReputationDecayed(agentA, 100, 90, 10);
+        registry.applyDecay(agentA);
+    }
+
+    // ─── Decay: clamps reputation to zero ────────────────────────────────
+
+    function test_decay_clampsToZero() public {
+        vm.warp(1000);
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        // 200 days: 30 grace + 170 days of decay → decay = 170 > 100 → clamp to 0
+        vm.warp(1000 + 200 days);
+        registry.applyDecay(agentA);
+
+        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
+        assertEq(agent.reputation, 0);
+    }
+
+    // ─── Decay: second call after reset requires new grace period ────────
+
+    function test_decay_secondCallNeedsNewGracePeriod() public {
+        vm.warp(1000);
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        // First decay at 35 days
+        vm.warp(1000 + 35 days);
+        registry.applyDecay(agentA);
+        assertEq(registry.getAgent(agentA).reputation, 95);
+
+        // Try again immediately — should revert (timer reset)
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotEligibleForDecay.selector, agentA));
+        registry.applyDecay(agentA);
+
+        // Warp another 31 days — now eligible again (1 day of decay)
+        vm.warp(1000 + 35 days + 31 days);
+        registry.applyDecay(agentA);
+        assertEq(registry.getAgent(agentA).reputation, 94);
+    }
+
+    // ─── setDecayParams: only callable by owner ──────────────────────────
+
+    function test_setDecayParams_onlyOwner() public {
+        vm.prank(agentA);
+        vm.expectRevert(AgentIdentityRegistry.NotAuthorized.selector);
+        registry.setDecayParams(5, 7 days);
+    }
+
+    function test_setDecayParams_works() public {
+        vm.prank(deployer);
+        registry.setDecayParams(5, 7 days);
+
+        assertEq(registry.decayRate(), 5);
+        assertEq(registry.decayGracePeriod(), 7 days);
+    }
+
+    // ─── setDecayParams: custom rate affects decay ───────────────────────
+
+    function test_decay_customRate() public {
+        vm.prank(deployer);
+        registry.setDecayParams(10, 7 days); // 10 points/day, 7 day grace
+
+        vm.warp(1000);
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        // 10 days: 7 grace + 3 days of decay → decay = 3 * 10 = 30
+        vm.warp(1000 + 10 days);
+        registry.applyDecay(agentA);
+
+        assertEq(registry.getAgent(agentA).reputation, 70);
+    }
+
+    // ─── Decay: reverts for unregistered agent ───────────────────────────
+
+    function test_decay_revert_unregistered() public {
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotRegistered.selector, agentA));
+        registry.applyDecay(agentA);
+    }
+
+    // ─── Decay: reverts for inactive agent ───────────────────────────────
+
+    function test_decay_revert_inactiveAgent() public {
+        vm.warp(1000);
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        vm.prank(agentA);
+        registry.deactivate();
+
+        vm.warp(1000 + 35 days);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.AgentNotActive.selector, agentA));
+        registry.applyDecay(agentA);
+    }
+
+    // ─── Idempotency: deactivate then deactivate reverts ─────────────────
+
+    function test_idempotent_deactivateDeactivate() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        vm.prank(agentA);
+        registry.deactivate();
+
+        vm.prank(agentA);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.AgentNotActive.selector, agentA));
+        registry.deactivate();
+    }
+
+    // ─── Idempotency: reactivate then reactivate reverts ─────────────────
+
+    function test_idempotent_reactivateReactivate() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        // Already active on registration
+        vm.prank(agentA);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.AgentAlreadyActive.selector, agentA));
+        registry.reactivate();
+    }
+
+    // ─── Deactivated registered agent cannot endorse ─────────────────────
+
+    function test_deactivatedRegistered_cannotEndorse() public {
+        _makeUP(agentA);
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+        vm.prank(agentB);
+        registry.register("B", "desc", "");
+
+        vm.prank(agentA);
+        registry.deactivate();
+
+        vm.prank(agentA);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.AgentNotActive.selector, agentA));
+        registry.endorse(agentB, "should fail");
+    }
+
+    // ─── Initialize emits events ─────────────────────────────────────────
+
+    function test_initialize_emitsEvents() public {
+        AgentIdentityRegistry impl = new AgentIdentityRegistry();
+        bytes memory initData = abi.encodeCall(
+            AgentIdentityRegistry.initialize,
+            (skillsRegistryAddr, agentA)
+        );
+
+        vm.expectEmit(true, true, false, false);
+        emit AgentIdentityRegistry.OwnershipTransferred(address(0), agentA);
+        vm.expectEmit(true, false, false, true);
+        emit AgentIdentityRegistry.ReputationUpdaterSet(agentA, true);
+        new ERC1967Proxy(address(impl), initData);
+    }
+
+    // ─── Initialize sets decay defaults ──────────────────────────────────
+
+    function test_initialize_setsDecayDefaults() public view {
+        assertEq(registry.decayRate(), 1);
+        assertEq(registry.decayGracePeriod(), 30 days);
     }
 
     // ─── Helper: repeat a character ──────────────────────────────────────
