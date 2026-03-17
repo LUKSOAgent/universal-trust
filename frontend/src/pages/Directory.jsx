@@ -23,6 +23,7 @@ async function loadAgentsFromAPI() {
       reputation: n.reputation,
       endorsementCount: n.endorsementCount,
       trustScore: n.trustScore,
+      weightedTrustScore: n.weightedTrustScore ?? null,
       registeredAt: n.registeredAt,
       lastActiveAt: n.lastActiveAt || 0,
       isActive: n.isActive ?? true,

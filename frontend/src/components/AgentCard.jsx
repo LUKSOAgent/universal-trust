@@ -5,6 +5,45 @@ import { getSkillCount } from "../useContract";
 import { computeCompositeScore } from "../envio";
 import { getTrustLevel } from "./TrustScoreCard";
 
+/**
+ * Return score tier badge info based on weightedTrustScore.
+ * < 100:    gray    "New"
+ * 100-149:  blue    "Registered"
+ * 150-299:  green   "Trusted"
+ * 300-499:  yellow  "Established"
+ * 500+:     orange  "Verified"
+ */
+function getWeightedTrustTier(score) {
+  if (score >= 500) {
+    return {
+      label: "Verified",
+      badgeClass: "bg-orange-500/20 text-orange-400 border-orange-500/40",
+    };
+  }
+  if (score >= 300) {
+    return {
+      label: "Established",
+      badgeClass: "bg-yellow-500/20 text-yellow-400 border-yellow-500/40",
+    };
+  }
+  if (score >= 150) {
+    return {
+      label: "Trusted",
+      badgeClass: "bg-green-500/20 text-green-400 border-green-500/40",
+    };
+  }
+  if (score >= 100) {
+    return {
+      label: "Registered",
+      badgeClass: "bg-blue-500/20 text-blue-400 border-blue-500/40",
+    };
+  }
+  return {
+    label: "New",
+    badgeClass: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+  };
+}
+
 function MiniTrustBar({ score }) {
   const maxScore = 10000;
   const pct = Math.min((score / maxScore) * 100, 100);
@@ -27,8 +66,11 @@ function MiniTrustBar({ score }) {
 function AgentCardInner({ agent, upProfile }) {
   const [skillCount, setSkillCount] = useState(null);
   const trustScore = agent.trustScore ?? (agent.reputation + (agent.endorsementCount * 10));
+  const weightedTrustScore = agent.weightedTrustScore ?? null;
   const compositeScore = computeCompositeScore(trustScore, null, skillCount ?? 0);
   const level = getTrustLevel(compositeScore);
+  const weightedTier = getWeightedTrustTier(weightedTrustScore ?? trustScore);
+  const showWeighted = weightedTrustScore !== null && weightedTrustScore !== trustScore;
   const registeredDate = agent.registeredAt > 0 ? new Date(agent.registeredAt * 1000).toLocaleDateString() : "Unknown";
 
   // Use UP name if available and different from registered name
@@ -115,8 +157,22 @@ function AgentCardInner({ agent, upProfile }) {
               compositeScore >= 500 ? "bg-green-500" : compositeScore >= 200 ? "bg-blue-500" : compositeScore >= 100 ? "bg-yellow-500" : "bg-gray-500"
             }`} style={{ zIndex: -1 }} />
           </div>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${level.bg} ${level.color}`}>
-            {level.label}
+          {/* Score tier badge (based on weightedTrustScore or trustScore) */}
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${weightedTier.badgeClass}`}>
+            {weightedTier.label}
+          </span>
+          {/* Weighted trust score (only when it differs from regular trustScore) */}
+          {showWeighted && (
+            <span
+              className="text-[10px] text-gray-500 cursor-help"
+              title="Endorsements weighted by endorser reputation"
+            >
+              Weighted: <span className="text-gray-300 font-semibold">{weightedTrustScore}</span>
+            </span>
+          )}
+          {/* Trust Score label */}
+          <span className="text-[10px] text-gray-600">
+            Score: <span className="text-gray-400">{trustScore}</span>
           </span>
           <span className="hidden sm:block">
             <Link

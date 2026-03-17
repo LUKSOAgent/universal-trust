@@ -29,6 +29,8 @@ const ABI = [
   "function isUniversalProfile(address) view returns (bool)",
 ];
 
+
+
 export default async function handler(req, res) {
   // CORS — open for all agents
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -79,6 +81,12 @@ export default async function handler(req, res) {
       .filter((r) => r.status === "fulfilled")
       .map((r) => r.value);
 
+    // Build a reputation lookup map for weightedTrustScore computation
+    const reputationByAddr = {};
+    for (const node of nodes) {
+      reputationByAddr[node.id.toLowerCase()] = node.reputation;
+    }
+
     // Fetch endorsement edges in parallel (inner endorser lookups also parallelized)
     const edgeResults = await Promise.allSettled(
       nodes.map(async (node) => {
@@ -109,6 +117,26 @@ export default async function handler(req, res) {
       .filter((r) => r.status === "fulfilled")
       .flatMap((r) => r.value);
 
+    // Compute weightedTrustScore for each node:
+    // reputation + sum(min(50, max(10, floor(endorserReputation / 10)))) for each endorser, capped at 10000
+    // Build endorser-set per node from edges
+    const endorsersByTarget = {};
+    for (const edge of edges) {
+      const target = edge.target.toLowerCase();
+      if (!endorsersByTarget[target]) endorsersByTarget[target] = [];
+      endorsersByTarget[target].push(edge.source.toLowerCase());
+    }
+
+    for (const node of nodes) {
+      const endorsers = endorsersByTarget[node.id.toLowerCase()] || [];
+      const endorsementBonus = endorsers.reduce((sum, endorserAddr) => {
+        const endorserRep = reputationByAddr[endorserAddr] ?? 0;
+        const contribution = Math.min(50, Math.max(10, Math.floor(endorserRep / 10)));
+        return sum + contribution;
+      }, 0);
+      node.weightedTrustScore = Math.min(10000, node.reputation + endorsementBonus);
+    }
+
     return res.status(200).json({
       meta: {
         generatedAt: new Date().toISOString(),
@@ -117,6 +145,7 @@ export default async function handler(req, res) {
         agentCount: nodes.length,
         endorsementCount: edges.length,
         trustFormula: "trustScore = reputation + (endorsements × 10)",
+        weightedTrustFormula: "weightedTrustScore = reputation + sum(min(50, max(10, floor(endorserReputation / 10)))) per endorser, capped at 10000",
         sdk: "npm install @universal-trust/sdk",
         docs: "https://universal-trust.vercel.app/.well-known/agent-trust.json",
       },
