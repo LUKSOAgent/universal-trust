@@ -6,6 +6,23 @@ import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
 import TrustScoreCard, { computeCompositeScore, getTrustLevel } from "../components/TrustScoreCard";
 import { fetchUPProfile, fetchUPProfiles, fetchOnChainReputation } from "../envio";
 
+function timeAgo(ts) {
+  if (!ts || ts === 0) return null;
+  const now = Date.now();
+  const diff = now - ts * 1000;
+  if (diff < 0) return "just now";
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
+  const months = Math.floor(days / 30);
+  return `${months} month${months === 1 ? "" : "s"} ago`;
+}
+
 export default function AgentProfile() {
   const { address } = useParams();
   const [agent, setAgent] = useState(null);
@@ -166,35 +183,47 @@ export default function AgentProfile() {
   if (!verification?.registered) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-        <div className="bg-lukso-card border border-lukso-border rounded-xl p-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-lukso-darker border border-lukso-border flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Agent Not Found</h2>
-          <p className="text-gray-400 mb-2">
-            This address is not registered in the AgentIdentityRegistry.
-          </p>
-          <p className="text-gray-500 font-mono text-sm mb-6 break-all">{address}</p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link to="/" className="text-lukso-pink hover:underline text-sm">
-              ← Back to directory
-            </Link>
-            <Link
-              to={`/verify?address=${address}`}
-              className="px-4 py-2 rounded-lg text-sm text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition"
-            >
-              Scan this address
-            </Link>
-            <a
-              href={`https://universalprofile.cloud/${address}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 rounded-lg text-sm text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
-            >
-              Check Universal Profile ↗
-            </a>
+        <div className="bg-lukso-card border border-lukso-border rounded-xl p-8 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-lukso-purple/5 to-transparent pointer-events-none" />
+          <div className="relative z-10">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-lukso-darker border-2 border-lukso-border flex items-center justify-center">
+              <svg className="w-10 h-10 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Not Registered</h2>
+            <p className="text-gray-400 mb-1">
+              This address is not in the AgentIdentityRegistry contract.
+            </p>
+            <p className="text-gray-600 text-sm mb-2">
+              It may be a valid Universal Profile — just not yet registered as an AI agent.
+            </p>
+            <p className="text-gray-500 font-mono text-sm mb-6 break-all">{address}</p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link to="/" className="text-lukso-pink hover:underline text-sm">
+                ← Back to directory
+              </Link>
+              <Link
+                to="/register"
+                className="px-5 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition"
+              >
+                Register as Agent
+              </Link>
+              <Link
+                to={`/verify?address=${address}`}
+                className="px-4 py-2 rounded-lg text-sm text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition"
+              >
+                Scan this address
+              </Link>
+              <a
+                href={`https://universalprofile.cloud/${address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg text-sm text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
+              >
+                Check Universal Profile ↗
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -204,7 +233,9 @@ export default function AgentProfile() {
   const registeredTs = agent ? Number(agent.registeredAt) : 0;
   const lastActiveTs = agent ? Number(agent.lastActiveAt) : 0;
   const registeredDate = registeredTs > 0 ? new Date(registeredTs * 1000).toLocaleString() : "Unknown";
+  const registeredRelative = timeAgo(registeredTs);
   const lastActive = lastActiveTs > 0 ? new Date(lastActiveTs * 1000).toLocaleString() : "Never";
+  const lastActiveRelative = timeAgo(lastActiveTs);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -384,7 +415,7 @@ export default function AgentProfile() {
                     const idx = sorted.findIndex(a => a.addr.toLowerCase() === address?.toLowerCase());
                     return idx >= 0 ? (
                       <span className="text-sm text-gray-400">
-                        Rank <span className="text-lukso-pink font-bold text-base">#{idx + 1}</span> <span className="text-gray-600">of {allAgents.length}</span>
+                        Ranked <span className="text-lukso-pink font-bold text-base">#{idx + 1}</span> <span className="text-gray-600">of {allAgents.length}</span>
                       </span>
                     ) : null;
                   })()}
@@ -417,17 +448,17 @@ export default function AgentProfile() {
 
       {/* Timeline - compact inline display */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-6 px-1 text-xs text-gray-500 animate-fade-in" style={{ animationDelay: "0.15s" }}>
-        <span className="flex items-center gap-1.5">
+        <span className="flex items-center gap-1.5" title={registeredDate}>
           <svg className="w-3.5 h-3.5 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          Registered <span className="text-gray-300 font-medium">{registeredDate}</span>
+          Registered <span className="text-gray-300 font-medium">{registeredRelative || registeredDate}</span>
         </span>
-        <span className="flex items-center gap-1.5">
+        <span className="flex items-center gap-1.5" title={lastActive}>
           <svg className="w-3.5 h-3.5 text-lukso-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Last active <span className="text-gray-300 font-medium">{lastActive}</span>
+          Last active <span className="text-gray-300 font-medium">{lastActiveRelative || lastActive}</span>
         </span>
         <span className="flex items-center gap-1.5">
           <span className="text-lukso-purple">⚡</span>
