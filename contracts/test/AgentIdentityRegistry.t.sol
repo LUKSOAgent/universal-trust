@@ -910,18 +910,14 @@ contract AgentIdentityRegistryTest is Test {
     // ─── transferOwnership to zero address (bricking) ─────────────────────
 
     function test_transferOwnership_toZeroAddress() public {
-        // The contract allows transferring to address(0) — this is a one-way
-        // door that permanently removes owner capabilities. Not a bug, but
-        // this test documents the behavior.
+        // Transferring to address(0) is now blocked to prevent
+        // accidental permanent lockout of owner capabilities.
         vm.prank(deployer);
+        vm.expectRevert(AgentIdentityRegistry.ZeroAddress.selector);
         registry.transferOwnership(address(0));
 
-        assertEq(registry.owner(), address(0));
-
-        // Nobody can now call owner functions
-        vm.prank(deployer);
-        vm.expectRevert(AgentIdentityRegistry.NotAuthorized.selector);
-        registry.setReputationUpdater(agentA, true);
+        // Owner remains unchanged
+        assertEq(registry.owner(), deployer);
     }
 
     // ─── Boundary: zero address cannot register (edge case) ──────────────
