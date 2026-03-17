@@ -365,10 +365,22 @@ export default function TrustGraph() {
     }
 
     // LSP26 soft endorsement edges (only between nodes already in the graph)
+    // nodeIds uses original-case addresses; lsp26Edges may use lowercase — normalise with a lowercase set
     if (filters.lsp26_follow) {
+      const nodeIdsLower = new Set([...nodeIds].map((id) => id.toLowerCase()));
+      // Build a map from lowercase → original-case address so we can resolve source/target properly
+      const addrByLower = {};
+      for (const id of nodeIds) addrByLower[id.toLowerCase()] = id;
+
       for (const e of lsp26Edges) {
-        if (nodeIds.has(e.source) && nodeIds.has(e.target)) {
-          links.push({ source: e.source, target: e.target, kind: "lsp26-follow" });
+        const srcLower = e.source.toLowerCase();
+        const tgtLower = e.target.toLowerCase();
+        if (nodeIdsLower.has(srcLower) && nodeIdsLower.has(tgtLower)) {
+          links.push({
+            source: addrByLower[srcLower] ?? e.source,
+            target: addrByLower[tgtLower] ?? e.target,
+            kind: "lsp26-follow",
+          });
         }
       }
     }
