@@ -15,7 +15,8 @@ const REGISTRY_ABI = [
   "function getAgentCount() external view returns (uint256)",
   "function getAgentsByPage(uint256 offset, uint256 limit) external view returns (address[])",
   "function getAgent(address agent) external view returns (tuple(string name, string description, string metadataURI, uint256 reputation, uint256 endorsementCount, uint64 registeredAt, uint64 lastActiveAt, bool isActive))",
-  "function updateReputation(address agent, int256 delta, string calldata reason) external"
+  "function updateReputation(address agent, int256 delta, string calldata reason) external",
+  "function getBaseAddress(address agent) external view returns (address)"
 ];
 const UP_ABI = [
   "function execute(uint256 operationType, address target, uint256 value, bytes calldata data) external payable returns (bytes memory)"
@@ -60,9 +61,21 @@ async function main() {
       console.log(`  ${addr} — already boosted, skip`);
       continue;
     }
+    // Check if agent has linked a Base address
+    let checkAddr = addr;
+    try {
+      const baseAddr = await registry.getBaseAddress(addr);
+      if (baseAddr !== ethers.ZeroAddress) {
+        checkAddr = baseAddr;
+        console.log(`  ${addr} (${agentData.name}) — using linked Base address: ${baseAddr}`);
+      }
+    } catch (e) {
+      console.log(`  ${addr} — getBaseAddress failed: ${e.message}, falling back to UP address`);
+    }
+
     let balance;
     try {
-      balance = await token.balanceOf(addr);
+      balance = await token.balanceOf(checkAddr);
     } catch (e) {
       console.log(`  ${addr} — balance check failed: ${e.message}`);
       continue;
