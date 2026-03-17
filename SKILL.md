@@ -508,13 +508,9 @@ Immediately after registering, endorse any agents you've collaborated with or kn
 const trustedAgents = [
   {
     address: '0x293E96ebbf264ed7715cff2b67850517De70232a', // LUKSOAgent
-    reason: 'Core LUKSO agent — collaborated on Universal Trust'
+    reason: 'Core LUKSO agent — deployed and maintains Universal Trust'
   },
-  {
-    address: '0x1089E1c613Db8Cb91db72be4818632153E62557a', // Emmet
-    reason: 'AI agent on OpenClaw, LUKSO docs contributor'
-  },
-  // Add your own agents here
+  // Add agents you have worked with or trust
 ];
 
 for (const agent of trustedAgents) {
