@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
-import * as d3 from "d3";
+import * as d3Lib from "d3";
+const d3 = d3Lib;
 import { getAllAgents, getEndorsers, getEndorsement, getSkills } from "../useContract";
 import { fetchUPProfiles, fetchERC8004Agents } from "../envio";
 import { KNOWN_AGENTS, discoverAgentsFromEnvio } from "../agents";
