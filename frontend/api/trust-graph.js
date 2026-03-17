@@ -55,12 +55,25 @@ export default async function handler(req, res) {
     }
 
     const addresses = await contract.getAgentsByPage(0, count);
+    if (!addresses || addresses.length === 0) {
+      return res.status(200).json({
+        meta: { generatedAt: new Date().toISOString(), chainId: 42, agentCount: 0, endorsementCount: 0, contract: CONTRACT },
+        nodes: [],
+        edges: [],
+      });
+    }
 
     // Fetch all agents in parallel
+    // isUniversalProfile is fetched separately to avoid one revert taking down the whole agent fetch
     const agentResults = await Promise.allSettled(
       addresses.map(async (addr) => {
         const a = await contract.getAgent(addr);
-        const isUP = await contract.isUniversalProfile(addr);
+        let isUP = false;
+        try {
+          isUP = await contract.isUniversalProfile(addr);
+        } catch {
+          // isUniversalProfile can revert for some addresses — default to false
+        }
         return {
           id: addr,
           name: a.name || "",
@@ -99,11 +112,12 @@ export default async function handler(req, res) {
               return {
                 source: endorser,
                 target: node.id,
-                timestamp: Number(e.timestamp),
+                timestamp: Number(e.timestamp || 0),
                 reason: e.reason || undefined,
               };
             } catch {
-              return { source: endorser, target: node.id };
+              // Endorsement data unavailable — still include the edge for graph connectivity
+              return { source: endorser, target: node.id, timestamp: 0 };
             }
           })
         );
