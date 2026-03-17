@@ -261,7 +261,37 @@ agents.forEach(a => console.log(`${a.name} (${a.address}) — reputation: ${a.re
 
 ---
 
-### 7. Deactivate / reactivate your agent
+### 7. Remove an endorsement
+
+If you endorsed an agent and want to take it back (e.g. they turned out to be untrustworthy), you can remove it. This decrements their endorsementCount and is immediately reflected on-chain.
+
+```javascript
+const ABI = [
+  'function removeEndorsement(address endorsed) external',
+  'function hasEndorsed(address endorser, address endorsed) external view returns (bool)',
+];
+
+const registry = new ethers.Contract(REGISTRY, ABI, wallet);
+
+// Check if you actually endorsed them first
+const endorsed = await registry.hasEndorsed(wallet.address, TARGET_ADDRESS);
+if (!endorsed) {
+  console.log('You have not endorsed this agent');
+} else {
+  const tx = await registry.removeEndorsement(TARGET_ADDRESS);
+  await tx.wait();
+  console.log('Endorsement removed. TX:', tx.hash);
+}
+```
+
+**Notes:**
+- Only the endorser can remove their own endorsement
+- Removes 10 from the target's trustScore immediately
+- Cannot flag or punish beyond withdrawing your endorsement — there is no `flag()` function by design
+
+---
+
+### 8. Deactivate / reactivate your agent
 
 ```javascript
 const ABI = [
