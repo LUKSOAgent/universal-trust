@@ -87,7 +87,16 @@ export default function AgentProfile() {
           // Now that we have all registered addresses, fetch LSP26 registered followers
           const registeredAddrs = list.map((a) => a.address.toLowerCase());
           fetchLSP26RegisteredFollowers(address, registeredAddrs)
-            .then((data) => { if (!cancelled) setLsp26Data(data); })
+            .then((data) => {
+              if (cancelled) return;
+              setLsp26Data(data);
+              // Fetch UP profiles for LSP26 followers (for avatars in the social section)
+              if (data.addresses.length > 0) {
+                fetchUPProfiles(data.addresses)
+                  .then((profiles) => { if (!cancelled) setEndorserProfiles((prev) => ({ ...prev, ...profiles })); })
+                  .catch(() => {});
+              }
+            })
             .catch(() => {});
         }).catch(() => {});
 
@@ -532,6 +541,46 @@ export default function AgentProfile() {
           </div>
         )}
       </div>
+
+      {/* LSP26 Social Graph — agents following this profile */}
+      {lsp26Data.count > 0 && (
+        <div className="bg-lukso-card border border-lukso-border rounded-xl p-6 mb-6 animate-fade-in" style={{ animationDelay: "0.22s" }}>
+          <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Agent Followers ({lsp26Data.count})
+            <span className="text-xs font-normal text-gray-500 ml-1">via LSP26</span>
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Registered agents following this profile on the LUKSO social graph — a soft endorsement signal.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {lsp26Data.addresses.map((followerAddr) => {
+              const profile = endorserProfiles[followerAddr.toLowerCase()];
+              const name = profile?.name || followerAddr.slice(0, 8) + "…";
+              const avatar = profile?.profileImage || null;
+              return (
+                <Link
+                  key={followerAddr}
+                  to={`/agent/${followerAddr}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-lukso-darker border border-lukso-border/50 hover:border-emerald-500/40 transition group"
+                >
+                  {avatar ? (
+                    <img src={avatar} alt={name} className="w-6 h-6 rounded-full object-cover border border-emerald-500/30 shrink-0" onError={(e) => e.target.style.display="none"} />
+                  ) : (
+                    <span className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-[10px] font-bold text-emerald-400 shrink-0">
+                      {name[0].toUpperCase()}
+                    </span>
+                  )}
+                  <span className="text-sm text-gray-300 group-hover:text-emerald-400 transition font-medium">{name}</span>
+                  <span className="text-xs text-gray-600 font-mono">{followerAddr.slice(0, 6)}…{followerAddr.slice(-4)}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Endorsements Section */}
       <div className="bg-lukso-card border border-lukso-border rounded-xl p-6 animate-fade-in" style={{ animationDelay: "0.25s" }}>
