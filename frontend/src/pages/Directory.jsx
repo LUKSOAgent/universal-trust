@@ -356,7 +356,7 @@ export default function Directory() {
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4" role="region" aria-label="Agent directory listing">
             {filteredAgents.map((agent, i) => (
               <div key={agent.address} className="animate-fade-in" style={{ animationDelay: `${i * 0.05}s` }}>
                 <AgentCard
