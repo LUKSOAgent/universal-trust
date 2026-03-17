@@ -998,6 +998,8 @@ export default function TrustGraph() {
               <button
                 key={type}
                 onClick={() => setFilters((f) => ({ ...f, [type]: !f[type] }))}
+                aria-pressed={filters[type]}
+                aria-label={`Toggle ${TYPE_LABELS[type]} nodes`}
                 className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border whitespace-nowrap transition ${
                   filters[type] ? "opacity-100" : "opacity-30"
                 }`}
@@ -1010,6 +1012,8 @@ export default function TrustGraph() {
             ))}
             <button
               onClick={() => setFilters((f) => ({ ...f, lsp26_follow: !f.lsp26_follow }))}
+              aria-pressed={filters.lsp26_follow}
+              aria-label="Toggle LSP26 follow edges"
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border whitespace-nowrap transition ${
                 filters.lsp26_follow ? "opacity-100" : "opacity-30"
               }`}
