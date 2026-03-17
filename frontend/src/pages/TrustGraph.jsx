@@ -562,6 +562,12 @@ export default function TrustGraph() {
     });
   }, [search]);
 
+  // ── Selected node detail (memoized) — must be declared before useEffect that uses graphLinks ──
+  const { nodes: graphNodes, links: graphLinks } = useMemo(() => {
+    if (!rawData) return { nodes: [], links: [] };
+    return buildGraph();
+  }, [rawData, buildGraph]);
+
   // ── Selected highlight ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!svgRef.current || !rawData) return;
@@ -668,11 +674,6 @@ export default function TrustGraph() {
   }
 
   // ── Selected node detail ───────────────────────────────────────────────────
-  // Memoize graph to avoid rebuilding the entire graph on every render
-  const { nodes: graphNodes, links: graphLinks } = useMemo(() => {
-    if (!rawData) return { nodes: [], links: [] };
-    return buildGraph();
-  }, [rawData, buildGraph]);
   const selectedNode = selected ? graphNodes.find((n) => n.id === selected) : null;
   const selectedAgent = selectedNode?.type?.startsWith("agent")
     ? rawData?.agents.find((a) => a.address === selectedNode.id)
