@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import * as d3Lib from "d3";
 const d3 = d3Lib;
 import { getAllAgents, getEndorsers, getEndorsement, getSkills } from "../useContract";
-import { fetchUPProfiles, fetchERC8004Agents } from "../envio";
+import { fetchUPProfiles, fetchERC8004Agents, fetchOnChainReputation, computeCompositeScore } from "../envio";
 import { KNOWN_AGENTS, discoverAgentsFromEnvio } from "../agents";
 
 // Case-insensitive lookup helper for upProfiles (keys are always lowercase)
@@ -116,6 +116,25 @@ export default function TrustGraph() {
           } catch {}
         }));
 
+        // Enrich agents with Envio activity scores for composite score (non-blocking)
+        Promise.allSettled(agentList.map((a) => fetchOnChainReputation(a.address)))
+          .then((repResults) => {
+            const enriched = agentList.map((agent, i) => {
+              const onChainScore = repResults[i].status === "fulfilled"
+                ? (repResults[i].value?.generalScore ?? null)
+                : null;
+              const skillCount = (skillMap[agent.address] || []).length;
+              const composite = computeCompositeScore(
+                agent.trustScore ?? agent.reputation + agent.endorsementCount * 10,
+                onChainScore,
+                skillCount
+              );
+              return { ...agent, onChainScore, skillCount, composite };
+            });
+            setRawData({ agents: enriched, edges: endorseEdges, skills: skillMap });
+          })
+          .catch(() => {});
+
         setRawData({ agents: agentList, edges: endorseEdges, skills: skillMap });
 
         // Load ecosystem agents from Envio (non-blocking)
@@ -200,7 +219,8 @@ export default function TrustGraph() {
     for (const a of agents) {
       const upData = upLookup(upProfiles, a.address); const type = (upData?.isUP === true) ? "agent_up" : "agent_eoa";
       if (!filters[type]) continue;
-      const score = a.reputation + a.endorsementCount * 10;
+      // Use composite score (contract + activity + skills) if available, else fallback
+      const score = a.composite ?? a.trustScore ?? (a.reputation + a.endorsementCount * 10);
       const rScale = d3.scaleSqrt().domain([0, 500]).range([1, SCORE_SCALE_MAX]);
       nodes.push({
         id: a.address,
@@ -619,7 +639,7 @@ export default function TrustGraph() {
     if (q.includes("most trusted") || q.includes("highest trust") || q.includes("top agent")) {
       const sorted = [...agents].sort((a, b) => (b.reputation + b.endorsementCount * 10) - (a.reputation + a.endorsementCount * 10));
       const top = sorted.slice(0, 3);
-      answer = `Top agents by trust score:\n${top.map((a, i) => `${i + 1}. ${upLookup(upProfiles, a.address)?.name || a.name} — score ${a.reputation + a.endorsementCount * 10}`).join("\n")}`;
+      answer = `Top agents by trust score:\n${top.map((a, i) => `${i + 1}. ${upLookup(upProfiles, a.address)?.name || a.name} — score ${a.composite ?? a.trustScore ?? (a.reputation + a.endorsementCount * 10)}`).join("\n")}`;
 
     } else if (q.includes("most endors") || q.includes("most connected")) {
       const sorted = [...agents].sort((a, b) => b.endorsementCount - a.endorsementCount);
