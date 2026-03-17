@@ -3,8 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { verifyAgent, getSkills } from "../useContract";
 import { CONTRACT_ADDRESS, EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
-import { resolveIPFS, fetchUPProfile, fetchOnChainReputation } from "../envio";
-import { computeCompositeScore } from "../components/TrustScoreCard";
+import { resolveIPFS, fetchUPProfile, fetchOnChainReputation, computeCompositeScore } from "../envio";
 
 const ENVIO = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
 

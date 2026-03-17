@@ -8,17 +8,12 @@
  *   allAgents     - array of all agents (for rank/percentile)
  */
 
-const MAX_SCORE = 10000;
+import { computeCompositeScore } from "../envio";
 
-/**
- * Compute the composite trust score from all data sources.
- * compositeScore = contractTrustScore + Math.round(onChainScore * 2) + skillsCount * 5
- */
-export function computeCompositeScore(trustScore, onChainScore, skillsCount) {
-  const onChain = onChainScore ?? 0;
-  const skills = skillsCount ?? 0;
-  return trustScore + Math.round(onChain * 2) + skills * 5;
-}
+// Re-export for backward compatibility
+export { computeCompositeScore };
+
+const MAX_SCORE = 10000;
 
 /**
  * Return a trust level label and color classes based on trustScore.

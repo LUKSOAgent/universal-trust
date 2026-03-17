@@ -2,7 +2,8 @@ import { useState, useEffect, memo } from "react";
 import { Link } from "react-router-dom";
 import TrustBadge from "./TrustBadge";
 import { getSkillCount } from "../useContract";
-import { computeCompositeScore, getTrustLevel } from "./TrustScoreCard";
+import { computeCompositeScore } from "../envio";
+import { getTrustLevel } from "./TrustScoreCard";
 
 function MiniTrustBar({ score }) {
   const maxScore = 10000;
