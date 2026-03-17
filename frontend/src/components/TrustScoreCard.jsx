@@ -17,31 +17,44 @@ const MAX_SCORE = 10000;
 
 /**
  * Return a trust level label and color classes based on trustScore.
+ * Aligned with improved tier colors:
+ * 0-99: Unproven (gray)
+ * 100-199: Registered (blue)
+ * 200-499: Trusted (emerald/green)
+ * 500-999: Established (purple)
+ * 1000+: Verified (amber/gold)
  */
 export function getTrustLevel(score) {
+  if (score >= 1000)
+    return {
+      label: "Verified",
+      color: "text-amber-400",
+      bg: "bg-amber-500/15 border-amber-500/40",
+      bar: "from-amber-500 to-yellow-400",
+    };
   if (score >= 500)
     return {
-      label: "Highly Trusted",
-      color: "text-green-400",
-      bg: "bg-green-500/15 border-green-500/40",
-      bar: "from-green-500 to-emerald-400",
+      label: "Established",
+      color: "text-purple-400",
+      bg: "bg-purple-500/15 border-purple-500/40",
+      bar: "from-purple-500 to-violet-400",
     };
   if (score >= 200)
     return {
       label: "Trusted",
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/15 border-emerald-500/40",
+      bar: "from-emerald-500 to-green-400",
+    };
+  if (score >= 100)
+    return {
+      label: "Registered",
       color: "text-blue-400",
       bg: "bg-blue-500/15 border-blue-500/40",
       bar: "from-blue-500 to-cyan-400",
     };
-  if (score >= 100)
-    return {
-      label: "Verified",
-      color: "text-yellow-400",
-      bg: "bg-yellow-500/15 border-yellow-500/40",
-      bar: "from-yellow-500 to-amber-400",
-    };
   return {
-    label: "New",
+    label: "Unproven",
     color: "text-gray-400",
     bg: "bg-gray-500/10 border-gray-500/30",
     bar: "from-gray-500 to-gray-400",

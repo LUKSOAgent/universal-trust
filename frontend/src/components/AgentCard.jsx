@@ -1,46 +1,86 @@
 import { useState, useEffect, memo } from "react";
 import { Link } from "react-router-dom";
 import TrustBadge from "./TrustBadge";
-import { getSkillCount } from "../useContract";
+import { getSkillCount, getContract, getProvider } from "../useContract";
 import { computeCompositeScore } from "../envio";
 import { getTrustLevel } from "./TrustScoreCard";
 
 /**
- * Return score tier badge info based on weightedTrustScore.
- * < 100:    gray    "New"
- * 100-149:  blue    "Registered"
- * 150-299:  green   "Trusted"
- * 300-499:  yellow  "Established"
- * 500+:     orange  "Verified"
+ * Improved trust tier mapping with distinct colors and access levels.
+ * 0-99:       "Unproven"    — gray    (#6b7280)
+ * 100-199:    "Registered"  — blue    (#3b82f6)
+ * 200-499:    "Trusted"     — green   (#10b981)
+ * 500-999:    "Established" — purple  (#8b5cf6)
+ * 1000+:      "Verified"    — gold    (#f59e0b)
  */
-function getWeightedTrustTier(score) {
-  if (score >= 500) {
+function getImprovedTrustTier(score) {
+  if (score >= 1000) {
     return {
       label: "Verified",
-      badgeClass: "bg-orange-500/20 text-orange-400 border-orange-500/40",
+      badgeClass: "bg-amber-500/20 text-amber-400 border-amber-500/40",
+      accessLevel: "Elite",
     };
   }
-  if (score >= 300) {
+  if (score >= 500) {
     return {
       label: "Established",
-      badgeClass: "bg-yellow-500/20 text-yellow-400 border-yellow-500/40",
+      badgeClass: "bg-purple-500/20 text-purple-400 border-purple-500/40",
+      accessLevel: "Premium",
     };
   }
-  if (score >= 150) {
+  if (score >= 200) {
     return {
       label: "Trusted",
-      badgeClass: "bg-green-500/20 text-green-400 border-green-500/40",
+      badgeClass: "bg-emerald-500/20 text-emerald-400 border-emerald-500/40",
+      accessLevel: "Standard",
     };
   }
   if (score >= 100) {
     return {
       label: "Registered",
       badgeClass: "bg-blue-500/20 text-blue-400 border-blue-500/40",
+      accessLevel: "Basic",
     };
   }
   return {
-    label: "New",
+    label: "Unproven",
     badgeClass: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+    accessLevel: "Basic",
+  };
+}
+
+/**
+ * Calculate days since Unix timestamp (seconds).
+ */
+function daysSince(timestampSeconds) {
+  if (!timestampSeconds || timestampSeconds === 0) return null;
+  const seconds = Math.floor(Date.now() / 1000) - timestampSeconds;
+  return Math.max(0, Math.floor(seconds / 86400));
+}
+
+/**
+ * Format inactivity status and decay warnings.
+ * gracePeriod = 30 days (TODO: fetch from contract)
+ */
+function getDecayStatus(lastActiveAt) {
+  const daysSinceActive = daysSince(lastActiveAt);
+  if (daysSinceActive === null) return null;
+
+  if (daysSinceActive <= 7) {
+    return { status: `Active ${daysSinceActive}d ago`, warning: null };
+  }
+  if (daysSinceActive <= 30) {
+    return { status: `Inactive ${daysSinceActive}d ago`, warning: null };
+  }
+  if (daysSinceActive <= 60) {
+    return {
+      status: `Inactive ${daysSinceActive}d ago`,
+      warning: { type: "eligible", label: "⚠ Decay eligible" },
+    };
+  }
+  return {
+    status: `Inactive ${daysSinceActive}d ago`,
+    warning: { type: "high", label: "⚠ High decay risk" },
   };
 }
 
@@ -65,17 +105,52 @@ function MiniTrustBar({ score }) {
 
 function AgentCardInner({ agent, upProfile }) {
   const [skillCount, setSkillCount] = useState(null);
+  const [decayLoading, setDecayLoading] = useState(false);
   const trustScore = agent.trustScore ?? (agent.reputation + (agent.endorsementCount * 10));
   const weightedTrustScore = agent.weightedTrustScore ?? null;
   const compositeScore = computeCompositeScore(trustScore, null, skillCount ?? 0);
   const level = getTrustLevel(compositeScore);
-  const weightedTier = getWeightedTrustTier(weightedTrustScore ?? trustScore);
+  const improvedTier = getImprovedTrustTier(compositeScore);
   const showWeighted = weightedTrustScore !== null && weightedTrustScore !== trustScore;
   const registeredDate = agent.registeredAt > 0 ? new Date(agent.registeredAt * 1000).toLocaleDateString() : "Unknown";
 
   // Use UP name if available and different from registered name
   const displayName = upProfile?.name || agent.name;
   const avatarUrl = upProfile?.profileImage || null;
+
+  // Decay status
+  const decayStatus = getDecayStatus(agent.lastActiveAt);
+  const canApplyDecay = decayStatus?.warning !== null;
+
+  // Handler to apply decay on-chain
+  const handleApplyDecay = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`Apply decay to ${displayName}?`)) return;
+    
+    try {
+      setDecayLoading(true);
+      // TODO: Fetch gracePeriod and decayRate from contract once deployed
+      const gracePeriod = 30 * 86400; // 30 days in seconds
+      const contract = getContract();
+      const signer = await getProvider().getSigner?.();
+      
+      if (!signer) {
+        alert("No wallet connected. Please connect via MetaMask or similar.");
+        return;
+      }
+      
+      const contractWithSigner = contract.connect(signer);
+      const tx = await contractWithSigner.applyDecay(agent.address);
+      await tx.wait();
+      alert("Decay applied successfully!");
+    } catch (err) {
+      console.error("Error applying decay:", err);
+      alert(`Error applying decay: ${err.message}`);
+    } finally {
+      setDecayLoading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -146,20 +221,73 @@ function AgentCardInner({ agent, upProfile }) {
             )}
             <span>Joined {registeredDate}</span>
           </div>
+
+          {/* Decay status row */}
+          {decayStatus && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-500">{decayStatus.status}</span>
+              {decayStatus.warning && (
+                <>
+                  <span
+                    className={`text-xs px-2 py-1 rounded border font-semibold ${
+                      decayStatus.warning.type === "high"
+                        ? "bg-red-500/20 text-red-400 border-red-500/40"
+                        : "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                    }`}
+                  >
+                    {decayStatus.warning.label}
+                  </span>
+                  {canApplyDecay && (
+                    <button
+                      onClick={handleApplyDecay}
+                      disabled={decayLoading}
+                      className="text-xs px-2 py-1 rounded border border-lukso-pink/40 bg-lukso-pink/10 text-lukso-pink hover:bg-lukso-pink/20 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {decayLoading ? "Applying..." : "Apply Decay"}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Access level indicator */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-600">Access:</span>
+            <span className="text-xs font-semibold text-gray-400">{improvedTier.accessLevel}</span>
+            {compositeScore >= 200 && <span className="text-xs text-gray-500">+</span>}
+            {compositeScore >= 200 && <span className="text-xs font-semibold text-gray-400">Standard</span>}
+            {compositeScore >= 500 && <span className="text-xs text-gray-500">+</span>}
+            {compositeScore >= 500 && <span className="text-xs font-semibold text-purple-400">Premium</span>}
+            {compositeScore >= 1000 && <span className="text-xs text-gray-500">+</span>}
+            {compositeScore >= 1000 && <span className="text-xs font-semibold text-amber-400">Elite</span>}
+          </div>
+
           <MiniTrustBar score={compositeScore} />
         </div>
         
         <div className="shrink-0 flex flex-col items-center gap-1.5">
           <div className="relative">
             <TrustBadge score={compositeScore} size="md" />
-            {/* Trust tier glow ring */}
-            <div className={`absolute -inset-1 rounded-full opacity-20 blur-sm ${
-              compositeScore >= 500 ? "bg-green-500" : compositeScore >= 200 ? "bg-blue-500" : compositeScore >= 100 ? "bg-yellow-500" : "bg-gray-500"
-            }`} style={{ zIndex: -1 }} />
+            {/* Trust tier glow ring — updated colors for improved tiers */}
+            <div
+              className={`absolute -inset-1 rounded-full opacity-20 blur-sm ${
+                compositeScore >= 1000
+                  ? "bg-amber-500"
+                  : compositeScore >= 500
+                  ? "bg-purple-500"
+                  : compositeScore >= 200
+                  ? "bg-emerald-500"
+                  : compositeScore >= 100
+                  ? "bg-blue-500"
+                  : "bg-gray-500"
+              }`}
+              style={{ zIndex: -1 }}
+            />
           </div>
-          {/* Trust level badge — consistent with profile page */}
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${level.bg} ${level.color}`}>
-            {level.label}
+          {/* Improved trust tier badge */}
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${improvedTier.badgeClass}`}>
+            {improvedTier.label}
           </span>
           {/* Weighted trust score (only when it differs from regular trustScore) */}
           {showWeighted && (
