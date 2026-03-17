@@ -5,6 +5,15 @@ import "forge-std/Test.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "../src/AgentIdentityRegistry.sol";
 
+/// @dev Minimal mock that responds to ERC165 + LSP0 interface checks
+///      so isUniversalProfile() returns true.
+contract MockUniversalProfile {
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        // LSP0ERC725Account = 0x24871b3a
+        return interfaceId == 0x24871b3a || interfaceId == 0x01ffc9a7; // ERC165
+    }
+}
+
 contract AgentIdentityRegistryTest is Test {
     AgentIdentityRegistry public registry;
 
@@ -1363,6 +1372,297 @@ contract AgentIdentityRegistryTest is Test {
         // Both should have trust = 100 + (1 * 10) = 110
         assertEq(registry.getTrustScore(agentA), 110);
         assertEq(registry.getTrustScore(agentB), 110);
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Weighted Trust Score Tests
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// @dev Deploy MockUniversalProfile bytecode at an address so isUniversalProfile returns true.
+    ///      Uses addresses above precompile range (>0xFF) to avoid vm.etch restrictions.
+    function _makeUP(address addr) internal {
+        MockUniversalProfile mock = new MockUniversalProfile();
+        vm.etch(addr, address(mock).code);
+    }
+
+    // Addresses outside precompile range for UP-based endorsement tests
+    address upAlpha  = address(0xAA01);
+    address upBeta   = address(0xBB01);
+    address upGamma  = address(0xCC01);
+
+    // ─── Basic weighted score with default reputation ────────────────────
+
+    function test_weightedTrustScore_noEndorsements() public {
+        vm.prank(agentA);
+        registry.register("A", "desc", "");
+
+        // No endorsements → just reputation (100)
+        assertEq(registry.getWeightedTrustScore(agentA), 100);
+    }
+
+    function test_weightedTrustScore_defaultReputation() public {
+        // Default reputation is 100 → endorserWeight = max(10, 100/10) = max(10, 10) = 10
+        vm.prank(upAlpha);
+        registry.register("A", "", "");
+        _makeUP(upBeta);
+        vm.prank(upBeta);
+        registry.register("B", "", "");
+        _makeUP(upGamma);
+        vm.prank(upGamma);
+        registry.register("C", "", "");
+
+        // upBeta (rep=100) endorses upAlpha → weight = 10
+        vm.prank(upBeta);
+        registry.endorse(upAlpha, "");
+
+        // Weighted: 100 + 10 = 110
+        assertEq(registry.getWeightedTrustScore(upAlpha), 110);
+
+        // upGamma (rep=100) also endorses upAlpha → weight = 10
+        vm.prank(upGamma);
+        registry.endorse(upAlpha, "");
+
+        // Weighted: 100 + 10 + 10 = 120
+        assertEq(registry.getWeightedTrustScore(upAlpha), 120);
+    }
+
+    function test_weightedTrustScore_highRepEndorser() public {
+        vm.prank(upAlpha);
+        registry.register("A", "", "");
+        _makeUP(upBeta);
+        vm.prank(upBeta);
+        registry.register("B", "", "");
+
+        // Boost upBeta reputation to 300 → endorserWeight = 300/10 = 30
+        vm.prank(deployer);
+        registry.updateReputation(upBeta, 200, "boost");
+
+        vm.prank(upBeta);
+        registry.endorse(upAlpha, "");
+
+        // Weighted: 100 + 30 = 130
+        assertEq(registry.getWeightedTrustScore(upAlpha), 130);
+    }
+
+    function test_weightedTrustScore_maxWeight50() public {
+        vm.prank(upAlpha);
+        registry.register("A", "", "");
+        _makeUP(upBeta);
+        vm.prank(upBeta);
+        registry.register("B", "", "");
+
+        // Boost upBeta to reputation 1000 → endorserWeight = 1000/10 = 100, clamped to 50
+        vm.prank(deployer);
+        registry.updateReputation(upBeta, 900, "max out");
+
+        vm.prank(upBeta);
+        registry.endorse(upAlpha, "");
+
+        // Weighted: 100 + 50 = 150
+        assertEq(registry.getWeightedTrustScore(upAlpha), 150);
+    }
+
+    function test_weightedTrustScore_minWeight10() public {
+        vm.prank(upAlpha);
+        registry.register("A", "", "");
+        _makeUP(upBeta);
+        vm.prank(upBeta);
+        registry.register("B", "", "");
+
+        // Drop upBeta reputation to 0 → endorserWeight = max(10, 0/10) = 10
+        vm.prank(deployer);
+        registry.updateReputation(upBeta, -100, "nuke");
+
+        vm.prank(upBeta);
+        registry.endorse(upAlpha, "");
+
+        // Weighted: 100 + 10 = 110
+        assertEq(registry.getWeightedTrustScore(upAlpha), 110);
+    }
+
+    function test_weightedTrustScore_mixedEndorsers() public {
+        vm.prank(upAlpha);
+        registry.register("A", "", "");
+        _makeUP(upBeta);
+        vm.prank(upBeta);
+        registry.register("B", "", "");
+        _makeUP(upGamma);
+        vm.prank(upGamma);
+        registry.register("C", "", "");
+
+        // upBeta: reputation 500 → weight = 50 (capped)
+        vm.prank(deployer);
+        registry.updateReputation(upBeta, 400, "boost B");
+
+        // upGamma: reputation 300 → weight = 30
+        vm.prank(deployer);
+        registry.updateReputation(upGamma, 200, "boost C");
+
+        vm.prank(upBeta);
+        registry.endorse(upAlpha, "");
+        vm.prank(upGamma);
+        registry.endorse(upAlpha, "");
+
+        // Weighted: 100 + 50 + 30 = 180
+        assertEq(registry.getWeightedTrustScore(upAlpha), 180);
+    }
+
+    function test_weightedTrustScore_capped() public {
+        vm.prank(upAlpha);
+        registry.register("A", "", "");
+
+        // Max out reputation
+        vm.prank(deployer);
+        registry.updateReputation(upAlpha, 9900, "max out");
+
+        // Even without endorsements, score is already MAX_REPUTATION
+        assertEq(registry.getWeightedTrustScore(upAlpha), 10000);
+
+        // Add an endorser — should still be capped at 10000
+        _makeUP(upBeta);
+        vm.prank(upBeta);
+        registry.register("B", "", "");
+        vm.prank(upBeta);
+        registry.endorse(upAlpha, "");
+
+        assertEq(registry.getWeightedTrustScore(upAlpha), 10000);
+    }
+
+    function test_weightedTrustScore_vs_flatTrustScore() public {
+        vm.prank(upAlpha);
+        registry.register("A", "", "");
+        _makeUP(upBeta);
+        vm.prank(upBeta);
+        registry.register("B", "", "");
+
+        // upBeta: reputation 500 → flat weight = 10, weighted weight = 50
+        vm.prank(deployer);
+        registry.updateReputation(upBeta, 400, "boost B");
+
+        vm.prank(upBeta);
+        registry.endorse(upAlpha, "");
+
+        // Flat: 100 + (1 * 10) = 110
+        assertEq(registry.getTrustScore(upAlpha), 110);
+
+        // Weighted: 100 + 50 = 150 (endorser has rep 500, weight = 50)
+        assertEq(registry.getWeightedTrustScore(upAlpha), 150);
+    }
+
+    function test_weightedTrustScore_revert_notRegistered() public {
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotRegistered.selector, agentA));
+        registry.getWeightedTrustScore(agentA);
+    }
+
+    // ─── verifyV2 tests ─────────────────────────────────────────────────
+
+    function test_verifyV2_registered() public {
+        vm.prank(upAlpha);
+        registry.register("Agent Alpha", "desc", "");
+        _makeUP(upBeta);
+        vm.prank(upBeta);
+        registry.register("Beta", "", "");
+
+        // Boost upBeta to rep 300
+        vm.prank(deployer);
+        registry.updateReputation(upBeta, 200, "boost");
+
+        // upBeta endorses upAlpha
+        vm.prank(upBeta);
+        registry.endorse(upAlpha, "");
+
+        (
+            bool registered,
+            bool active,
+            bool isUP,
+            uint256 reputation,
+            uint256 endorsements,
+            uint256 trustScore,
+            string memory name,
+            uint256 weightedTrustScore
+        ) = registry.verifyV2(upAlpha);
+
+        assertTrue(registered);
+        assertTrue(active);
+        assertFalse(isUP); // upAlpha is an EOA, not etched
+        assertEq(reputation, 100);
+        assertEq(endorsements, 1);
+        assertEq(trustScore, 110); // 100 + 1*10
+        assertEq(name, "Agent Alpha");
+        assertEq(weightedTrustScore, 130); // 100 + 30 (endorser rep 300 / 10 = 30)
+    }
+
+    function test_verifyV2_unregistered() public view {
+        (
+            bool registered,
+            bool active,
+            bool isUP,
+            uint256 reputation,
+            uint256 endorsements,
+            uint256 trustScore,
+            string memory name,
+            uint256 weightedTrustScore
+        ) = registry.verifyV2(address(0x999));
+
+        assertFalse(registered);
+        assertFalse(active);
+        assertFalse(isUP);
+        assertEq(reputation, 0);
+        assertEq(endorsements, 0);
+        assertEq(trustScore, 0);
+        assertEq(name, "");
+        assertEq(weightedTrustScore, 0);
+    }
+
+    function test_verifyV2_matchesGetWeightedTrustScore() public {
+        vm.prank(upAlpha);
+        registry.register("A", "", "");
+        _makeUP(upBeta);
+        vm.prank(upBeta);
+        registry.register("B", "", "");
+
+        vm.prank(deployer);
+        registry.updateReputation(upBeta, 400, "boost");
+
+        vm.prank(upBeta);
+        registry.endorse(upAlpha, "");
+
+        (,,,,,,, uint256 v2Weighted) = registry.verifyV2(upAlpha);
+        uint256 directWeighted = registry.getWeightedTrustScore(upAlpha);
+
+        assertEq(v2Weighted, directWeighted);
+    }
+
+    // ─── Gas: weighted trust score ───────────────────────────────────────
+
+    function test_gas_getWeightedTrustScore_50endorsers() public {
+        address target = address(0xEE00);
+        vm.prank(target);
+        registry.register("Target", "", "");
+
+        // Create 50 endorsers with varying reputation (addresses above precompile range)
+        for (uint256 i = 1; i <= 50; i++) {
+            address sybil = address(uint160(0x10000 + i));
+            _makeUP(sybil);
+            vm.prank(sybil);
+            registry.register(string(abi.encodePacked("E_", vm.toString(i))), "", "");
+
+            // Every 5th endorser gets boosted reputation
+            if (i % 5 == 0) {
+                vm.prank(deployer);
+                registry.updateReputation(sybil, int256(i * 10), "boost");
+            }
+
+            vm.prank(sybil);
+            registry.endorse(target, "");
+        }
+
+        uint256 gasBefore = gasleft();
+        registry.getWeightedTrustScore(target);
+        uint256 gasUsed = gasBefore - gasleft();
+        emit log_named_uint("Gas: getWeightedTrustScore (50 endorsers)", gasUsed);
+        // Should complete within reasonable gas (< 500k for 50 endorsers)
+        assertLt(gasUsed, 500000);
     }
 
     // ─── Helper: repeat a character ──────────────────────────────────────

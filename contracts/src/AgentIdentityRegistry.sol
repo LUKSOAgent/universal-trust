@@ -309,6 +309,35 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
         return score > MAX_REPUTATION ? MAX_REPUTATION : score;
     }
 
+    /**
+     * @notice Weighted trust score — endorsements from high-reputation agents
+     *         count more than those from low-reputation agents.
+     *         endorserWeight(e) = clamp(endorser.reputation / 10, 10, 50)
+     * @param agent The agent address to compute the score for
+     * @return The weighted trust score, capped at MAX_REPUTATION
+     */
+    function getWeightedTrustScore(address agent) external view onlyRegistered(agent) returns (uint256) {
+        return _computeWeightedTrustScore(agent);
+    }
+
+    function _computeWeightedTrustScore(address agent) internal view returns (uint256) {
+        AgentIdentity storage a = _agents[agent];
+        uint256 score = a.reputation;
+
+        address[] storage endorsers = _endorsers[agent];
+        uint256 len = endorsers.length;
+        for (uint256 i = 0; i < len; i++) {
+            address endorser = endorsers[i];
+            uint256 endorserRep = _agents[endorser].reputation;
+            uint256 weight = endorserRep / 10;
+            if (weight < 10) weight = 10;
+            if (weight > 50) weight = 50;
+            score += weight;
+        }
+
+        return score > MAX_REPUTATION ? MAX_REPUTATION : score;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Universal Profile Detection
     // ─────────────────────────────────────────────────────────────────────────
@@ -416,6 +445,30 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
         trustScore = reputation + (endorsements * 10);
         if (trustScore > MAX_REPUTATION) trustScore = MAX_REPUTATION;
         name = a.name;
+    }
+
+    function verifyV2(address agent) external view returns (
+        bool registered,
+        bool active,
+        bool isUP,
+        uint256 reputation,
+        uint256 endorsements,
+        uint256 trustScore,
+        string memory name,
+        uint256 weightedTrustScore
+    ) {
+        registered = _agentIndex[agent] != 0;
+        if (!registered) return (false, false, false, 0, 0, 0, "", 0);
+
+        AgentIdentity storage a = _agents[agent];
+        active = a.isActive;
+        isUP = isUniversalProfile(agent);
+        reputation = a.reputation;
+        endorsements = a.endorsementCount;
+        trustScore = reputation + (endorsements * 10);
+        if (trustScore > MAX_REPUTATION) trustScore = MAX_REPUTATION;
+        name = a.name;
+        weightedTrustScore = _computeWeightedTrustScore(agent);
     }
 }
 
