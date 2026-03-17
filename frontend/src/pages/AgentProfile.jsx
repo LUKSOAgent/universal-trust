@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { verifyAgent, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered, getAllAgents } from "../useContract";
+import { verifyV2, getBaseAddress, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered, getAllAgents } from "../useContract";
 import { EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
 import TrustScoreCard, { computeCompositeScore, getTrustLevel } from "../components/TrustScoreCard";
-import { fetchUPProfile, fetchUPProfiles, fetchOnChainReputation } from "../envio";
+import { fetchUPProfile, fetchUPProfiles, fetchOnChainReputation, fetchLSP26RegisteredFollowers } from "../envio";
 
 function timeAgo(ts) {
   if (!ts || ts === 0) return null;
@@ -29,6 +29,7 @@ export default function AgentProfile() {
   const [verification, setVerification] = useState(null);
   const [upProfile, setUpProfile] = useState(null);
   const [onChainRep, setOnChainRep] = useState(null);
+  const [lsp26Data, setLsp26Data] = useState({ count: 0, addresses: [] });
   const [allAgents, setAllAgents] = useState([]);
 
   // Set page title when agent data loads
@@ -76,8 +77,15 @@ export default function AgentProfile() {
         fetchUPProfile(address).then((p) => setUpProfile(p)).catch(() => {});
         fetchOnChainReputation(address).then((r) => setOnChainRep(r)).catch(() => {});
 
-        // Fetch all agents for rank computation (optional, non-blocking)
-        getAllAgents().then((list) => setAllAgents(list)).catch(() => {});
+        // Fetch all agents for rank computation + LSP26 follower intersection (optional, non-blocking)
+        getAllAgents().then((list) => {
+          setAllAgents(list);
+          // Now that we have all registered addresses, fetch LSP26 registered followers
+          const registeredAddrs = list.map((a) => a.address.toLowerCase());
+          fetchLSP26RegisteredFollowers(address, registeredAddrs)
+            .then((data) => setLsp26Data(data))
+            .catch(() => {});
+        }).catch(() => {});
 
         // Fetch endorser UP profiles (non-blocking, for avatars)
         if (endorserList.length > 0) {
@@ -248,7 +256,8 @@ export default function AgentProfile() {
         {/* Verification Banner — uses composite score for consistent trust level */}
         {(() => {
           const onChainScore = onChainRep?.generalScore ?? null;
-          const composite = computeCompositeScore(verification.trustScore, onChainScore, skills.length);
+          const lsp26Score = lsp26Data.count * 5;
+          const composite = computeCompositeScore(verification.trustScore, onChainScore, skills.length, lsp26Score);
           const lvl = getTrustLevel(composite);
           return (
             <div className={`flex items-center justify-between px-6 py-2.5 border-b border-lukso-border ${lvl.bg}`}>
@@ -264,7 +273,7 @@ export default function AgentProfile() {
         })()}
         <div className="p-8">
         <div className="flex flex-col md:flex-row items-start gap-6">
-          <TrustBadge score={computeCompositeScore(verification.trustScore, onChainRep?.generalScore ?? null, skills.length)} size="lg" />
+          <TrustBadge score={computeCompositeScore(verification.trustScore, onChainRep?.generalScore ?? null, skills.length, lsp26Data.count * 5)} size="lg" />
           
           <div className="flex-1 min-w-0">
             {/* UP avatar from Envio */}
@@ -388,7 +397,8 @@ export default function AgentProfile() {
       {/* Composite Score Hero + Stats Grid */}
       {(() => {
         const onChainScore = onChainRep?.generalScore ?? null;
-        const composite = computeCompositeScore(verification.trustScore, onChainScore, skills.length);
+        const lsp26Score = lsp26Data.count * 5;
+        const composite = computeCompositeScore(verification.trustScore, onChainScore, skills.length, lsp26Score);
         const lvl = getTrustLevel(composite);
         return (
           <div className="mb-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
@@ -404,6 +414,7 @@ export default function AgentProfile() {
                     {verification.trustScore} <span className="text-gray-600">(contract)</span>
                     {onChainScore !== null ? <>{" + "}{Math.round(onChainScore * 3)} <span className="text-gray-600">(activity×3)</span></> : ""}
                     {skills.length > 0 ? <>{" + "}{Math.min(skills.length, 20) * 10} <span className="text-gray-600">({skills.length} skills×10)</span></> : ""}
+                    {lsp26Score > 0 ? <>{" + "}{lsp26Score} <span className="text-gray-600">(LSP26 follows×5)</span></> : ""}
                   </p>
                 </div>
                 <div className="flex flex-col items-center gap-2 shrink-0">
@@ -444,6 +455,8 @@ export default function AgentProfile() {
           allAgents={allAgents}
           onChainRep={onChainRep}
           skillsCount={skills.length}
+          lsp26Score={lsp26Data.count * 5}
+          lsp26FollowerCount={lsp26Data.count}
           hideComposite={true}
         />
       </div>

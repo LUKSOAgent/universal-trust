@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import AgentCard from "../components/AgentCard";
 import { getAllAgents, getAgentCount, getSkills } from "../useContract";
-import { fetchUPProfiles, fetchOnChainReputation, computeCompositeScore } from "../envio";
+import { fetchUPProfiles, fetchOnChainReputation, fetchLSP26RegisteredFollowers, computeCompositeScore } from "../envio";
 
 async function loadAgentsFromAPI() {
   const res = await fetch("/api/trust-graph");
@@ -67,20 +67,22 @@ export default function Directory() {
       setAgents(agentList);
       setCount(totalCount);
 
-      // Enrich with UP profiles + Envio activity scores + skill counts (non-blocking)
+      // Enrich with UP profiles + Envio activity scores + skill counts + LSP26 followers (non-blocking)
       if (agentList.length > 0) {
         const addrs = agentList.map((a) => a.address);
+        const addrsLower = addrs.map((a) => a.toLowerCase());
 
         // UP profiles (avatars, names)
         fetchUPProfiles(addrs)
           .then((profiles) => setUpProfiles(profiles))
           .catch(() => {});
 
-        // Envio activity scores + skill counts → composite score per agent
+        // Envio activity scores + skill counts + LSP26 followers → composite score per agent
         Promise.allSettled([
           Promise.allSettled(addrs.map((addr) => fetchOnChainReputation(addr))),
           Promise.allSettled(addrs.map((addr) => getSkills(addr).catch(() => []))),
-        ]).then(([repResults, skillResults]) => {
+          Promise.allSettled(addrs.map((addr) => fetchLSP26RegisteredFollowers(addr, addrsLower))),
+        ]).then(([repResults, skillResults, lsp26Results]) => {
           setAgents((prev) =>
             prev.map((agent, i) => {
               const onChainScore =
@@ -91,12 +93,18 @@ export default function Directory() {
                 skillResults.value?.[i]?.status === "fulfilled"
                   ? (skillResults.value[i].value?.length ?? 0)
                   : 0;
+              const lsp26Data =
+                lsp26Results.value?.[i]?.status === "fulfilled"
+                  ? (lsp26Results.value[i].value ?? { count: 0, addresses: [] })
+                  : { count: 0, addresses: [] };
+              const lsp26Score = lsp26Data.count * 5;
               const composite = computeCompositeScore(
                 agent.trustScore ?? agent.reputation + agent.endorsementCount * 10,
                 onChainScore,
-                skillCount
+                skillCount,
+                lsp26Score
               );
-              return { ...agent, onChainScore, skillCount, composite };
+              return { ...agent, onChainScore, skillCount, lsp26FollowerCount: lsp26Data.count, lsp26Score, composite };
             })
           );
         }).catch(() => {});

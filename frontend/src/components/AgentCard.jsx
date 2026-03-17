@@ -109,7 +109,7 @@ function AgentCardInner({ agent, upProfile }) {
   const trustScore = agent.trustScore ?? (agent.reputation + (agent.endorsementCount * 10));
   const weightedTrustScore = agent.weightedTrustScore ?? null;
   // Use pre-computed composite from Directory if available (includes Envio activity score)
-  const compositeScore = agent.composite ?? computeCompositeScore(trustScore, agent.onChainScore ?? null, skillCount ?? agent.skillCount ?? 0);
+  const compositeScore = agent.composite ?? computeCompositeScore(trustScore, agent.onChainScore ?? null, skillCount ?? agent.skillCount ?? 0, agent.lsp26Score ?? 0);
   const level = getTrustLevel(compositeScore);
   const improvedTier = getImprovedTrustTier(compositeScore);
   const showWeighted = weightedTrustScore !== null && weightedTrustScore !== trustScore;
@@ -218,6 +218,12 @@ function AgentCardInner({ agent, upProfile }) {
               <span className="flex items-center gap-1">
                 <span className="text-lukso-purple">⚡</span>
                 <span className="text-lukso-purple font-medium">{skillCount}</span> skill{skillCount === 1 ? "" : "s"}
+              </span>
+            )}
+            {(agent.lsp26FollowerCount ?? 0) > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="text-emerald-400">👥</span>
+                <span className="text-emerald-400 font-medium">{agent.lsp26FollowerCount}</span> registered follower{agent.lsp26FollowerCount === 1 ? "" : "s"}
               </span>
             )}
             <span>Joined {registeredDate}</span>

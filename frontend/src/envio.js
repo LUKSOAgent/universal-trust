@@ -10,24 +10,27 @@ import { ethers } from "ethers";
  * Compute the composite trust score from all data sources.
  *
  * Formula:
- *   contractTrustScore + Math.round(onChainScore × 3) + Math.min(skillsCount, 20) × 10
+ *   contractTrustScore + Math.round(onChainScore × 3) + Math.min(skillsCount, 20) × 10 + lsp26Score
  *
  * Score ranges (approximate):
  *   Contract trust: 0–10,000  (reputation + endorsements × 10)
  *   On-chain activity: 0–300  (Envio score 0–100, ×3 multiplier)
  *   Skills bonus: 0–200       (up to 20 skills × 10 pts each, capped)
+ *   LSP26 follows: 0–N        (registeredFollowersCount × 5, soft signal)
  *
- * Total max ≈ 10,500 — displayed prominently on TrustScoreCard, Verify, Directory.
+ * Total max ≈ 10,500+ — displayed prominently on TrustScoreCard, Verify, Directory.
  *
  * @param {number} trustScore - Contract-based trust score (from verify())
  * @param {number|null} onChainScore - Envio on-chain activity score (0-100)
  * @param {number} skillsCount - Number of registered skills
+ * @param {number} lsp26Score - LSP26 follower score (registeredFollowersCount × 5)
  * @returns {number}
  */
-export function computeCompositeScore(trustScore, onChainScore, skillsCount) {
+export function computeCompositeScore(trustScore, onChainScore, skillsCount, lsp26Score) {
   const onChain = onChainScore ?? 0;
   const skills = Math.min(skillsCount ?? 0, 20); // cap at 20 skills to prevent gaming
-  return trustScore + Math.round(onChain * 3) + skills * 10;
+  const lsp26 = lsp26Score ?? 0;
+  return trustScore + Math.round(onChain * 3) + skills * 10 + lsp26;
 }
 
 const ENVIO_ENDPOINT = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
@@ -157,6 +160,82 @@ export async function fetchUPProfile(address) {
   if (!address) return null;
   const profiles = await fetchUPProfiles([address]);
   return profiles[address.toLowerCase()] || null;
+}
+
+/**
+ * In-memory cache for LSP26 registered followers (TTL: 5 minutes).
+ */
+const _lsp26Cache = new Map(); // addr → { data, expiry }
+const LSP26_TTL = 5 * 60 * 1000; // 5 min
+
+/**
+ * Fetch LSP26 followers of an address that are also registered on Universal Trust.
+ * Queries the Envio Follow table, intersects with registeredAddresses.
+ *
+ * @param {string} address - The address to look up followers for
+ * @param {string[]} registeredAddresses - Array of registered agent addresses (lowercased)
+ * @returns {Promise<{ count: number, addresses: string[] }>}
+ */
+export async function fetchLSP26RegisteredFollowers(address, registeredAddresses) {
+  if (!address || !registeredAddresses || registeredAddresses.length === 0) {
+    return { count: 0, addresses: [] };
+  }
+
+  const addr = address.toLowerCase();
+
+  // Cache hit
+  const cached = _lsp26Cache.get(addr);
+  if (cached && cached.expiry > Date.now()) return cached.data;
+
+  const registeredSet = new Set(registeredAddresses.map((a) => a.toLowerCase()));
+
+  // Paginated fetch — max 500 followers
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 5;
+  let allFollowers = [];
+  let offset = 0;
+
+  try {
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const query = `
+        query LSP26Followers($addr: String!, $limit: Int!, $offset: Int!) {
+          Follow(where: { followee_id: { _eq: $addr } }, limit: $limit, offset: $offset) {
+            follower_id
+          }
+        }
+      `;
+
+      const res = await fetch(ENVIO_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query,
+          variables: { addr, limit: PAGE_SIZE, offset },
+        }),
+        signal: AbortSignal.timeout(6000),
+      });
+
+      if (!res.ok) break;
+
+      const { data, errors } = await res.json();
+      if (errors || !data?.Follow) break;
+
+      const followers = data.Follow.map((f) => f.follower_id.toLowerCase());
+      allFollowers = allFollowers.concat(followers);
+
+      if (followers.length < PAGE_SIZE) break; // last page
+      offset += PAGE_SIZE;
+    }
+
+    // Intersect with registered addresses
+    const registered = allFollowers.filter((f) => registeredSet.has(f));
+    const result = { count: registered.length, addresses: registered };
+
+    _lsp26Cache.set(addr, { data: result, expiry: Date.now() + LSP26_TTL });
+    return result;
+  } catch {
+    return { count: 0, addresses: [] };
+  }
 }
 
 /**

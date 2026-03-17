@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import * as d3Lib from "d3";
 const d3 = d3Lib;
 import { getAllAgents, getEndorsers, getEndorsement, getSkills } from "../useContract";
-import { fetchUPProfiles, fetchERC8004Agents, fetchOnChainReputation, computeCompositeScore } from "../envio";
+import { fetchUPProfiles, fetchERC8004Agents, fetchOnChainReputation, fetchLSP26RegisteredFollowers, computeCompositeScore } from "../envio";
 import { KNOWN_AGENTS, discoverAgentsFromEnvio } from "../agents";
 
 // Case-insensitive lookup helper for upProfiles (keys are always lowercase)
@@ -116,20 +116,28 @@ export default function TrustGraph() {
           } catch {}
         }));
 
-        // Enrich agents with Envio activity scores for composite score (non-blocking)
-        Promise.allSettled(agentList.map((a) => fetchOnChainReputation(a.address)))
-          .then((repResults) => {
+        // Enrich agents with Envio activity scores + LSP26 followers for composite score (non-blocking)
+        const agentAddrsLower = agentList.map((a) => a.address.toLowerCase());
+        Promise.allSettled([
+          Promise.allSettled(agentList.map((a) => fetchOnChainReputation(a.address))),
+          Promise.allSettled(agentList.map((a) => fetchLSP26RegisteredFollowers(a.address, agentAddrsLower))),
+        ]).then(([repResults, lsp26Results]) => {
             const enriched = agentList.map((agent, i) => {
-              const onChainScore = repResults[i].status === "fulfilled"
-                ? (repResults[i].value?.generalScore ?? null)
+              const onChainScore = repResults.value?.[i]?.status === "fulfilled"
+                ? (repResults.value[i].value?.generalScore ?? null)
                 : null;
               const skillCount = (skillMap[agent.address] || []).length;
+              const lsp26Data = lsp26Results.value?.[i]?.status === "fulfilled"
+                ? (lsp26Results.value[i].value ?? { count: 0, addresses: [] })
+                : { count: 0, addresses: [] };
+              const lsp26Score = lsp26Data.count * 5;
               const composite = computeCompositeScore(
                 agent.trustScore ?? agent.reputation + agent.endorsementCount * 10,
                 onChainScore,
-                skillCount
+                skillCount,
+                lsp26Score
               );
-              return { ...agent, onChainScore, skillCount, composite };
+              return { ...agent, onChainScore, skillCount, lsp26FollowerCount: lsp26Data.count, lsp26Score, composite };
             });
             setRawData({ agents: enriched, edges: endorseEdges, skills: skillMap });
           })
