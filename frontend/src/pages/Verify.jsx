@@ -101,19 +101,21 @@ export default function Verify() {
 
   useEffect(() => {
     document.title = "Trust Scanner — Universal Trust";
+    const timerRef = suggestTimer;
     return () => {
       document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO";
-      clearTimeout(suggestTimer.current);
+      clearTimeout(timerRef.current);
     };
   }, []);
 
   // Auto-verify if address provided via URL
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const urlAddr = searchParams.get("address");
     if (urlAddr && /^0x[0-9a-fA-F]{40}$/.test(urlAddr)) {
       doVerify(urlAddr);
     }
-  }, []);
+  }, [searchParams]);
 
   function validateAddress(value) {
     if (!value) { setValidationError(null); return; }
@@ -272,6 +274,15 @@ export default function Verify() {
               onChange={(e) => handleInputChange(e.target.value)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setInputValue(""); setAddress("");
+                  setResult(null); setError(null);
+                  setValidationError(null); setScanPhase(null);
+                  setSuggestions([]); setShowSuggestions(false);
+                  e.target.blur();
+                }
+              }}
               placeholder="0x... address or UP name (e.g. luksoagent)"
               aria-label="Agent address or name to verify"
               autoComplete="off"
