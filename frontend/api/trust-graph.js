@@ -78,25 +78,29 @@ export default async function handler(req, res) {
       .filter((r) => r.status === "fulfilled")
       .map((r) => r.value);
 
-    // Fetch endorsement edges in parallel
+    // Fetch endorsement edges in parallel (inner endorser lookups also parallelized)
     const edgeResults = await Promise.allSettled(
       nodes.map(async (node) => {
         const endorsers = await contract.getEndorsers(node.id);
-        const edges = [];
-        for (const endorser of endorsers) {
-          try {
-            const e = await contract.getEndorsement(endorser, node.id);
-            edges.push({
-              source: endorser,
-              target: node.id,
-              timestamp: Number(e.timestamp),
-              reason: e.reason || undefined,
-            });
-          } catch {
-            edges.push({ source: endorser, target: node.id });
-          }
-        }
-        return edges;
+        if (!endorsers || endorsers.length === 0) return [];
+        const innerResults = await Promise.allSettled(
+          endorsers.map(async (endorser) => {
+            try {
+              const e = await contract.getEndorsement(endorser, node.id);
+              return {
+                source: endorser,
+                target: node.id,
+                timestamp: Number(e.timestamp),
+                reason: e.reason || undefined,
+              };
+            } catch {
+              return { source: endorser, target: node.id };
+            }
+          })
+        );
+        return innerResults
+          .filter((r) => r.status === "fulfilled")
+          .map((r) => r.value);
       })
     );
 
@@ -120,6 +124,6 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error("trust-graph error:", err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: "Internal server error — failed to fetch trust graph" });
   }
 }

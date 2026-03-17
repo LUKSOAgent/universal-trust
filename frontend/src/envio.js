@@ -6,6 +6,21 @@
  */
 import { ethers } from "ethers";
 
+/**
+ * Compute the composite trust score from all data sources.
+ * compositeScore = contractTrustScore + Math.round(onChainScore * 2) + skillsCount * 5
+ *
+ * @param {number} trustScore - Contract-based trust score
+ * @param {number|null} onChainScore - Envio on-chain activity score (0-100)
+ * @param {number} skillsCount - Number of registered skills
+ * @returns {number}
+ */
+export function computeCompositeScore(trustScore, onChainScore, skillsCount) {
+  const onChain = onChainScore ?? 0;
+  const skills = skillsCount ?? 0;
+  return trustScore + Math.round(onChain * 2) + skills * 5;
+}
+
 const ENVIO_ENDPOINT = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
 const ERC8004_ADDRESS = "0xe30B7514744D324e8bD93157E4c82230d6e6e8f3";
 const RPC_URL = "https://rpc.mainnet.lukso.network";
@@ -242,9 +257,16 @@ export async function fetchOnChainReputation(address) {
       profileCreatedAt = new Date(createdTs * 1000).toISOString();
       const days = Math.floor((Date.now() - createdTs * 1000) / 86400000);
       score += logScore(days, 730, 15);
-      if (days > 365)     accountAge = `${Math.floor(days / 365)}y ${Math.floor((days % 365) / 30)}m`;
-      else if (days > 30) accountAge = `${Math.floor(days / 30)} months`;
-      else                accountAge = `${days} days`;
+      if (days > 365) {
+        const years = Math.floor(days / 365);
+        const months = Math.floor((days % 365) / 30);
+        accountAge = `${years}y ${months}m`;
+      } else if (days > 30) {
+        const months = Math.floor(days / 30);
+        accountAge = `${months} month${months === 1 ? "" : "s"}`;
+      } else {
+        accountAge = `${days} day${days === 1 ? "" : "s"}`;
+      }
     }
 
     score = Math.round(score);
