@@ -467,6 +467,121 @@ registerAndVerify(process.env.AGENT_PRIVATE_KEY, 'My Agent', 'An AI agent on LUK
 
 ---
 
+## UP INTEGRATION (Trust Score on your Universal Profile)
+
+The keeper script syncs your trust score from the Universal Trust registry directly onto your Universal Profile as an ERC725Y data key. This means your trust score shows up natively in UP viewers like [universaleverything.io](https://universaleverything.io) without any API call.
+
+### How it works
+
+1. The keeper reads all registered agents from the AgentIdentityRegistry
+2. For each agent that is a Universal Profile (isUP = true), it reads their `trustScore`
+3. It writes the trust score to the agent's UP using `setData(bytes32, bytes)`
+4. The data key is `AgentTrustScore` = `keccak256("AgentTrustScore")` = `0x1922b75218ebd5da7c581b0fa5723e3b223942b73f15565d4b3697f200c44faf`
+5. The value is ABI-encoded as `uint256` (32 bytes)
+
+### The data key
+
+| Field | Value |
+|-------|-------|
+| Key name | `AgentTrustScore` |
+| Key hash | `0x1922b75218ebd5da7c581b0fa5723e3b223942b73f15565d4b3697f200c44faf` |
+| Value encoding | `abi.encode(uint256)` — 32 bytes |
+| Example | Trust score 130 → `0x0000000000000000000000000000000000000000000000000000000000000082` |
+
+### Run the keeper
+
+```bash
+KEEPER_PRIVATE_KEY=0x... node scripts/keeper-up-sync.js
+```
+
+The keeper:
+- Skips EOA agents (not Universal Profiles)
+- Skips UPs where the value is already correct (avoids unnecessary gas)
+- Logs "needs permission grant" for UPs where the keeper has no SETDATA permission
+- Outputs a summary: updated / unchanged / skipped / failed
+
+### Grant SETDATA permission to the keeper
+
+The keeper can only write to your UP if you grant it `SETDATA` permission via LSP6 KeyManager. This is a minimal permission — it only allows writing ERC725Y data keys. It does NOT allow transferring LYX, executing calls, or changing permissions.
+
+**Print instructions with the keeper's address:**
+
+```bash
+KEEPER_PRIVATE_KEY=0x... node scripts/grant-keeper-permission.js
+```
+
+**Quick grant via ethers v6:**
+
+```javascript
+const { ethers } = require("ethers");
+
+const KEEPER_ADDRESS = "<keeper-address>";  // Printed by grant-keeper-permission.js
+const YOUR_UP = "<your-up-address>";
+
+const provider = new ethers.JsonRpcProvider("https://rpc.mainnet.lukso.network", 42);
+const wallet = new ethers.Wallet(process.env.AGENT_PRIVATE_KEY, provider);
+
+const UP_ABI = [
+  "function setData(bytes32, bytes) external",
+  "function setDataBatch(bytes32[], bytes[]) external",
+  "function getData(bytes32) external view returns (bytes)",
+];
+
+const up = new ethers.Contract(YOUR_UP, UP_ABI, wallet);
+const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+
+// Read current permissions array length
+const ARRAY_KEY = "0xdf30dba06db6a30e65354d9a64c609861f089545ca58c6b4dbe31a5f338cb0e3";
+const ARRAY_PREFIX = "0xdf30dba06db6a30e65354d9a64c60986";
+const PERM_PREFIX = "0x4b80742de2bf82acb3630000";
+const SETDATA_PERM = "0x0000000000000000000000000000000000000000000000000000000000040000";
+
+const lengthBytes = await up.getData(ARRAY_KEY);
+const currentLength = lengthBytes === "0x" ? 0n : BigInt(lengthBytes);
+const newLength = currentLength + 1n;
+
+const permKey = PERM_PREFIX + KEEPER_ADDRESS.slice(2).toLowerCase();
+const indexKey = ARRAY_PREFIX + currentLength.toString(16).padStart(32, "0");
+
+const tx = await up.setDataBatch(
+  [permKey, indexKey, ARRAY_KEY],
+  [
+    SETDATA_PERM,
+    ethers.zeroPadValue(KEEPER_ADDRESS, 32),
+    abiCoder.encode(["uint256"], [newLength]),
+  ]
+);
+await tx.wait();
+console.log("SETDATA permission granted! TX:", tx.hash);
+```
+
+**Or via universaleverything.io (no code):**
+
+1. Go to `https://universaleverything.io/<YOUR_UP_ADDRESS>`
+2. Connect your UP controller
+3. Settings → Permissions → Add Controller
+4. Paste the keeper address
+5. Enable ONLY "SETDATA"
+6. Confirm the transaction
+
+### What it looks like
+
+Once the keeper has written your trust score, it appears as an ERC725Y data key on your Universal Profile. Any UP viewer or dApp that reads ERC725Y data will see:
+
+- **Key:** `AgentTrustScore` (`0x1922b7...`)
+- **Value:** Your current trust score as a uint256
+
+On universaleverything.io, this shows under the raw data keys of your profile. Future UP viewers that recognize the `AgentTrustScore` key can render it as a trust badge.
+
+### Gas costs
+
+| Action | Approx. gas | Approx. LYX |
+|--------|-------------|-------------|
+| setData (per UP) | ~50,000 | ~0.0004 LYX |
+| Grant SETDATA permission | ~80,000 | ~0.0007 LYX |
+
+---
+
 ## LINKS
 
 - **Registry UI:** https://universal-trust.vercel.app *(coming soon)*
