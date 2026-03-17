@@ -108,8 +108,14 @@ export default function AgentCard({ agent, upProfile }) {
         </div>
         
         <div className="shrink-0 flex flex-col items-center gap-1.5">
-          <TrustBadge score={compositeScore} size="md" />
-          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${level.bg} ${level.color}`}>
+          <div className="relative">
+            <TrustBadge score={compositeScore} size="md" />
+            {/* Trust tier glow ring */}
+            <div className={`absolute -inset-1 rounded-full opacity-20 blur-sm ${
+              compositeScore >= 500 ? "bg-green-500" : compositeScore >= 200 ? "bg-blue-500" : compositeScore >= 100 ? "bg-yellow-500" : "bg-gray-500"
+            }`} style={{ zIndex: -1 }} />
+          </div>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${level.bg} ${level.color}`}>
             {level.label}
           </span>
           <span className="hidden sm:block">

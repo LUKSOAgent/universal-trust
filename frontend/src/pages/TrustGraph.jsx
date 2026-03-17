@@ -566,7 +566,20 @@ export default function TrustGraph() {
     if (!svgRef.current || !rawData) return;
     const svg = d3.select(svgRef.current);
     if (!selected) {
-      svg.selectAll(".g-node").attr("opacity", search.trim() ? undefined : 1);
+      // Re-apply search filter or reset all to full opacity
+      const q = search.trim().toLowerCase();
+      if (q) {
+        svg.selectAll(".g-node").attr("opacity", (d) => {
+          const match =
+            (d.label || "").toLowerCase().includes(q) ||
+            (d.address || "").toLowerCase().includes(q) ||
+            (d.description || "").toLowerCase().includes(q) ||
+            (d.content || "").toLowerCase().includes(q);
+          return match ? 1 : 0.1;
+        });
+      } else {
+        svg.selectAll(".g-node").attr("opacity", 1);
+      }
       svg.selectAll(".g-link").attr("stroke-opacity", 1);
       return;
     }
