@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import AgentCard from "../components/AgentCard";
-import { getAllAgents, getAgentCount, verifyAgent } from "../useContract";
-import { fetchUPProfiles } from "../envio";
-// computeCompositeScore used by AgentCard internally
+import { getAllAgents, getAgentCount, getSkills } from "../useContract";
+import { fetchUPProfiles, fetchOnChainReputation, computeCompositeScore } from "../envio";
 
 async function loadAgentsFromAPI() {
   const res = await fetch("/api/trust-graph");
@@ -68,11 +67,39 @@ export default function Directory() {
       setAgents(agentList);
       setCount(totalCount);
 
-      // Enrich with UP profiles from Envio (non-blocking, optional)
+      // Enrich with UP profiles + Envio activity scores + skill counts (non-blocking)
       if (agentList.length > 0) {
-        fetchUPProfiles(agentList.map((a) => a.address))
+        const addrs = agentList.map((a) => a.address);
+
+        // UP profiles (avatars, names)
+        fetchUPProfiles(addrs)
           .then((profiles) => setUpProfiles(profiles))
           .catch(() => {});
+
+        // Envio activity scores + skill counts → composite score per agent
+        Promise.allSettled([
+          Promise.allSettled(addrs.map((addr) => fetchOnChainReputation(addr))),
+          Promise.allSettled(addrs.map((addr) => getSkills(addr).catch(() => []))),
+        ]).then(([repResults, skillResults]) => {
+          setAgents((prev) =>
+            prev.map((agent, i) => {
+              const onChainScore =
+                repResults.value?.[i]?.status === "fulfilled"
+                  ? (repResults.value[i].value?.generalScore ?? null)
+                  : null;
+              const skillCount =
+                skillResults.value?.[i]?.status === "fulfilled"
+                  ? (skillResults.value[i].value?.length ?? 0)
+                  : 0;
+              const composite = computeCompositeScore(
+                agent.trustScore ?? agent.reputation + agent.endorsementCount * 10,
+                onChainScore,
+                skillCount
+              );
+              return { ...agent, onChainScore, skillCount, composite };
+            })
+          );
+        }).catch(() => {});
       }
     } catch (err) {
       console.error("Failed to load agents:", err);
@@ -104,8 +131,9 @@ export default function Directory() {
     result = [...result].sort((a, b) => {
       switch (sortBy) {
         case "trust": {
-          const scoreA = a.trustScore ?? (a.reputation + a.endorsementCount * 10);
-          const scoreB = b.trustScore ?? (b.reputation + b.endorsementCount * 10);
+          // Use composite score (contract + activity + skills) if available, else fall back
+          const scoreA = a.composite ?? a.trustScore ?? (a.reputation + a.endorsementCount * 10);
+          const scoreB = b.composite ?? b.trustScore ?? (b.reputation + b.endorsementCount * 10);
           return scoreB - scoreA;
         }
         case "name":

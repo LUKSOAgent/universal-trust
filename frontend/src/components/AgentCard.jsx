@@ -108,7 +108,8 @@ function AgentCardInner({ agent, upProfile }) {
   const [decayLoading, setDecayLoading] = useState(false);
   const trustScore = agent.trustScore ?? (agent.reputation + (agent.endorsementCount * 10));
   const weightedTrustScore = agent.weightedTrustScore ?? null;
-  const compositeScore = computeCompositeScore(trustScore, null, skillCount ?? 0);
+  // Use pre-computed composite from Directory if available (includes Envio activity score)
+  const compositeScore = agent.composite ?? computeCompositeScore(trustScore, agent.onChainScore ?? null, skillCount ?? agent.skillCount ?? 0);
   const level = getTrustLevel(compositeScore);
   const improvedTier = getImprovedTrustTier(compositeScore);
   const showWeighted = weightedTrustScore !== null && weightedTrustScore !== trustScore;

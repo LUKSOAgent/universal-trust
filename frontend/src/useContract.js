@@ -74,6 +74,32 @@ export async function getTrustScore(address) {
   return Number(score);
 }
 
+export async function getWeightedTrustScore(address) {
+  const contract = getContract();
+  const score = await contract.getWeightedTrustScore(address);
+  return Number(score);
+}
+
+export async function getBaseAddress(address) {
+  const contract = getContract();
+  return await contract.getBaseAddress(address);
+}
+
+export async function verifyV2(address) {
+  const contract = getContract();
+  const result = await contract.verifyV2(address);
+  return {
+    registered: result[0],
+    active: result[1],
+    isUP: result[2],
+    reputation: Number(result[3]),
+    endorsements: Number(result[4]),
+    trustScore: Number(result[5]),
+    weightedTrustScore: Number(result[6]),
+    name: result[7],
+  };
+}
+
 export async function getAllAgents() {
   const count = await getAgentCount();
   if (count === 0) return [];
@@ -81,23 +107,34 @@ export async function getAllAgents() {
   const addresses = await getAgentsByPage(0, count);
   const agents = [];
   
-  for (const addr of addresses) {
-    try {
-      const agent = await getAgent(addr);
-      agents.push({
-        address: addr,
-        name: agent.name,
-        description: agent.description,
-        metadataURI: agent.metadataURI,
-        reputation: Number(agent.reputation),
-        endorsementCount: Number(agent.endorsementCount),
-        registeredAt: Number(agent.registeredAt),
-        lastActiveAt: Number(agent.lastActiveAt),
-        isActive: agent.isActive,
-      });
-    } catch (e) {
-      console.warn(`Failed to fetch agent ${addr}:`, e);
+  const agentDataList = await Promise.allSettled(
+    addresses.map((addr) => getAgent(addr))
+  );
+  const weightedScores = await Promise.allSettled(
+    addresses.map((addr) => getWeightedTrustScore(addr))
+  );
+
+  for (let i = 0; i < addresses.length; i++) {
+    const addr = addresses[i];
+    if (agentDataList[i].status === "rejected") {
+      console.warn(`Failed to fetch agent ${addr}:`, agentDataList[i].reason);
+      continue;
     }
+    const agent = agentDataList[i].value;
+    const weightedTrustScore =
+      weightedScores[i].status === "fulfilled" ? weightedScores[i].value : null;
+    agents.push({
+      address: addr,
+      name: agent.name,
+      description: agent.description,
+      metadataURI: agent.metadataURI,
+      reputation: Number(agent.reputation),
+      endorsementCount: Number(agent.endorsementCount),
+      registeredAt: Number(agent.registeredAt),
+      lastActiveAt: Number(agent.lastActiveAt),
+      isActive: agent.isActive,
+      weightedTrustScore,
+    });
   }
   
   return agents;
