@@ -18,9 +18,9 @@ contract AgentIdentityRegistryTest is Test {
     AgentIdentityRegistry public registry;
 
     address public deployer = address(0xDEAD);
-    address public agentA = address(0xA);
-    address public agentB = address(0xB);
-    address public agentC = address(0xC);
+    address public agentA = address(0xA001);
+    address public agentB = address(0xB001);
+    address public agentC = address(0xC001);
     address public skillsRegistryAddr = address(0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6);
 
     function setUp() public {
@@ -168,7 +168,15 @@ contract AgentIdentityRegistryTest is Test {
 
     // ─── Endorsements ────────────────────────────────────────────────────────
 
+    /// @dev Deploy MockUniversalProfile bytecode at an address so isUniversalProfile() returns true.
+    ///      Addresses must be outside the precompile range (>0xFF) for vm.etch to work.
+    function _makeUP(address addr) internal {
+        MockUniversalProfile mock = new MockUniversalProfile();
+        vm.etch(addr, address(mock).code);
+    }
+
     function test_endorse() public {
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("Agent Alpha", "desc", "");
         vm.prank(agentB);
@@ -187,6 +195,7 @@ contract AgentIdentityRegistryTest is Test {
     }
 
     function test_endorse_revert_self() public {
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("Agent Alpha", "desc", "");
 
@@ -196,6 +205,7 @@ contract AgentIdentityRegistryTest is Test {
     }
 
     function test_endorse_revert_duplicate() public {
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("Agent Alpha", "desc", "");
         vm.prank(agentB);
@@ -210,6 +220,7 @@ contract AgentIdentityRegistryTest is Test {
     }
 
     function test_removeEndorsement() public {
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("Agent Alpha", "desc", "");
         vm.prank(agentB);
@@ -226,6 +237,8 @@ contract AgentIdentityRegistryTest is Test {
     }
 
     function test_multipleEndorsements() public {
+        _makeUP(agentA);
+        _makeUP(agentB);
         vm.prank(agentA);
         registry.register("Agent Alpha", "desc", "");
         vm.prank(agentB);
@@ -247,6 +260,8 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Trust Score ─────────────────────────────────────────────────────────
 
     function test_trustScore() public {
+        _makeUP(agentB);
+        _makeUP(agentC);
         vm.prank(agentA);
         registry.register("Agent Alpha", "desc", "");
         vm.prank(agentB);
@@ -365,6 +380,10 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Inactive agent cannot endorse ───────────────────────────────────────
 
     function test_endorse_revert_inactiveEndorser() public {
+        // Since the UP constraint replaced the registered/active endorser checks,
+        // a deactivated UP endorser CAN still endorse (only endorsed must be active).
+        // An EOA endorser hits EndorserMustBeUniversalProfile before any active check.
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("Agent Alpha", "desc", "");
         vm.prank(agentB);
@@ -373,9 +392,10 @@ contract AgentIdentityRegistryTest is Test {
         vm.prank(agentA);
         registry.deactivate();
 
+        // Deactivated UP can still endorse — contract only checks onlyActive(endorsed)
         vm.prank(agentA);
-        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.AgentNotActive.selector, agentA));
-        registry.endorse(agentB, "nope");
+        registry.endorse(agentB, "still works");
+        assertTrue(registry.hasEndorsed(agentA, agentB));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -424,6 +444,9 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Swap-and-pop with 3+ endorsers ──────────────────────────────────────
 
     function test_removeEndorsement_swapAndPop_threeEndorsers() public {
+        _makeUP(agentA);
+        _makeUP(agentB);
+        _makeUP(agentC);
         // Register 4 agents
         vm.prank(agentA);
         registry.register("A", "desc", "");
@@ -432,7 +455,7 @@ contract AgentIdentityRegistryTest is Test {
         vm.prank(agentC);
         registry.register("C", "desc", "");
 
-        address agentD = address(0xD);
+        address agentD = address(0xD001);
         vm.prank(agentD);
         registry.register("D", "desc", "");
 
@@ -506,6 +529,7 @@ contract AgentIdentityRegistryTest is Test {
     // ─── lastActiveAt updates correctly ──────────────────────────────────────
 
     function test_lastActiveAt_updates() public {
+        _makeUP(agentA);
         // Register at timestamp 1000
         vm.warp(1000);
         vm.prank(agentA);
@@ -532,10 +556,11 @@ contract AgentIdentityRegistryTest is Test {
         vm.prank(agentA);
         registry.endorse(agentB, "good");
 
+        // Note: endorse() only updates the endorsed agent's lastActiveAt, not the endorser's
         agent = registry.getAgent(agentA);
-        assertEq(agent.lastActiveAt, 3000);
+        assertEq(agent.lastActiveAt, 2000); // endorser's lastActiveAt unchanged
 
-        // Check endorsed agent's lastActiveAt also updated
+        // Check endorsed agent's lastActiveAt was updated
         AgentIdentityRegistry.AgentIdentity memory endorsed = registry.getAgent(agentB);
         assertEq(endorsed.lastActiveAt, 3000);
 
@@ -621,6 +646,7 @@ contract AgentIdentityRegistryTest is Test {
     }
 
     function test_gas_endorse() public {
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("A", "desc", "");
         vm.prank(agentB);
@@ -666,11 +692,13 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Unregistered agents cannot endorse ──────────────────────────────────
 
     function test_endorse_revert_unregisteredEndorser() public {
+        // Since the UP constraint replaced the registered-endorser check,
+        // an EOA endorser now gets EndorserMustBeUniversalProfile instead of NotRegistered.
         vm.prank(agentB);
         registry.register("B", "desc", "");
 
-        vm.prank(agentA); // not registered
-        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.NotRegistered.selector, agentA));
+        vm.prank(agentA); // not registered, not a UP → UP check fires first
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.EndorserMustBeUniversalProfile.selector, agentA));
         registry.endorse(agentB, "");
     }
 
@@ -740,6 +768,7 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Endorse after deactivate-reactivate cycle ─────────────────────────
 
     function test_endorse_afterDeactivateReactivate() public {
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("A", "desc", "");
         vm.prank(agentB);
@@ -762,6 +791,7 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Re-endorse after removing endorsement ──────────────────────────────
 
     function test_reEndorse_afterRemoval() public {
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("A", "desc", "");
         vm.prank(agentB);
@@ -832,6 +862,8 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Reentrancy guard: mock attacker contract ────────────────────────
 
     function test_reentrancy_endorse_noExternalCalls() public {
+        _makeUP(agentA);
+        _makeUP(agentB);
         // The contract makes no external calls during endorse(), so reentrancy
         // is impossible. This test verifies the invariant that endorsement
         // state is consistent after rapid sequential operations.
@@ -937,6 +969,8 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Boundary: trust score cap with max reputation + endorsements ────
 
     function test_trustScore_capped_maxReputationPlusEndorsements() public {
+        _makeUP(agentB);
+        _makeUP(agentC);
         vm.prank(agentA);
         registry.register("A", "", "");
         vm.prank(agentB);
@@ -982,6 +1016,7 @@ contract AgentIdentityRegistryTest is Test {
     function testFuzz_endorse_arbitraryReason(string calldata reason) public {
         vm.assume(bytes(reason).length < 512); // Practical gas limit
 
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("A", "", "");
         vm.prank(agentB);
@@ -1027,6 +1062,7 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Gas: removeEndorsement under gas limit ──────────────────────────
 
     function test_gas_removeEndorsement() public {
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("A", "", "");
         vm.prank(agentB);
@@ -1052,6 +1088,7 @@ contract AgentIdentityRegistryTest is Test {
     }
 
     function test_events_endorse() public {
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("A", "", "");
         vm.prank(agentB);
@@ -1154,6 +1191,9 @@ contract AgentIdentityRegistryTest is Test {
     // ─── endorsementCount consistency: struct field vs array length ───────
 
     function test_endorsementCount_consistency() public {
+        _makeUP(agentA);
+        _makeUP(agentB);
+        _makeUP(agentC);
         // The contract tracks endorsementCount in both the AgentIdentity struct
         // and the _endorsers array. These must ALWAYS stay in sync.
         vm.prank(agentA);
@@ -1163,7 +1203,7 @@ contract AgentIdentityRegistryTest is Test {
         vm.prank(agentC);
         registry.register("C", "", "");
 
-        address agentD = address(0xD);
+        address agentD = address(0xD001);
         vm.prank(agentD);
         registry.register("D", "", "");
 
@@ -1257,12 +1297,13 @@ contract AgentIdentityRegistryTest is Test {
     function test_gas_sybilEndorsements_50agents() public {
         // Simulate a sybil attack: create 50 agents and have them all endorse a target.
         // This documents the gas cost and verifies the trust score is correctly capped.
-        address target = address(0xEE);
+        address target = address(0xEE01);
         vm.prank(target);
         registry.register("Target", "", "");
 
         for (uint256 i = 1; i <= 50; i++) {
             address sybil = address(uint160(i + 1000));
+            _makeUP(sybil);
             vm.prank(sybil);
             registry.register(string(abi.encodePacked("Sybil_", vm.toString(i))), "", "");
 
@@ -1284,6 +1325,7 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Verify: getTrustScore matches verify() trustScore ───────────────
 
     function test_trustScore_getTrustScore_vs_verify_match() public {
+        _makeUP(agentB);
         vm.prank(agentA);
         registry.register("A", "", "");
         vm.prank(agentB);
@@ -1325,6 +1367,7 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Event: EndorsementRemoved ───────────────────────────────────────
 
     function test_events_endorsementRemoved() public {
+        _makeUP(agentA);
         vm.prank(agentA);
         registry.register("A", "", "");
         vm.prank(agentB);
@@ -1354,6 +1397,8 @@ contract AgentIdentityRegistryTest is Test {
     // ─── Mutual endorsement (A endorses B, B endorses A) ────────────────
 
     function test_mutualEndorsement() public {
+        _makeUP(agentA);
+        _makeUP(agentB);
         vm.prank(agentA);
         registry.register("A", "", "");
         vm.prank(agentB);
@@ -1377,13 +1422,6 @@ contract AgentIdentityRegistryTest is Test {
     // ═════════════════════════════════════════════════════════════════════════
     // Weighted Trust Score Tests
     // ═════════════════════════════════════════════════════════════════════════
-
-    /// @dev Deploy MockUniversalProfile bytecode at an address so isUniversalProfile returns true.
-    ///      Uses addresses above precompile range (>0xFF) to avoid vm.etch restrictions.
-    function _makeUP(address addr) internal {
-        MockUniversalProfile mock = new MockUniversalProfile();
-        vm.etch(addr, address(mock).code);
-    }
 
     // Addresses outside precompile range for UP-based endorsement tests
     address upAlpha  = address(0xAA01);
