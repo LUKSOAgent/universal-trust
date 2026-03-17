@@ -388,6 +388,12 @@ export default function AgentProfile() {
               >
                 Quick Verify
               </Link>
+              <Link
+                to="/graph"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
+              >
+                Trust Graph ↗
+              </Link>
             </div>
           </div>
         </div>
@@ -423,7 +429,10 @@ export default function AgentProfile() {
                   </span>
                   {allAgents.length > 0 && (() => {
                     const sorted = [...allAgents]
-                      .map(a => ({ addr: a.address, score: a.reputation + a.endorsementCount * 10 }))
+                      .map(a => {
+                        const cs = a.composite ?? (a.reputation + a.endorsementCount * 10);
+                        return { addr: a.address, score: cs };
+                      })
                       .sort((a, b) => b.score - a.score);
                     const idx = sorted.findIndex(a => a.addr.toLowerCase() === address?.toLowerCase());
                     return idx >= 0 ? (
@@ -439,7 +448,7 @@ export default function AgentProfile() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard label="Reputation" value={verification.reputation} />
               <StatCard label="Endorsements" value={verification.endorsements} />
-              <StatCard label="On-chain Score" value={verification.trustScore} />
+              <StatCard label="Contract Score" value={verification.trustScore} />
               <StatCard label="Skills" value={skills.length} />
             </div>
           </div>
@@ -490,7 +499,7 @@ export default function AgentProfile() {
           Skills ({skills.length})
         </h2>
         {skills.length === 0 ? (
-          <EmptyState icon="skills" message="No skills registered yet." />
+          <EmptyState icon="skills" message="No skills registered yet. Skills are published on-chain via the AgentSkillsRegistry." />
         ) : (
           <div className="space-y-3">
             {skills.map((skill, i) => (

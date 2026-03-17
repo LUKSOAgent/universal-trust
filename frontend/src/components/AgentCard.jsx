@@ -1,7 +1,7 @@
-import { useState, useEffect, memo, useRef } from "react";
+import { useState, useEffect, memo } from "react";
 import { Link } from "react-router-dom";
 import TrustBadge from "./TrustBadge";
-import { getSkillCount, getContract, getProvider } from "../useContract";
+import { getSkillCount } from "../useContract";
 import { computeCompositeScore } from "../envio";
 import { getTrustLevel } from "./TrustScoreCard";
 
@@ -134,7 +134,6 @@ function MiniTrustBar({ score }) {
 
 function AgentCardInner({ agent, upProfile }) {
   const [skillCount, setSkillCount] = useState(null);
-  const [decayLoading, setDecayLoading] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const trustScore = agent.trustScore ?? (agent.reputation + (agent.endorsementCount * 10));
   const weightedTrustScore = agent.weightedTrustScore ?? null;
@@ -155,37 +154,6 @@ function AgentCardInner({ agent, upProfile }) {
 
   // Decay status
   const decayStatus = getDecayStatus(agent.lastActiveAt);
-  const canApplyDecay = decayStatus?.warning !== null;
-
-  // Handler to apply decay on-chain
-  const handleApplyDecay = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!window.confirm(`Apply decay to ${displayName}?`)) return;
-    
-    try {
-      setDecayLoading(true);
-      // TODO: Fetch gracePeriod and decayRate from contract once deployed
-      const gracePeriod = 30 * 86400; // 30 days in seconds
-      const contract = getContract();
-      const signer = await getProvider().getSigner?.();
-      
-      if (!signer) {
-        alert("No wallet connected. Please connect via MetaMask or similar.");
-        return;
-      }
-      
-      const contractWithSigner = contract.connect(signer);
-      const tx = await contractWithSigner.applyDecay(agent.address);
-      await tx.wait();
-      alert("Decay applied successfully!");
-    } catch (err) {
-      console.error("Error applying decay:", err);
-      alert(`Error applying decay: ${err.message}`);
-    } finally {
-      setDecayLoading(false);
-    }
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -268,26 +236,15 @@ function AgentCardInner({ agent, upProfile }) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-gray-500">{decayStatus.status}</span>
               {decayStatus.warning && (
-                <>
-                  <span
-                    className={`text-xs px-2 py-1 rounded border font-semibold ${
-                      decayStatus.warning.type === "high"
-                        ? "bg-red-500/20 text-red-400 border-red-500/40"
-                        : "bg-amber-500/20 text-amber-400 border-amber-500/40"
-                    }`}
-                  >
-                    {decayStatus.warning.label}
-                  </span>
-                  {canApplyDecay && (
-                    <button
-                      onClick={handleApplyDecay}
-                      disabled={decayLoading}
-                      className="text-xs px-2 py-1 rounded border border-lukso-pink/40 bg-lukso-pink/10 text-lukso-pink hover:bg-lukso-pink/20 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                    >
-                      {decayLoading ? "Applying..." : "Apply Decay"}
-                    </button>
-                  )}
-                </>
+                <span
+                  className={`text-xs px-2 py-1 rounded border font-semibold ${
+                    decayStatus.warning.type === "high"
+                      ? "bg-red-500/20 text-red-400 border-red-500/40"
+                      : "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                  }`}
+                >
+                  {decayStatus.warning.label}
+                </span>
               )}
             </div>
           )}
@@ -295,13 +252,13 @@ function AgentCardInner({ agent, upProfile }) {
           {/* Access level indicator */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-600">Access:</span>
-            <span className="text-xs font-semibold text-gray-400">{improvedTier.accessLevel}</span>
-            {compositeScore >= 200 && <span className="text-xs text-gray-500">+</span>}
-            {compositeScore >= 200 && <span className="text-xs font-semibold text-gray-400">Standard</span>}
-            {compositeScore >= 500 && <span className="text-xs text-gray-500">+</span>}
-            {compositeScore >= 500 && <span className="text-xs font-semibold text-purple-400">Premium</span>}
-            {compositeScore >= 1000 && <span className="text-xs text-gray-500">+</span>}
-            {compositeScore >= 1000 && <span className="text-xs font-semibold text-amber-400">Elite</span>}
+            <span className={`text-xs font-semibold ${
+              compositeScore >= 1000 ? "text-amber-400" :
+              compositeScore >= 500 ? "text-purple-400" :
+              compositeScore >= 200 ? "text-emerald-400" :
+              compositeScore >= 100 ? "text-blue-400" :
+              "text-gray-400"
+            }`}>{improvedTier.accessLevel}</span>
           </div>
 
           <MiniTrustBar score={compositeScore} />
