@@ -7,6 +7,7 @@ const LUKSO_RPC = "https://rpc.mainnet.lukso.network";
 const TOKEN_ADDRESS = "0x81040cfd2bb62062525d958aD01931988a590B07";
 const REGISTRY_ADDRESS = "0x16505FeC789F4553Ea88d812711A0E913D926ADD";
 const UP_ADDRESS = "0x293E96ebbf264ed7715cff2b67850517De70232a";
+const MIN_BASE_TOKEN_BALANCE = ethers.parseUnits("50000000", 18); // 50 million
 const TOKEN_BOOST = 50;
 const STATE_FILE = path.join(__dirname, ".token-boost-state.json");
 
@@ -80,11 +81,11 @@ async function main() {
       console.log(`  ${addr} — balance check failed: ${e.message}`);
       continue;
     }
-    if (balance === 0n) {
-      console.log(`  ${addr} — no token balance`);
+    if (balance < MIN_BASE_TOKEN_BALANCE) {
+      console.log(`  ${addr} — balance: ${ethers.formatUnits(balance, 18)} (need 50M)`);
       continue;
     }
-    console.log(`  ${addr} — holds ${ethers.formatUnits(balance, 18)} tokens → boost +${TOKEN_BOOST}`);
+    console.log(`  ${addr} — holds ${ethers.formatUnits(balance, 18)} tokens (≥50M) → boost +${TOKEN_BOOST}`);
     if (!dryRun) {
       const registryInterface = new ethers.Interface(REGISTRY_ABI);
       const calldata = registryInterface.encodeFunctionData("updateReputation", [addr, TOKEN_BOOST, "LUKSO Fan Token holder on Base"]);
