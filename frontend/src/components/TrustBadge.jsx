@@ -1,23 +1,34 @@
 export default function TrustBadge({ score, size = "md" }) {
   let color, label, ringColor, glowColor;
-  if (score >= 500) {
-    color = "from-green-500 to-emerald-400";
-    label = "Highly Trusted";
-    ringColor = "border-green-500/40";
-    glowColor = "shadow-green-500/20";
+  // Improved tier mapping with distinct colors:
+  // 0-99: Unproven (gray)
+  // 100-199: Registered (blue)
+  // 200-499: Trusted (green/emerald)
+  // 500-999: Established (purple)
+  // 1000+: Verified (gold/amber)
+  if (score >= 1000) {
+    color = "from-amber-500 to-yellow-400";
+    label = "Verified";
+    ringColor = "border-amber-500/40";
+    glowColor = "shadow-amber-500/20";
+  } else if (score >= 500) {
+    color = "from-purple-500 to-violet-400";
+    label = "Established";
+    ringColor = "border-purple-500/40";
+    glowColor = "shadow-purple-500/20";
   } else if (score >= 200) {
-    color = "from-blue-500 to-cyan-400";
+    color = "from-emerald-500 to-green-400";
     label = "Trusted";
+    ringColor = "border-emerald-500/40";
+    glowColor = "shadow-emerald-500/20";
+  } else if (score >= 100) {
+    color = "from-blue-500 to-cyan-400";
+    label = "Registered";
     ringColor = "border-blue-500/40";
     glowColor = "shadow-blue-500/20";
-  } else if (score >= 100) {
-    color = "from-yellow-500 to-amber-400";
-    label = "Verified";
-    ringColor = "border-yellow-500/30";
-    glowColor = "shadow-yellow-500/10";
   } else {
     color = "from-gray-500 to-gray-400";
-    label = "New";
+    label = "Unproven";
     ringColor = "border-gray-500/20";
     glowColor = "";
   }
