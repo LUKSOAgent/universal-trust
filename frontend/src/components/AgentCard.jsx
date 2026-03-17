@@ -156,12 +156,17 @@ function AgentCardInner({ agent, upProfile }) {
   const decayStatus = getDecayStatus(agent.lastActiveAt);
 
   useEffect(() => {
+    // Skip RPC call if Directory already enriched this agent with skillCount
+    if (agent.skillCount !== undefined && agent.skillCount !== null) {
+      setSkillCount(agent.skillCount);
+      return;
+    }
     let cancelled = false;
     getSkillCount(agent.address)
       .then((c) => { if (!cancelled) setSkillCount(c); })
       .catch(() => { if (!cancelled) setSkillCount(0); });
     return () => { cancelled = true; };
-  }, [agent.address]);
+  }, [agent.address, agent.skillCount]);
   
   return (
     <Link
@@ -231,34 +236,33 @@ function AgentCardInner({ agent, upProfile }) {
             <span>Joined {registeredDate}</span>
           </div>
 
-          {/* Decay status row */}
-          {decayStatus && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-gray-500">{decayStatus.status}</span>
-              {decayStatus.warning && (
-                <span
-                  className={`text-xs px-2 py-1 rounded border font-semibold ${
-                    decayStatus.warning.type === "high"
-                      ? "bg-red-500/20 text-red-400 border-red-500/40"
-                      : "bg-amber-500/20 text-amber-400 border-amber-500/40"
-                  }`}
-                >
-                  {decayStatus.warning.label}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Access level indicator */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600">Access:</span>
-            <span className={`text-xs font-semibold ${
-              compositeScore >= 1000 ? "text-amber-400" :
-              compositeScore >= 500 ? "text-purple-400" :
-              compositeScore >= 200 ? "text-emerald-400" :
-              compositeScore >= 100 ? "text-blue-400" :
-              "text-gray-400"
-            }`}>{improvedTier.accessLevel}</span>
+          {/* Decay status + Access level row — inline with proper spacing */}
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            {decayStatus && (
+              <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                {decayStatus.status}
+                {decayStatus.warning && (
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded border font-semibold ${
+                      decayStatus.warning.type === "high"
+                        ? "bg-red-500/20 text-red-400 border-red-500/40"
+                        : "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                    }`}
+                  >
+                    {decayStatus.warning.label}
+                  </span>
+                )}
+              </span>
+            )}
+            <span className="text-xs text-gray-600 flex items-center gap-1">
+              Access: <span className={`font-semibold ${
+                compositeScore >= 1000 ? "text-amber-400" :
+                compositeScore >= 500 ? "text-purple-400" :
+                compositeScore >= 200 ? "text-emerald-400" :
+                compositeScore >= 100 ? "text-blue-400" :
+                "text-gray-400"
+              }`}>{improvedTier.accessLevel}</span>
+            </span>
           </div>
 
           <MiniTrustBar score={compositeScore} />
