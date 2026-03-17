@@ -78,8 +78,6 @@ export default async function handler(req, res) {
       .filter((r) => r.status === "fulfilled")
       .map((r) => r.value);
 
-    const addrSet = new Set(nodes.map((n) => n.id.toLowerCase()));
-
     // Fetch endorsement edges in parallel
     const edgeResults = await Promise.allSettled(
       nodes.map(async (node) => {
