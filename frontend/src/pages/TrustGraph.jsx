@@ -53,7 +53,7 @@ export default function TrustGraph() {
 
   const [search, setSearch]       = useState("");
   const [selected, setSelected]   = useState(null); // node id
-  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: true, ecosystem: true, skill: true, endorsement: false, external_endorser: true, lsp26_follow: true });
+  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: false, ecosystem: true, skill: true, endorsement: false, external_endorser: true, lsp26_follow: true });
   const [dims, setDims]           = useState({ w: 900, h: 600 });
 
   // AI Query
@@ -364,18 +364,20 @@ export default function TrustGraph() {
       }
     }
 
-    // LSP26 soft endorsement edges (only between nodes already in the graph)
+    // LSP26 soft endorsement edges — only between Universal Trust registered agents (not ERC-8004 or ecosystem nodes)
     // nodeIds uses original-case addresses; lsp26Edges may use lowercase — normalise with a lowercase set
     if (filters.lsp26_follow) {
-      const nodeIdsLower = new Set([...nodeIds].map((id) => id.toLowerCase()));
-      // Build a map from lowercase → original-case address so we can resolve source/target properly
+      // Build lowercase set only from registered Universal Trust agents
+      const registeredLower = new Set(
+        nodes.filter((n) => n.registered).map((n) => n.id.toLowerCase())
+      );
       const addrByLower = {};
-      for (const id of nodeIds) addrByLower[id.toLowerCase()] = id;
+      for (const n of nodes) if (n.registered) addrByLower[n.id.toLowerCase()] = n.id;
 
       for (const e of lsp26Edges) {
         const srcLower = e.source.toLowerCase();
         const tgtLower = e.target.toLowerCase();
-        if (nodeIdsLower.has(srcLower) && nodeIdsLower.has(tgtLower)) {
+        if (registeredLower.has(srcLower) && registeredLower.has(tgtLower)) {
           links.push({
             source: addrByLower[srcLower] ?? e.source,
             target: addrByLower[tgtLower] ?? e.target,
