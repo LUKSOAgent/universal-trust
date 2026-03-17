@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { verifyAgent, getBaseAddress, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered, getAllAgents } from "../useContract";
+import { verifyAgent, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered, getAllAgents } from "../useContract";
 import { EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
 import TrustScoreCard, { computeCompositeScore, getTrustLevel } from "../components/TrustScoreCard";
