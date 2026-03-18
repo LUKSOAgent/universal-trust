@@ -1,10 +1,44 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { verifyAgent, getEndorsers, getAgent, getSkills, getEndorsement, isRegistered, getAllAgents } from "../useContract";
 import { EXPLORER_URL } from "../config";
 import TrustBadge from "../components/TrustBadge";
 import TrustScoreCard, { computeCompositeScore, getTrustLevel } from "../components/TrustScoreCard";
 import { fetchUPProfile, fetchUPProfiles, fetchOnChainReputation, fetchLSP26RegisteredFollowers } from "../envio";
+
+/**
+ * Animated count-up component — counts from 0 to target value over duration.
+ * Creates a satisfying "ticking up" effect for the composite score.
+ */
+function AnimatedScore({ value, duration = 800 }) {
+  const [display, setDisplay] = useState(0);
+  const prevValue = useRef(0);
+
+  useEffect(() => {
+    const start = prevValue.current;
+    const end = value;
+    if (start === end) return;
+    const startTime = performance.now();
+
+    function tick(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease-out cubic for satisfying deceleration
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(start + (end - start) * eased);
+      setDisplay(current);
+      if (progress < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        prevValue.current = end;
+      }
+    }
+
+    requestAnimationFrame(tick);
+  }, [value, duration]);
+
+  return <>{display.toLocaleString()}</>;
+}
 
 function timeAgo(ts) {
   if (!ts || ts === 0) return null;
@@ -445,7 +479,7 @@ export default function AgentProfile() {
               <div className="relative z-10 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider mb-1">Composite Trust Score</p>
-                  <p className="text-5xl sm:text-6xl font-bold text-white tabular-nums">{composite.toLocaleString()}</p>
+                  <p className="text-5xl sm:text-6xl font-bold text-white tabular-nums"><AnimatedScore value={composite} /></p>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-lukso-pink/10 text-lukso-pink border border-lukso-pink/20">
                       <span className="w-1 h-1 rounded-full bg-lukso-pink" />
@@ -705,7 +739,9 @@ export default function AgentProfile() {
                     </div>
                   </div>
                   {detail?.reason ? (
-                    <p className="text-gray-400 text-sm mt-1 italic">"{detail.reason}"</p>
+                    <div className="mt-2 pl-3 border-l-2 border-lukso-pink/30">
+                      <p className="text-gray-300 text-sm italic leading-relaxed">"{detail.reason}"</p>
+                    </div>
                   ) : (
                     <p className="text-gray-600 text-xs mt-1 italic">On-chain endorsement — no message</p>
                   )}

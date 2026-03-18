@@ -100,6 +100,7 @@ export default function Verify() {
   const suggestTimer = useRef(null);
   const inputRef = useRef(null);
   const mountedRef = useRef(true);
+  const verifyIdRef = useRef(0); // prevents stale async results from overwriting newer verify calls
 
   useEffect(() => {
     document.title = "Trust Scanner — Universal Trust";
@@ -174,6 +175,9 @@ export default function Verify() {
   }
 
   async function doVerify(addr) {
+    // Increment verify ID to invalidate stale async results from previous calls
+    const thisVerifyId = ++verifyIdRef.current;
+    const isStale = () => verifyIdRef.current !== thisVerifyId || !mountedRef.current;
     try {
       setAddress(addr); // ensure address state matches what we're scanning
       setLoading(true);
@@ -188,34 +192,34 @@ export default function Verify() {
       // Fetch contract data + UP profile in parallel (fast path)
       const [data] = await Promise.all([
         verifyAgent(addr),
-        fetchUPProfile(addr).then((p) => setUpProfile(p)).catch(() => {}),
+        fetchUPProfile(addr).then((p) => { if (!isStale()) setUpProfile(p); }).catch(() => {}),
       ]);
+      if (isStale()) return;
       setScanPhase("done");
       setResult(data);
 
-      // Fetch skills count (non-blocking, guarded against unmount)
+      // Fetch skills count (non-blocking, guarded against unmount + stale verify)
       getSkills(addr)
-        .then((skills) => { if (mountedRef.current) setSkillsCount(skills.length); })
-        .catch(() => { if (mountedRef.current) setSkillsCount(0); });
+        .then((skills) => { if (!isStale()) setSkillsCount(skills.length); })
+        .catch(() => { if (!isStale()) setSkillsCount(0); });
 
       // LSP26 registered followers — fetch registered agent addresses, then intersect
       fetch("/api/trust-graph")
         .then((r) => r.ok ? r.json() : null)
         .then((graphData) => {
-          if (!graphData?.nodes) return;
+          if (!graphData?.nodes || isStale()) return;
           const registeredAddrs = graphData.nodes.map((n) => n.id.toLowerCase());
           return fetchLSP26RegisteredFollowers(addr, registeredAddrs);
         })
-        .then((data) => { if (data && mountedRef.current) setLsp26Score(data.count * 5); })
+        .then((data) => { if (data && !isStale()) setLsp26Score(data.count * 5); })
         .catch(() => {});
 
       // On-chain reputation from Envio — lazy, non-blocking, separate loading state
-      // Only fetch for UPs (EOAs have no Envio data anyway)
       setOnChainLoading(true);
       fetchOnChainReputation(addr)
-        .then((rep) => { if (mountedRef.current) setOnChainRep(rep); })
-        .catch(() => { if (mountedRef.current) setOnChainRep(null); })
-        .finally(() => { if (mountedRef.current) setOnChainLoading(false); });
+        .then((rep) => { if (!isStale()) setOnChainRep(rep); })
+        .catch(() => { if (!isStale()) setOnChainRep(null); })
+        .finally(() => { if (!isStale()) setOnChainLoading(false); });
     } catch (err) {
       setScanPhase(null);
       if (err.message?.includes("network") || err.message?.includes("fetch")) {

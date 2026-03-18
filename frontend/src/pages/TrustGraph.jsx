@@ -51,6 +51,10 @@ export default function TrustGraph() {
 
   const [erc8004Agents, setErc8004Agents] = useState([]); // agents from ERC-8004 registry
 
+  // Ref for upProfiles to avoid D3 simulation restart on profile enrichment
+  const upProfilesRef = useRef({});
+  useEffect(() => { upProfilesRef.current = upProfiles; }, [upProfiles]);
+
   const [search, setSearch]       = useState("");
   const [selected, setSelected]   = useState(null); // node id
   const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: false, ecosystem: true, skill: true, endorsement: false, external_endorser: true, lsp26_follow: true });
@@ -247,6 +251,8 @@ export default function TrustGraph() {
   const buildGraph = useCallback(() => {
     if (!rawData) return { nodes: [], links: [] };
     const { agents, edges, skills, lsp26Edges = [] } = rawData;
+    // Use ref to avoid D3 simulation restart when profiles load asynchronously
+    const profiles = upProfilesRef.current;
 
     const nodes = [];
     const links = [];
@@ -254,7 +260,7 @@ export default function TrustGraph() {
 
     // Agent nodes (registered on Universal Trust)
     for (const a of agents) {
-      const upData = upLookup(upProfiles, a.address); const type = (upData?.isUP === true) ? "agent_up" : "agent_eoa";
+      const upData = upLookup(profiles, a.address); const type = (upData?.isUP === true) ? "agent_up" : "agent_eoa";
       if (!filters[type]) continue;
       // Use composite score (contract + activity + skills) if available, else fallback
       const score = a.composite ?? a.trustScore ?? (a.reputation + a.endorsementCount * 10);
@@ -262,7 +268,7 @@ export default function TrustGraph() {
       nodes.push({
         id: a.address,
         type,
-        label: upLookup(upProfiles, a.address)?.name || a.name || a.address.slice(0, 8) + "…",
+        label: upLookup(profiles, a.address)?.name || a.name || a.address.slice(0, 8) + "…",
         fullName: a.name,
         address: a.address,
         trustScore: score,
@@ -279,7 +285,7 @@ export default function TrustGraph() {
     if (filters.agent_8004) {
       for (const a of erc8004Agents) {
         if (nodeIds.has(a.owner)) continue; // already shown as agent_up / agent_eoa node
-        const upData = upLookup(upProfiles, a.owner);
+        const upData = upLookup(profiles, a.owner);
         const name = upData?.name || a.name || `Agent #${a.agentId}`;
         nodes.push({
           id: a.owner,
@@ -300,7 +306,7 @@ export default function TrustGraph() {
     if (filters.ecosystem) {
       for (const a of ecosystemAgents) {
         if (nodeIds.has(a.address)) continue; // already registered
-        const name = upLookup(upProfiles, a.address)?.name || a.name || a.address.slice(0, 8) + "…";
+        const name = upLookup(profiles, a.address)?.name || a.name || a.address.slice(0, 8) + "…";
         nodes.push({
           id: a.address,
           type: "ecosystem",
@@ -341,7 +347,7 @@ export default function TrustGraph() {
       for (const e of edges) {
         if (nodeIds.has(e.source)) continue; // already in graph
         if (!nodeIds.has(e.target)) continue; // target must exist
-        const upData = upLookup(upProfiles, e.source);
+        const upData = upLookup(profiles, e.source);
         const label = upData?.name || (e.source.slice(0, 6) + "…" + e.source.slice(-4));
         nodes.push({
           id: e.source,
@@ -406,7 +412,7 @@ export default function TrustGraph() {
     }
 
     return { nodes, links };
-  }, [rawData, upProfiles, filters, ecosystemAgents, erc8004Agents]);
+  }, [rawData, filters, ecosystemAgents, erc8004Agents]);
 
   // ── Render D3 ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -538,9 +544,10 @@ export default function TrustGraph() {
       .on("click", (ev, d) => { ev.stopPropagation(); setSelected((p) => p === d.id ? null : d.id); });
 
     // Clip paths for PFP images (one per node that has an avatar)
+    const currentProfiles = upProfilesRef.current;
     nodes.forEach((d) => {
       const key = (d.id || d.address || "").toLowerCase();
-      const avatar = upProfiles[key]?.profileImage || upLookup(upProfiles, d.id)?.profileImage || upLookup(upProfiles, d.address)?.profileImage;
+      const avatar = currentProfiles[key]?.profileImage || upLookup(currentProfiles, d.id)?.profileImage || upLookup(currentProfiles, d.address)?.profileImage;
       if (avatar && (d.type === "agent_up" || d.type === "agent_eoa" || d.type === "ecosystem" || d.type === "external_endorser")) {
         d._avatar = avatar;
         defs.append("clipPath")
@@ -638,7 +645,7 @@ export default function TrustGraph() {
     });
 
     return () => sim.stop();
-  }, [loading, rawData, upProfiles, filters, dims, buildGraph]);
+  }, [loading, rawData, filters, dims, buildGraph]);
 
   // ── Search highlight ───────────────────────────────────────────────────────
   useEffect(() => {

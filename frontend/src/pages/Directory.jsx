@@ -183,9 +183,12 @@ export default function Directory() {
 
             {/* Synthesis 2026 badge */}
             <div className="flex justify-center mb-4 animate-fade-in" style={{ animationDelay: "0.05s" }}>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-lukso-purple/15 border border-lukso-purple/30 text-xs font-medium text-lukso-purple">
-                <span className="w-1.5 h-1.5 rounded-full bg-lukso-purple animate-pulse" />
-                Synthesis 2026 — Agents that Trust
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-lukso-pink/15 to-lukso-purple/15 border border-lukso-purple/40 text-sm font-semibold text-white shadow-lg shadow-lukso-purple/10">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lukso-pink opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-lukso-pink" />
+                </span>
+                Synthesis 2026 — <span className="text-lukso-purple">Agents that Trust</span>
               </span>
             </div>
 
