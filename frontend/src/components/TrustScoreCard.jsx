@@ -112,7 +112,10 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
   if (allAgents && allAgents.length > 0) {
     totalAgents = allAgents.length;
     const sorted = [...allAgents]
-      .map((a) => ({ address: a.address, score: a.reputation + a.endorsementCount * 10 }))
+      .map((a) => ({
+        address: a.address,
+        score: a.composite ?? (a.reputation + a.endorsementCount * 10),
+      }))
       .sort((a, b) => b.score - a.score);
     const idx = sorted.findIndex(
       (a) => a.address.toLowerCase() === address?.toLowerCase()
