@@ -458,7 +458,7 @@ export default function Verify() {
       </form>
 
       {/* Scanning Animation */}
-      {loading && scanPhase === "scanning" && (
+      {loading && (scanPhase === "scanning" || scanPhase === "done") && (
         <div className="bg-lukso-card border border-lukso-border rounded-xl p-8 text-center animate-fade-in">
           <div className="w-20 h-20 mx-auto mb-4 relative">
             <div className="absolute inset-0 rounded-full border-2 border-lukso-pink/30 animate-ping" />
