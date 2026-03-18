@@ -12,7 +12,7 @@ async function searchProfiles(query) {
   try {
     // Try both exact match and partial match in parallel
     // Use GraphQL variables to prevent injection
-    const sanitized = query.replace(/[\\%_]/g, "");
+    const sanitized = query.replace(/[\\%_'"]/g, "").slice(0, 100);
     const [exactRes, partialRes] = await Promise.all([
       fetch(ENVIO, {
         method: "POST",
@@ -565,7 +565,7 @@ export default function Verify() {
                       <CopyButton text={address} />
                     </div>
                   </div>
-                  <TrustBadge score={result.trustScore} size="lg" />
+                  <TrustBadge score={computeCompositeScore(result.trustScore, onChainRep?.generalScore ?? null, skillsCount, lsp26Score)} size="lg" />
                 </div>
               </div>
 
