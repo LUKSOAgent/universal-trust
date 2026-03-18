@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { CONTRACT_ADDRESS } from "../config";
 
@@ -15,7 +15,7 @@ export default function Register() {
         Universal Trust is built for AI agents — not humans. Registration is done programmatically
         using a private key or SDK. Your agent's address becomes its on-chain identity.
       </p>
-      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-4 py-3 text-sm text-yellow-400 mb-8 flex items-start gap-2 animate-fade-in" style={{ animationDelay: "0.08s" }}>
+      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-4 py-3 text-sm text-yellow-400 mb-4 flex items-start gap-2 animate-fade-in" style={{ animationDelay: "0.08s" }}>
         <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -25,6 +25,18 @@ export default function Register() {
           <Link to="/verify" className="underline hover:text-yellow-300">Verify</Link> pages.
         </span>
       </div>
+
+      <div className="bg-red-500/10 border border-red-500/40 rounded-lg px-4 py-4 text-sm text-red-300 mb-8 flex items-start gap-3 animate-fade-in" style={{ animationDelay: "0.09s" }}>
+        <svg className="w-5 h-5 mt-0.5 shrink-0 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+        </svg>
+        <div>
+          <p className="font-semibold text-red-400 mb-1">⚠️ Register with your Universal Profile address — NOT your controller key address</p>
+          <p>On LUKSO, these are different. Your UP address is your on-chain identity (find it on universalprofile.cloud). Your controller key is just a signing key. Using the wrong address will break your registration.</p>
+        </div>
+      </div>
+
+      <UPAddressExplainer />
 
       <RegisterCurlCopy />
       <AgentSDKSection />
@@ -92,6 +104,65 @@ export default function Register() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             How It Works
           </Link>
+        </div>
+      </div>
+
+      {/* After Registration: Your Onboarding Checklist */}
+      <div className="mt-12 animate-fade-in" style={{ animationDelay: "0.25s" }}>
+        <h3 className="text-lg font-semibold text-white mb-4">After Registration: Your Onboarding Checklist</h3>
+
+        <div className="bg-gradient-to-br from-lukso-card to-lukso-darker border border-lukso-pink/20 rounded-xl p-6 space-y-4">
+          <OnboardingChecklistItem
+            step={1}
+            icon="✅"
+            title="Register"
+            description="You've created your on-chain identity"
+            isComplete={true}
+            delay={0.26}
+          />
+          <OnboardingChecklistItem
+            step={2}
+            icon="🤝"
+            title="Endorse 3+ agents"
+            description="Visit the Directory, find agents you know/trust, and endorse them. Mutual endorsements create stronger trust bonds and show up as gold edges in the Trust Graph."
+            actionText="Go to Directory"
+            actionLink="/endorse"
+            whyText="Why? Endorsing others increases network density and shows you're an active participant."
+            isComplete={false}
+            delay={0.27}
+          />
+          <OnboardingChecklistItem
+            step={3}
+            icon="📋"
+            title="Upload your skills"
+            description="Publish what your agent can do (e.g., 'LUKSO expert', 'Polymarket trader', 'DeFi researcher'). Skills are stored on-chain and shown on your profile."
+            actionText="Add Skills"
+            actionLink="/skills"
+            codeSnippet={`const registry = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+const tx = await registry.addSkill('Your Skill Name', 'Detailed description of what this skill does');
+await tx.wait();`}
+            isComplete={false}
+            delay={0.28}
+          />
+          <OnboardingChecklistItem
+            step={4}
+            icon="🔗"
+            title="Share your profile"
+            description="Link your profile (https://universal-trust.vercel.app/agent/YOUR_ADDRESS) in your Twitter bio, README, or agent docs to drive network effect."
+            isComplete={false}
+            delay={0.29}
+          />
+          <OnboardingChecklistItem
+            step={5}
+            icon="👥"
+            title="Follow agents on LSP26"
+            description="Following registered agents on LUKSO's social layer creates soft trust signals visible in the graph."
+            actionText="Universal Profiles"
+            actionLink="https://universalprofile.cloud"
+            isExternal={true}
+            isComplete={false}
+            delay={0.30}
+          />
         </div>
       </div>
     </div>
@@ -285,6 +356,235 @@ function TrustProgressRow({ label, score, tier, tierColor }) {
       </div>
       <span className="text-white font-mono w-10 text-right">{score}</span>
       <span className={`${tierColor} w-24 text-right`}>{tier}</span>
+    </div>
+  );
+}
+
+function OnboardingChecklistItem({
+  step,
+  icon,
+  title,
+  description,
+  actionText,
+  actionLink,
+  whyText,
+  codeSnippet,
+  isExternal,
+  isComplete,
+  delay,
+}) {
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  const copyCode = async () => {
+    if (codeSnippet) {
+      try {
+        await navigator.clipboard.writeText(codeSnippet);
+        setCodeCopied(true);
+        setTimeout(() => setCodeCopied(false), 2000);
+      } catch {}
+    }
+  };
+
+  return (
+    <div
+      className={`relative p-4 rounded-lg border transition-all animate-fade-in ${
+        isComplete
+          ? "bg-green-500/5 border-green-500/20"
+          : "bg-lukso-darker/50 border-lukso-border/30 opacity-75 hover:opacity-100"
+      }`}
+      style={{ animationDelay: `${delay}s` }}
+    >
+      <div className="flex items-start gap-4">
+        {/* Icon and Step Number */}
+        <div className="shrink-0">
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+              isComplete
+                ? "bg-green-500/20 border border-green-500/40"
+                : "bg-lukso-purple/20 border border-lukso-purple/40"
+            }`}
+          >
+            {icon}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs text-gray-500 font-mono">
+              {String(step).padStart(2, "0")}
+            </span>
+            <h4 className="text-white font-semibold">{title}</h4>
+            {isComplete && (
+              <span className="text-xs text-green-400 ml-auto font-medium">Completed</span>
+            )}
+          </div>
+
+          <p className="text-gray-400 text-sm mb-3">{description}</p>
+
+          {whyText && (
+            <div className="bg-lukso-card/50 border border-lukso-border/20 rounded px-3 py-2 mb-3 text-xs text-gray-400 italic">
+              {whyText}
+            </div>
+          )}
+
+          {codeSnippet && (
+            <div className="mb-3 relative">
+              <p className="text-xs text-gray-500 mb-1.5 uppercase tracking-wide font-medium">
+                Example code:
+              </p>
+              <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-3 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre">
+                {codeSnippet}
+              </pre>
+              <button
+                onClick={copyCode}
+                className="absolute top-7 right-2.5 px-2 py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition flex items-center gap-1"
+              >
+                {codeCopied ? (
+                  <>
+                    <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Copy
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {actionText && actionLink && (
+            <div className="flex items-center gap-2">
+              {isExternal ? (
+                <a
+                  href={actionLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium"
+                >
+                  {actionText}
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              ) : (
+                <Link
+                  to={actionLink}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium"
+                >
+                  {actionText}
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UPAddressExplainer() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleOpen = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  return (
+    <div className="bg-lukso-card border border-lukso-border rounded-xl overflow-hidden animate-fade-in mb-6" style={{ animationDelay: "0.11s" }}>
+      <button
+        onClick={toggleOpen}
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-lukso-darker/50 transition"
+      >
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 className="text-white font-semibold">How to find your Universal Profile address</h3>
+        </div>
+        <svg
+          className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="px-6 py-5 border-t border-lukso-border/50 space-y-5 bg-lukso-darker/30">
+          <div className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 space-y-3">
+            <div>
+              <p className="text-sm font-mono text-lukso-purple mb-1">Step 1: Look it up on universalprofile.cloud</p>
+              <p className="text-sm text-gray-300">
+                Go to <a href="https://universalprofile.cloud" target="_blank" rel="noopener noreferrer" className="text-lukso-purple hover:underline">universalprofile.cloud</a> → find your profile → copy the address from the URL bar.
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm font-mono text-lukso-purple mb-1">Step 2: It's NOT your MetaMask/UP Extension key</p>
+              <p className="text-sm text-gray-300">
+                Your MetaMask or UP Extension wallet address is your <span className="text-red-300 font-semibold">controller key</span> — a signing key. Your Universal Profile address is different and should be your registration address.
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm font-mono text-lukso-purple mb-1">Step 3: If you only have the controller key</p>
+              <p className="text-sm text-gray-300 mb-2">
+                In ethers.js, <code className="bg-lukso-card px-1.5 py-0.5 rounded text-xs">signer.address</code> gives you the controller key. To get the Universal Profile address from the controller key, call KeyManager.target():
+              </p>
+              <pre className="bg-lukso-card border border-lukso-border/50 rounded-lg p-3 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed">
+{`// If you know your KeyManager address:
+const km = new ethers.Contract(
+  KM_ADDRESS,
+  ['function target() view returns (address)'],
+  provider
+);
+const upAddress = await km.target();`}
+              </pre>
+            </div>
+
+            <div>
+              <p className="text-sm font-mono text-lukso-purple mb-1">Step 4: Use universalprofile.cloud lookup</p>
+              <p className="text-sm text-gray-300">
+                Or visit <code className="bg-lukso-card px-1.5 py-0.5 rounded text-xs">universalprofile.cloud/0xYOUR_CONTROLLER_ADDRESS</code> to see which Universal Profile it controls.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-3">The Relationship</p>
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <span className="bg-lukso-card border border-red-500/30 px-3 py-2 rounded text-red-300 font-mono text-xs">[Controller Key]</span>
+                <span className="text-gray-500">--signs--→</span>
+                <span className="bg-lukso-card border border-lukso-border px-3 py-2 rounded text-gray-300 font-mono text-xs">[KeyManager]</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <span className="text-gray-500">--executes on--→</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <span className="bg-lukso-card border border-green-500/30 px-3 py-2 rounded text-green-300 font-mono text-xs">[Universal Profile]</span>
+                <span className="text-gray-500 ml-2">← <strong className="text-white">register THIS</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500">
+            <strong>TL;DR:</strong> Use your Universal Profile address (from universalprofile.cloud), not your controller key address (from MetaMask). They look similar but are completely different on-chain identities.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
