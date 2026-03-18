@@ -181,7 +181,7 @@ function AgentCardInner({ agent, upProfile }) {
     >
       <div className="flex items-start justify-between gap-2 sm:gap-4">
         <div className="flex-1 min-w-0 overflow-hidden">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
             {/* UP avatar or gradient fallback */}
             {avatarUrl ? (
               <img
@@ -209,18 +209,18 @@ function AgentCardInner({ agent, upProfile }) {
               </span>
             )}
             {agent.isActive ? (
-              <span className="px-2 py-0.5 text-xs rounded-full bg-green-500/20 text-green-400 border border-green-500/30 shrink-0">
+              <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-green-500/20 text-green-400 border border-green-500/30 shrink-0">
                 Active
               </span>
             ) : (
-              <span className="px-2 py-0.5 text-xs rounded-full bg-red-500/20 text-red-400 border border-red-500/30 shrink-0">
+              <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-red-500/20 text-red-400 border border-red-500/30 shrink-0">
                 Inactive
               </span>
             )}
             {/* LSP26 social signal badge */}
             {(agent.lsp26FollowerCount ?? 0) > 0 && (
-              <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0 font-medium">
-                👥 {agent.lsp26FollowerCount} agent{agent.lsp26FollowerCount === 1 ? " follows" : "s follow"}
+              <span className="hidden sm:inline-flex px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0 font-medium items-center gap-0.5">
+                👥 {agent.lsp26FollowerCount} agent{agent.lsp26FollowerCount === 1 ? "" : "s"}
               </span>
             )}
           </div>
