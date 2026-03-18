@@ -391,38 +391,71 @@ export default function TrustGraph() {
     }
 
     // Endorsement event nodes (optional)
+    // For mutual pairs: collapse into a single bidirectional node (canonical key = sorted addresses)
+    const addedMutualPairs = new Set();
     if (filters.endorsement) {
       for (const e of edges) {
         const src = resolveId(e.source);
         const tgt = resolveId(e.target);
         if (!nodeIds.has(src) || !nodeIds.has(tgt)) continue;
-        const eid = `endorse:${src}→${tgt}`;
-        if (!nodeIds.has(eid)) {
-          const mutual = isMutualPair(src, tgt);
-          nodes.push({
-            id: eid,
-            type: "endorsement",
-            label: mutual ? "⇄" : "✓",
-            r: NODE_R.endorsement,
-            reason: e.reason,
-            from: src,
-            to: tgt,
-            mutual,
-          });
-          nodeIds.add(eid);
+        const mutual = isMutualPair(src, tgt);
+        if (mutual) {
+          // Use a canonical (sorted) key so A→B and B→A share one node
+          const pairKey = [src, tgt].sort().join("↔");
+          if (addedMutualPairs.has(pairKey)) continue; // already added for this pair
+          addedMutualPairs.add(pairKey);
+          const eid = `endorse-mutual:${pairKey}`;
+          if (!nodeIds.has(eid)) {
+            nodes.push({
+              id: eid,
+              type: "endorsement",
+              label: "⇄",
+              r: NODE_R.endorsement,
+              from: src,
+              to: tgt,
+              mutual: true,
+            });
+            nodeIds.add(eid);
+          }
+          // One undirected-style link each side (no arrowhead, thick gold — handled in render)
+          links.push({ source: src, target: eid, kind: "endorses", mutual: true });
+          links.push({ source: tgt, target: eid, kind: "endorses", mutual: true });
+        } else {
+          const eid = `endorse:${src}→${tgt}`;
+          if (!nodeIds.has(eid)) {
+            nodes.push({
+              id: eid,
+              type: "endorsement",
+              label: "✓",
+              r: NODE_R.endorsement,
+              reason: e.reason,
+              from: src,
+              to: tgt,
+              mutual: false,
+            });
+            nodeIds.add(eid);
+          }
+          links.push({ source: src, target: eid, kind: "endorses", mutual: false });
+          links.push({ source: eid, target: tgt, kind: "endorsed-by", mutual: false });
         }
-        const m = isMutualPair(src, tgt);
-        links.push({ source: src, target: eid, kind: "endorses", mutual: m });
-        links.push({ source: eid, target: tgt, kind: "endorsed-by", mutual: m });
       }
     } else {
-      // Direct edges (includes external endorsers → registered agents)
+      // Direct edges — deduplicate mutual pairs to a single undirected thick link
+      const addedMutual = new Set();
       for (const e of edges) {
         const src = resolveId(e.source);
         const tgt = resolveId(e.target);
         if (!nodeIds.has(src) || !nodeIds.has(tgt)) continue;
         if (src === tgt) continue;
-        links.push({ source: src, target: tgt, kind: "endorses", reason: e.reason, mutual: isMutualPair(src, tgt) });
+        const mutual = isMutualPair(src, tgt);
+        if (mutual) {
+          const pairKey = [src, tgt].sort().join("↔");
+          if (addedMutual.has(pairKey)) continue; // skip the reverse direction
+          addedMutual.add(pairKey);
+          links.push({ source: src, target: tgt, kind: "endorses", reason: e.reason, mutual: true });
+        } else {
+          links.push({ source: src, target: tgt, kind: "endorses", reason: e.reason, mutual: false });
+        }
       }
     }
 
@@ -567,7 +600,7 @@ export default function TrustGraph() {
       })
       .attr("marker-end", (d) => {
         if (d.kind === "lsp26-follow") return "url(#arrow-lsp26)";
-        if (d.mutual) return "url(#arrow-mutual)";
+        if (d.mutual) return "none"; // no arrowhead for mutual — line is undirected
         const tgtId = d.target?.id || d.target;
         const target = nodes.find((n) => n.id === tgtId);
         return target ? `url(#arrow-${target.type})` : "none";
