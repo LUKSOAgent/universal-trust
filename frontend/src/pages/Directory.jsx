@@ -87,21 +87,25 @@ export default function Directory() {
           Promise.allSettled(addrs.map((addr) => fetchOnChainReputation(addr))),
           Promise.allSettled(addrs.map((addr) => getSkills(addr).catch(() => []))),
           Promise.allSettled(addrs.map((addr) => fetchLSP26RegisteredFollowers(addr, addrsLower))),
-        ]).then(([repResults, skillResults, lsp26Results]) => {
+        ]).then(([repOuter, skillOuter, lsp26Outer]) => {
           if (!mountedRef.current) return;
+          // Each outer result is { status, value } from allSettled — guard access
+          const repArr = repOuter.status === "fulfilled" ? repOuter.value : [];
+          const skillArr = skillOuter.status === "fulfilled" ? skillOuter.value : [];
+          const lsp26Arr = lsp26Outer.status === "fulfilled" ? lsp26Outer.value : [];
           setAgents((prev) =>
             prev.map((agent, i) => {
               const onChainScore =
-                repResults.value?.[i]?.status === "fulfilled"
-                  ? (repResults.value[i].value?.generalScore ?? null)
+                repArr[i]?.status === "fulfilled"
+                  ? (repArr[i].value?.generalScore ?? null)
                   : null;
               const skillCount =
-                skillResults.value?.[i]?.status === "fulfilled"
-                  ? (skillResults.value[i].value?.length ?? 0)
+                skillArr[i]?.status === "fulfilled"
+                  ? (skillArr[i].value?.length ?? 0)
                   : 0;
               const lsp26Data =
-                lsp26Results.value?.[i]?.status === "fulfilled"
-                  ? (lsp26Results.value[i].value ?? { count: 0, addresses: [] })
+                lsp26Arr[i]?.status === "fulfilled"
+                  ? (lsp26Arr[i].value ?? { count: 0, addresses: [] })
                   : { count: 0, addresses: [] };
               const lsp26Score = lsp26Data.count * 5;
               const composite = computeCompositeScore(
