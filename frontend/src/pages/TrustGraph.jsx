@@ -390,14 +390,16 @@ export default function TrustGraph() {
         if (!nodeIds.has(src) || !nodeIds.has(tgt)) continue;
         const eid = `endorse:${src}→${tgt}`;
         if (!nodeIds.has(eid)) {
+          const mutual = isMutualPair(src, tgt);
           nodes.push({
             id: eid,
             type: "endorsement",
-            label: "✓",
+            label: mutual ? "⇄" : "✓",
             r: NODE_R.endorsement,
             reason: e.reason,
             from: src,
             to: tgt,
+            mutual,
           });
           nodeIds.add(eid);
         }
@@ -507,17 +509,30 @@ export default function TrustGraph() {
 
     simRef.current = sim;
 
-    // Detect mutual endorsements: A→B and B→A both exist
-    const endorseSet = new Set(
-      links.filter((l) => l.kind === "endorses")
-        .map((l) => `${l.source?.id || l.source}→${l.target?.id || l.target}`)
+    // Detect mutual endorsements: A→B and B→A both exist.
+    // Build this from the raw edges (rawData.edges), not from the generated links array,
+    // because when endorsement nodes are enabled the links go agent→endorsement-node→agent
+    // and there are no direct agent→agent "endorses" links to check against.
+    const rawEdges = rawData?.edges ?? [];
+    const rawEndorseSet = new Set(
+      rawEdges.map((e) => `${(e.source || "").toLowerCase()}→${(e.target || "").toLowerCase()}`)
     );
+    const isMutualPair = (a, b) =>
+      rawEndorseSet.has(`${a.toLowerCase()}→${b.toLowerCase()}`) &&
+      rawEndorseSet.has(`${b.toLowerCase()}→${a.toLowerCase()}`);
+
+    // For direct "endorses" links (when endorsement nodes are OFF)
     const isMutual = (l) => {
       if (l.kind !== "endorses") return false;
       const s = l.source?.id || l.source;
       const t = l.target?.id || l.target;
-      return endorseSet.has(`${s}→${t}`) && endorseSet.has(`${t}→${s}`);
+      return isMutualPair(s, t);
     };
+
+    // For endorsement-node links: mark the endorsement node itself as mutual
+    // so we can style the agent→node and node→agent edges as gold.
+    // We tag each endorsement node with a `mutual` flag during buildGraph.
+    // (The endorsement nodes already have .from/.to set.)
 
     // Mutual arrowhead (gold)
     defs.append("marker")
@@ -543,8 +558,13 @@ export default function TrustGraph() {
       .attr("class", "g-link")
       .attr("stroke", (d) => {
         if (d.kind === "lsp26-follow") return "#10B981";
-        if (isMutual(d)) return "#F59E0B"; // gold for mutual
-        const target = nodes.find((n) => n.id === (d.target?.id || d.target));
+        if (isMutual(d)) return "#F59E0B"; // gold for mutual (direct links)
+        // For endorsement-node edges: check if the connected endorsement node is mutual
+        const srcId = d.source?.id || d.source;
+        const tgtId = d.target?.id || d.target;
+        const enNode = nodes.find((n) => n.type === "endorsement" && (n.id === srcId || n.id === tgtId));
+        if (enNode?.mutual) return "#F59E0B"; // gold for mutual via endorsement node
+        const target = nodes.find((n) => n.id === tgtId);
         return target ? COLORS[target.type] + "66" : "#ffffff22";
       })
       .attr("stroke-opacity", (d) => {
@@ -554,19 +574,31 @@ export default function TrustGraph() {
       .attr("stroke-width", (d) => {
         if (d.kind === "lsp26-follow") return 0.8;
         if (isMutual(d)) return 2.5;
+        const srcId = d.source?.id || d.source;
+        const tgtId = d.target?.id || d.target;
+        const enNode = nodes.find((n) => n.type === "endorsement" && (n.id === srcId || n.id === tgtId));
+        if (enNode?.mutual) return 2.5; // thick gold for mutual via endorsement node
         if (d.kind === "endorses") return 1.2;
         return 1;
       })
       .attr("stroke-dasharray", (d) => {
         if (d.kind === "lsp26-follow") return "3,5";
         if (isMutual(d)) return null; // solid for mutual
+        const srcId = d.source?.id || d.source;
+        const tgtId = d.target?.id || d.target;
+        const enNode = nodes.find((n) => n.type === "endorsement" && (n.id === srcId || n.id === tgtId));
+        if (enNode?.mutual) return null; // solid for mutual
         if (d.kind === "endorses") return "5,4"; // dashed for one-way
         return null;
       })
       .attr("marker-end", (d) => {
         if (d.kind === "lsp26-follow") return "url(#arrow-lsp26)";
         if (isMutual(d)) return "url(#arrow-mutual)";
-        const target = nodes.find((n) => n.id === (d.target?.id || d.target));
+        const srcId = d.source?.id || d.source;
+        const tgtId = d.target?.id || d.target;
+        const enNode = nodes.find((n) => n.type === "endorsement" && (n.id === srcId || n.id === tgtId));
+        if (enNode?.mutual) return "url(#arrow-mutual)";
+        const target = nodes.find((n) => n.id === tgtId);
         return target ? `url(#arrow-${target.type})` : "none";
       });
 
