@@ -121,6 +121,8 @@ export default function TrustGraph() {
         if (cancelled) return;
 
         // Enrich agents with Envio activity scores + LSP26 followers for composite score (non-blocking)
+        // We set initial rawData immediately, then patch only agents (not edges/skills) when enrichment arrives
+        // to avoid a full D3 simulation restart on the second setRawData call.
         const agentAddrsLower = agentList.map((a) => a.address.toLowerCase());
         Promise.allSettled([
           Promise.allSettled(agentList.map((a) => fetchOnChainReputation(a.address))),
@@ -134,17 +136,17 @@ export default function TrustGraph() {
                 ? (repResults[i].value?.generalScore ?? null)
                 : null;
               const skillCount = (skillMap[agent.address] || []).length;
-              const lsp26Data = lsp26Results[i]?.status === "fulfilled"
+              const lsp26DataItem = lsp26Results[i]?.status === "fulfilled"
                 ? (lsp26Results[i].value ?? { count: 0, addresses: [] })
                 : { count: 0, addresses: [] };
-              const lsp26Score = lsp26Data.count * 5;
+              const lsp26Score = lsp26DataItem.count * 5;
               const composite = computeCompositeScore(
                 agent.trustScore ?? agent.reputation + agent.endorsementCount * 10,
                 onChainScore,
                 skillCount,
                 lsp26Score
               );
-              return { ...agent, onChainScore, skillCount, lsp26FollowerCount: lsp26Data.count, lsp26Followers: lsp26Data.addresses, lsp26Score, composite };
+              return { ...agent, onChainScore, skillCount, lsp26FollowerCount: lsp26DataItem.count, lsp26Followers: lsp26DataItem.addresses, lsp26Score, composite };
             });
             // Build LSP26 follow edges from stored follower addresses
             const lsp26Edges = [];
@@ -157,7 +159,11 @@ export default function TrustGraph() {
                 });
               }
             }
-            setRawData({ agents: enriched, edges: endorseEdges, lsp26Edges, skills: skillMap });
+            // Patch agents + lsp26Edges into existing rawData — preserves edges/skills to avoid D3 restart
+            setRawData((prev) => prev
+              ? { ...prev, agents: enriched, lsp26Edges }
+              : { agents: enriched, edges: endorseEdges, lsp26Edges, skills: skillMap }
+            );
           })
           .catch(() => {});
 
@@ -711,7 +717,11 @@ export default function TrustGraph() {
     let answer = "";
 
     if (q.includes("most trusted") || q.includes("highest trust") || q.includes("top agent")) {
-      const sorted = [...agents].sort((a, b) => (b.reputation + b.endorsementCount * 10) - (a.reputation + a.endorsementCount * 10));
+      const sorted = [...agents].sort((a, b) => {
+        const sa = a.composite ?? a.trustScore ?? (a.reputation + a.endorsementCount * 10);
+        const sb = b.composite ?? b.trustScore ?? (b.reputation + b.endorsementCount * 10);
+        return sb - sa;
+      });
       const top = sorted.slice(0, 3);
       answer = `Top agents by trust score:\n${top.map((a, i) => `${i + 1}. ${upLookup(upProfiles, a.address)?.name || a.name} — score ${a.composite ?? a.trustScore ?? (a.reputation + a.endorsementCount * 10)}`).join("\n")}`;
 
@@ -1097,10 +1107,14 @@ export default function TrustGraph() {
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Registered</p>
                 <div className="space-y-0.5 mb-2">
                   {rawData.agents
-                    .sort((a, b) => (b.reputation + b.endorsementCount * 10) - (a.reputation + a.endorsementCount * 10))
+                    .sort((a, b) => {
+                      const scoreA = a.composite ?? a.trustScore ?? (a.reputation + a.endorsementCount * 10);
+                      const scoreB = b.composite ?? b.trustScore ?? (b.reputation + b.endorsementCount * 10);
+                      return scoreB - scoreA;
+                    })
                     .map((a) => {
                       const name = upLookup(upProfiles, a.address)?.name || a.name || a.address.slice(0, 8);
-                      const score = a.reputation + a.endorsementCount * 10;
+                      const score = a.composite ?? a.trustScore ?? (a.reputation + a.endorsementCount * 10);
                       const upData = upLookup(upProfiles, a.address); const type = (upData?.isUP === true) ? "agent_up" : "agent_eoa";
                       const avatar = upLookup(upProfiles, a.address)?.profileImage;
                       return (
@@ -1110,7 +1124,7 @@ export default function TrustGraph() {
                             ? <img src={avatar} alt="" className="w-5 h-5 rounded-full object-cover shrink-0 border" style={{ borderColor: COLORS[type] }} />
                             : <span className="w-2 h-2 rounded-full shrink-0" style={{ background: COLORS[type] }} />}
                           <span className="truncate text-gray-300 flex-1">{name}</span>
-                          <span className="text-gray-600 shrink-0">{score}</span>
+                          <span className="text-lukso-pink shrink-0 font-medium" title="Composite trust score">{score}</span>
                         </button>
                       );
                     })}

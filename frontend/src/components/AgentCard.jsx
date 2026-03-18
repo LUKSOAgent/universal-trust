@@ -117,9 +117,11 @@ function MiniTrustBar({ score }) {
   const maxScore = 10000;
   const pct = Math.min((score / maxScore) * 100, 100);
   let barColor;
-  if (score >= 500) barColor = "from-green-500 to-emerald-400";
-  else if (score >= 200) barColor = "from-blue-500 to-cyan-400";
-  else if (score >= 100) barColor = "from-yellow-500 to-amber-400";
+  // Match trust tier thresholds: Verified ≥1000, Established ≥500, Trusted ≥200, Registered ≥100
+  if (score >= 1000) barColor = "from-amber-500 to-yellow-400";
+  else if (score >= 500) barColor = "from-purple-500 to-violet-400";
+  else if (score >= 200) barColor = "from-emerald-500 to-green-400";
+  else if (score >= 100) barColor = "from-blue-500 to-cyan-400";
   else barColor = "from-gray-500 to-gray-400";
 
   return (
