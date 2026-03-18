@@ -47,6 +47,7 @@ export default function TrustGraph() {
   const [upProfiles, setUpProfiles] = useState({});
   const [ecosystemAgents, setEcosystemAgents] = useState([]); // agents from Envio, not on Universal Trust
   const [loading, setLoading]     = useState(true);
+  const [loadPhase, setLoadPhase] = useState("agents"); // "agents" | "endorsements" | "skills" | "done"
   const [error, setError]         = useState(null);
 
   const [erc8004Agents, setErc8004Agents] = useState([]); // agents from ERC-8004 registry
@@ -89,10 +90,12 @@ export default function TrustGraph() {
     async function load() {
       try {
         setLoading(true);
+        setLoadPhase("agents");
         const agentList = await getAllAgents();
         if (cancelled) return;
 
         // Endorsement edges
+        setLoadPhase("endorsements");
         const edgeSet = new Set();
         const endorseEdges = [];
         await Promise.all(agentList.map(async (agent) => {
@@ -115,6 +118,7 @@ export default function TrustGraph() {
         if (cancelled) return;
 
         // Skills
+        setLoadPhase("skills");
         const skillMap = {}; // agentAddr → [skillName, ...]
         await Promise.all(agentList.map(async (agent) => {
           try {
@@ -1174,7 +1178,21 @@ export default function TrustGraph() {
                     <div className="absolute inset-0 rounded-full border-2 border-lukso-pink border-t-transparent animate-spin" />
                   </div>
                   <p className="text-gray-300 text-sm font-medium">Loading trust network…</p>
-                  <p className="text-gray-500 text-xs mt-1">Fetching agents, endorsements & skills from LUKSO</p>
+                  <div className="mt-2 space-y-1 text-xs text-center">
+                    <p className={loadPhase === "agents" ? "text-gray-300" : "text-gray-600"}>
+                      {loadPhase === "agents" ? "⟳" : "✓"} Fetching registered agents…
+                    </p>
+                    {(loadPhase === "endorsements" || loadPhase === "skills" || loadPhase === "done") && (
+                      <p className={loadPhase === "endorsements" ? "text-gray-300" : "text-gray-600"}>
+                        {loadPhase === "endorsements" ? "⟳" : "✓"} Loading endorsement graph…
+                      </p>
+                    )}
+                    {(loadPhase === "skills" || loadPhase === "done") && (
+                      <p className={loadPhase === "skills" ? "text-gray-300" : "text-gray-600"}>
+                        {loadPhase === "skills" ? "⟳" : "✓"} Resolving agent skills…
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
               {error && (
