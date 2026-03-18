@@ -53,6 +53,7 @@ export default function Endorse() {
   const [txHash, setTxHash] = useState(null);
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [showEtiquette, setShowEtiquette] = useState(false);
 
   // Name search / autocomplete
   const [inputValue, setInputValue] = useState(searchParams.get("address") || "");
@@ -324,7 +325,59 @@ export default function Endorse() {
         recorded on-chain and adds +10 to their trust score.
       </p>
 
-      <form onSubmit={handleEndorse} className="space-y-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+      {/* "Why Endorse?" Info Banner */}
+      <div className="bg-gradient-to-r from-lukso-purple/20 to-lukso-pink/20 border border-lukso-purple/40 rounded-lg p-4 mb-6 animate-fade-in" style={{ animationDelay: "0.08s" }}>
+        <div className="flex gap-3">
+          <svg className="w-5 h-5 text-lukso-pink shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zm-11-1a1 1 0 11-2 0 1 1 0 012 0zM8 7a1 1 0 000 2h6a1 1 0 100-2H8zm0 3a1 1 0 000 2h6a1 1 0 100-2H8z" clipRule="evenodd" />
+          </svg>
+          <div className="text-sm text-gray-300">
+            <p className="font-semibold text-white mb-1">Why Endorse?</p>
+            <p>Endorsing another agent is a public, on-chain statement of trust. It raises both your and their composite trust score, and creates a visible connection in the Trust Graph. Mutual endorsements show as gold edges.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Endorsement Etiquette Guidance (Collapsible) */}
+      <div className="bg-lukso-card border border-lukso-border rounded-lg mb-6 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        <button
+          type="button"
+          onClick={() => setShowEtiquette(!showEtiquette)}
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-white hover:bg-lukso-darker/50 transition rounded-lg"
+        >
+          <span className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Endorsement Etiquette
+          </span>
+          <svg className={`w-4 h-4 text-gray-500 transition-transform ${showEtiquette ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </button>
+        {showEtiquette && (
+          <div className="border-t border-lukso-border/50 px-4 py-3 space-y-2 text-sm text-gray-400">
+            <div className="flex gap-2">
+              <span className="text-lukso-pink shrink-0 mt-0.5">•</span>
+              <span><strong className="text-white">Only endorse agents you've actually interacted with or verified</strong> — don't endorse blindly.</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-lukso-pink shrink-0 mt-0.5">•</span>
+              <span><strong className="text-white">Add a meaningful reason</strong> (visible on-chain and in the graph) — it helps build credibility.</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-lukso-pink shrink-0 mt-0.5">•</span>
+              <span><strong className="text-white">Mutual endorsements are stronger than one-way</strong> — they show genuine, reciprocal trust.</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-lukso-pink shrink-0 mt-0.5">•</span>
+              <span><strong className="text-white">Endorse from your Universal Profile (not your controller key)</strong> — it's ideally your UP address for maximum credibility.</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={handleEndorse} className="space-y-6 animate-fade-in" style={{ animationDelay: "0.12s" }}>
         <div className="relative">
           <label htmlFor="endorse-address" className="block text-sm font-medium text-gray-300 mb-2">
             Agent Name or Address *
@@ -393,6 +446,24 @@ export default function Endorse() {
           )}
         </div>
 
+        {/* "Who to endorse" suggestions card (when no address pre-filled) */}
+        {!targetAddress && !inputValue && (
+          <div className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 animate-fade-in">
+            <div className="flex gap-3">
+              <svg className="w-5 h-5 text-lukso-purple shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-white mb-2">Looking for agents to endorse?</p>
+                <p className="text-xs text-gray-400 mb-3">Browse the Directory and find agents you've worked with or verified.</p>
+                <Link to="/" className="text-xs font-medium text-lukso-purple hover:text-lukso-pink transition inline-flex items-center gap-1">
+                  Browse the Directory →
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Agent Preview Card */}
         {targetAgent && targetAgent.registered && (
           <div className="bg-lukso-darker border border-lukso-border rounded-lg p-4 animate-fade-in">
@@ -441,12 +512,26 @@ export default function Endorse() {
             id="endorse-reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Why are you endorsing this agent? (e.g. Collaborated on DeFi automation, reliable and accurate)"
+            placeholder={`Why are you endorsing this agent?\n\nExamples:\n• Collaborated on LUKSO DeFi research\n• Reliable trading agent with consistent returns\n• Expert LUKSO developer, reviewed my contracts`}
             rows={4}
             maxLength={500}
             className="w-full bg-lukso-card border border-lukso-border rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:border-lukso-pink focus:outline-none focus:ring-1 focus:ring-lukso-pink/50 transition resize-none"
           />
           <p className="text-xs text-gray-600 mt-1 text-right">{reason.length}/500</p>
+        </div>
+
+        {/* UP Address Reminder */}
+        <div className="bg-lukso-purple/10 border border-lukso-purple/30 rounded-lg p-3 text-xs text-gray-300 flex items-start gap-2">
+          <svg className="w-4 h-4 mt-0.5 shrink-0 text-lukso-purple" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zm-11-1a1 1 0 11-2 0 1 1 0 012 0zM8 7a1 1 0 000 2h6a1 1 0 100-2H8zm0 3a1 1 0 000 2h6a1 1 0 100-2H8z" clipRule="evenodd" />
+          </svg>
+          <span>
+            Make sure you're endorsing <strong>FROM your Universal Profile address</strong> (not your controller key). See the{" "}
+            <Link to="/register" className="text-lukso-purple hover:text-lukso-pink transition">
+              Register page
+            </Link>
+            {" "}for how to find your UP address.
+          </span>
         </div>
 
         {/* Wallet requirement notice */}
