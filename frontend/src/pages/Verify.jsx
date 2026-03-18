@@ -395,9 +395,9 @@ export default function Verify() {
           <div className="mt-3">
             <p className="text-xs text-gray-600 mb-3">
               Try a demo:{" "}
-              <button type="button" onClick={async () => { setInputValue("luksoagent"); const results = await searchProfiles("luksoagent"); if (results.length > 0) { setAddress(results[0].address); setInputValue(results[0].name); doVerify(results[0].address); } }} className="text-lukso-purple hover:text-lukso-pink transition font-medium">luksoagent</button>
+              <button type="button" onClick={() => { const a = "0x293E96ebbf264ed7715cff2b67850517De70232a"; setInputValue("luksoagent"); setAddress(a); setValidationError(null); doVerify(a); }} className="text-lukso-purple hover:text-lukso-pink transition font-medium">luksoagent</button>
               {" · "}
-              <button type="button" onClick={async () => { setInputValue("emmet"); const results = await searchProfiles("emmet"); if (results.length > 0) { setAddress(results[0].address); setInputValue(results[0].name); doVerify(results[0].address); } }} className="text-lukso-purple hover:text-lukso-pink transition font-medium">emmet</button>
+              <button type="button" onClick={() => { const a = "0x1089E1c613Db8Cb91db72be4818632153E62557a"; setInputValue("emmet"); setAddress(a); setValidationError(null); doVerify(a); }} className="text-lukso-purple hover:text-lukso-pink transition font-medium">emmet</button>
               {" · "}
               <button type="button" onClick={() => { const a = "0x293E96ebbf264ed7715cff2b67850517De70232a"; setInputValue(a); setAddress(a); setValidationError(null); doVerify(a); }} className="text-lukso-purple hover:text-lukso-pink transition font-mono">0x293E...0232a</button>
             </p>

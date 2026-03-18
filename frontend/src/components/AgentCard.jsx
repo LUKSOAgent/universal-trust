@@ -179,7 +179,7 @@ function AgentCardInner({ agent, upProfile }) {
         "border-l-gray-600 border-lukso-border"
       }`}
     >
-      <div className="flex items-start justify-between gap-3 sm:gap-4">
+      <div className="flex items-start justify-between gap-2 sm:gap-4">
         <div className="flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-2 mb-1">
             {/* UP avatar or gradient fallback */}
@@ -237,12 +237,17 @@ function AgentCardInner({ agent, upProfile }) {
               <span className="w-1.5 h-1.5 rounded-full bg-lukso-pink inline-block" />
               <span className="text-lukso-pink font-medium">{agent.endorsementCount}</span> endorsement{agent.endorsementCount === 1 ? "" : "s"}
             </span>
-            {skillCount !== null && skillCount > 0 && (
+            {skillCount !== null && skillCount > 0 ? (
               <span className="flex items-center gap-1">
                 <span className="text-lukso-purple">⚡</span>
                 <span className="text-lukso-purple font-medium">{skillCount}</span> skill{skillCount === 1 ? "" : "s"}
               </span>
-            )}
+            ) : skillCount === null ? (
+              <span className="flex items-center gap-1 animate-pulse">
+                <span className="text-gray-600">⚡</span>
+                <span className="w-8 h-3 bg-lukso-border/50 rounded inline-block" />
+              </span>
+            ) : null}
             <span>Joined {registeredDate}</span>
           </div>
 

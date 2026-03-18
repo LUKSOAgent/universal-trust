@@ -151,7 +151,7 @@ export default function Directory() {
           return scoreB - scoreA;
         }
         case "name":
-          return a.name.localeCompare(b.name);
+          return (a.name || "").localeCompare(b.name || "");
         case "recent":
           return b.registeredAt - a.registeredAt;
         case "endorsements":
