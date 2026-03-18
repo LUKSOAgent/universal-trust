@@ -134,7 +134,7 @@ function MiniTrustBar({ score }) {
   );
 }
 
-function AgentCardInner({ agent, upProfile }) {
+function AgentCardInner({ agent, upProfile, rank, totalAgents }) {
   const [skillCount, setSkillCount] = useState(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const trustScore = agent.trustScore ?? (agent.reputation + (agent.endorsementCount * 10));
@@ -310,6 +310,12 @@ function AgentCardInner({ agent, upProfile }) {
               </div>
             ) : (
               <TrustBadge score={compositeScore} size="md" />
+            )}
+            {/* Rank badge */}
+            {rank && totalAgents && rank <= totalAgents && (
+              <span className="text-[10px] text-gray-500 font-mono">
+                #{rank} <span className="text-gray-600">/ {totalAgents}</span>
+              </span>
             )}
             {/* Trust tier glow ring */}
             <div
