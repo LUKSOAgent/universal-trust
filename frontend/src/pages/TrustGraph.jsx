@@ -253,7 +253,7 @@ export default function TrustGraph() {
 
   // ── Build graph nodes/links from rawData + filters ─────────────────────────
   const buildGraph = useCallback(() => {
-    if (!rawData) return { nodes: [], links: [] };
+    if (!rawData) return { nodes: [], links: [], mergedCount: 0 };
     const { agents, edges, skills, lsp26Edges = [] } = rawData;
     // Use ref to avoid D3 simulation restart when profiles load asynchronously
     const profiles = upProfilesRef.current;
@@ -284,6 +284,63 @@ export default function TrustGraph() {
       });
       nodeIds.add(a.address);
     }
+
+    // ── Deduplication pass (agent nodes only) ─────────────────────────────────
+    // Group registered agent nodes by their resolved UP name.
+    // Nodes with no name (raw address label) are skipped — can't reliably deduplicate.
+    // For each group with >1 node: keep the "canonical" node (agent_up preferred, then highest score)
+    // and build a redirect map for all duplicates.
+    const redirectMap = {}; // { duplicateId -> canonicalId }
+    let mergedCount = 0;
+
+    // Only consider registered agent nodes (agent_up / agent_eoa)
+    const agentNodesByName = {};
+    for (const n of nodes) {
+      if (n.type !== "agent_up" && n.type !== "agent_eoa") continue;
+      // Skip nodes whose label looks like a truncated address (no real name)
+      const lbl = n.label || "";
+      if (!lbl || lbl.endsWith("…") && lbl.length <= 9) continue;
+
+      const key = lbl.toLowerCase().trim();
+      if (!agentNodesByName[key]) agentNodesByName[key] = [];
+      agentNodesByName[key].push(n);
+    }
+
+    for (const group of Object.values(agentNodesByName)) {
+      if (group.length < 2) continue;
+      // Pick canonical: prefer agent_up, then highest trustScore
+      group.sort((a, b) => {
+        if (a.type === "agent_up" && b.type !== "agent_up") return -1;
+        if (b.type === "agent_up" && a.type !== "agent_up") return  1;
+        return (b.trustScore ?? 0) - (a.trustScore ?? 0);
+      });
+      const canonical = group[0];
+      for (let i = 1; i < group.length; i++) {
+        redirectMap[group[i].id] = canonical.id;
+        mergedCount++;
+      }
+    }
+
+    // Remove duplicate nodes from the node list and nodeIds set
+    const dedupedNodes = nodes.filter((n) => !redirectMap[n.id]);
+    nodes.length = 0;
+    dedupedNodes.forEach((n) => nodes.push(n));
+    // Rebuild nodeIds from surviving nodes
+    nodeIds.clear();
+    for (const n of nodes) nodeIds.add(n.id);
+
+    // Helper: resolve an address through the redirect map (case-insensitive)
+    // Returns the canonical node id for a given address, or the original if not redirected.
+    const resolveId = (addr) => {
+      if (!addr) return addr;
+      // Direct match
+      if (redirectMap[addr]) return redirectMap[addr];
+      // Try case variations (redirectMap keys are original-case addresses from nodes)
+      for (const [dup, canon] of Object.entries(redirectMap)) {
+        if (dup.toLowerCase() === addr.toLowerCase()) return canon;
+      }
+      return addr;
+    };
 
     // ERC-8004 agents (registered on ERC-8004 Identity Registry, may or may not be on Universal Trust)
     if (filters.agent_8004) {
@@ -329,19 +386,22 @@ export default function TrustGraph() {
     // Skill nodes
     if (filters.skill) {
       for (const [agentAddr, skillList] of Object.entries(skills)) {
-        if (!nodeIds.has(agentAddr)) continue;
+        // Resolve through redirect map in case this agent was a duplicate
+        const canonAddr = resolveId(agentAddr);
+        if (!nodeIds.has(canonAddr)) continue;
         for (const s of skillList) {
-          const skillId = `skill:${agentAddr}:${s.name}`;
+          const skillId = `skill:${canonAddr}:${s.name}`;
+          if (nodeIds.has(skillId)) continue; // already added via another duplicate
           nodes.push({
             id: skillId,
             type: "skill",
             label: s.name,
             r: NODE_R.skill,
-            agentAddr,
+            agentAddr: canonAddr,
             content: s.content,
           });
           nodeIds.add(skillId);
-          links.push({ source: agentAddr, target: skillId, kind: "has-skill" });
+          links.push({ source: canonAddr, target: skillId, kind: "has-skill" });
         }
       }
     }
@@ -349,8 +409,10 @@ export default function TrustGraph() {
     // External endorser nodes — endorsers not already in the graph
     if (filters.external_endorser) {
       for (const e of edges) {
-        if (nodeIds.has(e.source)) continue; // already in graph
-        if (!nodeIds.has(e.target)) continue; // target must exist
+        const resolvedSource = resolveId(e.source);
+        const resolvedTarget = resolveId(e.target);
+        if (nodeIds.has(resolvedSource)) continue; // already in graph (use resolved source)
+        if (!nodeIds.has(resolvedTarget)) continue; // target must exist
         const upData = upLookup(profiles, e.source);
         const label = upData?.name || (e.source.slice(0, 6) + "…" + e.source.slice(-4));
         nodes.push({
@@ -369,26 +431,34 @@ export default function TrustGraph() {
     // Endorsement event nodes (optional)
     if (filters.endorsement) {
       for (const e of edges) {
-        if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue;
-        const eid = `endorse:${e.source}→${e.target}`;
-        nodes.push({
-          id: eid,
-          type: "endorsement",
-          label: "✓",
-          r: NODE_R.endorsement,
-          reason: e.reason,
-          from: e.source,
-          to: e.target,
-        });
-        nodeIds.add(eid);
-        links.push({ source: e.source, target: eid, kind: "endorses" });
-        links.push({ source: eid, target: e.target, kind: "endorsed-by" });
+        const src = resolveId(e.source);
+        const tgt = resolveId(e.target);
+        if (!nodeIds.has(src) || !nodeIds.has(tgt)) continue;
+        const eid = `endorse:${src}→${tgt}`;
+        if (!nodeIds.has(eid)) {
+          nodes.push({
+            id: eid,
+            type: "endorsement",
+            label: "✓",
+            r: NODE_R.endorsement,
+            reason: e.reason,
+            from: src,
+            to: tgt,
+          });
+          nodeIds.add(eid);
+        }
+        links.push({ source: src, target: eid, kind: "endorses" });
+        links.push({ source: eid, target: tgt, kind: "endorsed-by" });
       }
     } else {
       // Direct edges (includes external endorsers → registered agents)
       for (const e of edges) {
-        if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue;
-        links.push({ source: e.source, target: e.target, kind: "endorses", reason: e.reason });
+        const src = resolveId(e.source);
+        const tgt = resolveId(e.target);
+        if (!nodeIds.has(src) || !nodeIds.has(tgt)) continue;
+        // Avoid self-loops created by deduplication
+        if (src === tgt) continue;
+        links.push({ source: src, target: tgt, kind: "endorses", reason: e.reason });
       }
     }
 
@@ -406,16 +476,19 @@ export default function TrustGraph() {
         const srcLower = e.source.toLowerCase();
         const tgtLower = e.target.toLowerCase();
         if (registeredLower.has(srcLower) && registeredLower.has(tgtLower)) {
+          const src = addrByLower[srcLower] ?? e.source;
+          const tgt = addrByLower[tgtLower] ?? e.target;
+          if (src === tgt) continue; // skip self-loops from dedup
           links.push({
-            source: addrByLower[srcLower] ?? e.source,
-            target: addrByLower[tgtLower] ?? e.target,
+            source: src,
+            target: tgt,
             kind: "lsp26-follow",
           });
         }
       }
     }
 
-    return { nodes, links };
+    return { nodes, links, mergedCount };
   }, [rawData, filters, ecosystemAgents, erc8004Agents]);
 
   // ── Render D3 ─────────────────────────────────────────────────────────────
@@ -726,8 +799,8 @@ export default function TrustGraph() {
   }, [search]);
 
   // ── Selected node detail (memoized) — must be declared before useEffect that uses graphLinks ──
-  const { nodes: graphNodes, links: graphLinks } = useMemo(() => {
-    if (!rawData) return { nodes: [], links: [] };
+  const { nodes: graphNodes, links: graphLinks, mergedCount: graphMergedCount = 0 } = useMemo(() => {
+    if (!rawData) return { nodes: [], links: [], mergedCount: 0 };
     return buildGraph();
   }, [rawData, buildGraph]);
 
@@ -857,6 +930,7 @@ export default function TrustGraph() {
     edges: rawData.edges.length,
     skills: Object.values(rawData.skills).reduce((s, v) => s + v.length, 0),
     nodes: graphNodes.length,
+    merged: graphMergedCount,
   } : null;
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1113,10 +1187,17 @@ export default function TrustGraph() {
 
           {/* Stats — desktop only */}
           {stats && (
-            <div className="hidden md:flex ml-auto gap-3 text-xs text-gray-600 shrink-0">
-              <span className="text-lukso-pink">{stats.agents} reg.</span>
-              <span className="text-emerald-500">{stats.ecosystem} eco</span>
-              <span>{stats.edges} endorse</span>
+            <div className="hidden md:flex flex-col items-end ml-auto gap-0.5 shrink-0">
+              <div className="flex gap-3 text-xs text-gray-600">
+                <span className="text-lukso-pink">{stats.agents} reg.</span>
+                <span className="text-emerald-500">{stats.ecosystem} eco</span>
+                <span>{stats.edges} endorse</span>
+              </div>
+              {stats.merged > 0 && (
+                <span className="text-[10px] text-gray-600">
+                  Showing {stats.nodes} agents · {stats.merged} duplicate{stats.merged !== 1 ? "s" : ""} merged
+                </span>
+              )}
             </div>
           )}
         </div>
