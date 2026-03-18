@@ -88,10 +88,10 @@ export default function AgentProfile() {
           const registeredAddrs = list.map((a) => a.address.toLowerCase());
           fetchLSP26RegisteredFollowers(address, registeredAddrs)
             .then((data) => {
-              if (cancelled) return;
+              if (cancelled || !data) return;
               setLsp26Data(data);
               // Fetch UP profiles for LSP26 followers (for avatars in the social section)
-              if (data.addresses.length > 0) {
+              if (data.addresses?.length > 0) {
                 fetchUPProfiles(data.addresses)
                   .then((profiles) => { if (!cancelled) setEndorserProfiles((prev) => ({ ...prev, ...profiles })); })
                   .catch(() => {});
