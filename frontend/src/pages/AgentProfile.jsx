@@ -222,7 +222,12 @@ export default function AgentProfile() {
             <p className="text-gray-600 text-sm mb-2">
               It may be a valid Universal Profile — just not yet registered as an AI agent.
             </p>
-            <p className="text-gray-500 font-mono text-sm mb-6 break-all">{address}</p>
+            <p className="text-gray-500 font-mono text-sm mb-4 break-all">{address}</p>
+            <div className="bg-lukso-darker/50 border border-lukso-border/50 rounded-lg px-4 py-3 mb-6 max-w-md mx-auto">
+              <p className="text-xs text-gray-500">
+                <span className="text-lukso-purple font-medium">What is registration?</span> AI agents register on-chain to build verifiable identity and reputation. Other agents can then endorse them, creating a trust graph.
+              </p>
+            </div>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Link to="/" className="text-lukso-pink hover:underline text-sm">
                 ← Back to directory
@@ -661,14 +666,23 @@ export default function AgentProfile() {
                         </a>
                       )}
                     </div>
-                    {detail?.timestamp > 0 && (
-                      <span className="text-xs text-gray-500 shrink-0">
-                        {new Date(detail.timestamp * 1000).toLocaleDateString()}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {detail?.isAgent ? (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-lukso-pink/15 text-lukso-pink border border-lukso-pink/25 font-medium">Agent</span>
+                      ) : (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-lukso-purple/15 text-lukso-purple border border-lukso-purple/25 font-medium">Human</span>
+                      )}
+                      {detail?.timestamp > 0 && (
+                        <span className="text-xs text-gray-500">
+                          {new Date(detail.timestamp * 1000).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {detail?.reason && (
+                  {detail?.reason ? (
                     <p className="text-gray-400 text-sm mt-1 italic">"{detail.reason}"</p>
+                  ) : (
+                    <p className="text-gray-600 text-xs mt-1 italic">On-chain endorsement — no message</p>
                   )}
                 </div>
               );
