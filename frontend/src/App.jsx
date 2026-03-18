@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const Directory = lazy(() => import("./pages/Directory"));
 const AgentProfile = lazy(() => import("./pages/AgentProfile"));
@@ -44,20 +45,22 @@ function App() {
         </a>
         <Navbar />
         <main id="main-content" className="flex-1">
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Directory />} />
-              <Route path="/agent/:address" element={<AgentProfile />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/verify" element={<Verify />} />
-              <Route path="/endorse" element={<Endorse />} />
-              <Route path="/graph" element={<TrustGraph />} />
-              <Route path="/trust-graph" element={<Navigate to="/graph" replace />} />
-              <Route path="/skills" element={<Skills />} />
-              <Route path="/about" element={<About />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Directory />} />
+                <Route path="/agent/:address" element={<AgentProfile />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/verify" element={<Verify />} />
+                <Route path="/endorse" element={<Endorse />} />
+                <Route path="/graph" element={<TrustGraph />} />
+                <Route path="/trust-graph" element={<Navigate to="/graph" replace />} />
+                <Route path="/skills" element={<Skills />} />
+                <Route path="/about" element={<About />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </main>
         <Footer />
       </div>
