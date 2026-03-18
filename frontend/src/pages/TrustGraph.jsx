@@ -58,7 +58,7 @@ export default function TrustGraph() {
 
   const [search, setSearch]       = useState("");
   const [selected, setSelected]   = useState(null); // node id
-  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: false, ecosystem: true, skill: true, endorsement: false, external_endorser: true, lsp26_follow: true });
+  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: false, ecosystem: false, skill: false, endorsement: false, external_endorser: true, lsp26_follow: true });
   const [dims, setDims]           = useState({ w: 900, h: 600 });
 
   // AI Query
@@ -452,22 +452,31 @@ export default function TrustGraph() {
     const g = svg.append("g");
     gRef.current = g;
 
-    svg.call(
-      d3.zoom().scaleExtent([0.2, 5])
-        .on("zoom", (ev) => g.attr("transform", ev.transform))
-    );
-
-    // Simulation
+    // Simulation — tuned for clarity with many nodes
     const sim = d3.forceSimulation(nodes)
       .force("link", d3.forceLink(links).id((d) => d.id).distance((l) => {
-        if (l.kind === "has-skill") return 60;
-        if (l.kind === "endorses" || l.kind === "endorsed-by") return 100;
-        if (l.kind === "lsp26-follow") return 140;
-        return 120;
-      }).strength(0.6))
-      .force("charge", d3.forceManyBody().strength((d) => d.type === "agent_up" || d.type === "agent_eoa" ? -350 : -120))
-      .force("center", d3.forceCenter(w / 2, h / 2))
-      .force("collision", d3.forceCollide().radius((d) => d.r + 6));
+        if (l.kind === "has-skill") return 80;
+        if (l.kind === "endorses" || l.kind === "endorsed-by") return 160;
+        if (l.kind === "lsp26-follow") return 200;
+        return 180;
+      }).strength((l) => {
+        if (l.kind === "has-skill") return 0.4;
+        if (l.kind === "lsp26-follow") return 0.2;
+        return 0.5;
+      }))
+      .force("charge", d3.forceManyBody().strength((d) => {
+        if (d.type === "agent_up")          return -800;
+        if (d.type === "agent_eoa")         return -600;
+        if (d.type === "external_endorser") return -400;
+        if (d.type === "ecosystem")         return -300;
+        return -200; // skill, endorsement nodes
+      }))
+      .force("center", d3.forceCenter(w / 2, h / 2).strength(0.05))
+      .force("x", d3.forceX(w / 2).strength(0.03))
+      .force("y", d3.forceY(h / 2).strength(0.03))
+      .force("collision", d3.forceCollide().radius((d) => d.r + 18).strength(0.9))
+      .alphaDecay(0.03)
+      .velocityDecay(0.4);
 
     simRef.current = sim;
 
@@ -622,12 +631,34 @@ export default function TrustGraph() {
       .attr("font-size", 7).attr("font-weight", "700")
       .attr("pointer-events", "none");
 
-    // Name below
-    node.filter((d) => d.type.startsWith("agent") || d.type === "ecosystem").append("text")
-      .text((d) => d.label.length > 14 ? d.label.slice(0, 13) + "…" : d.label)
+    // Name below — only for main agent nodes, with background for legibility
+    node.filter((d) => d.type === "agent_up" || d.type === "agent_eoa").each(function(d) {
+      const label = d.label.length > 12 ? d.label.slice(0, 11) + "…" : d.label;
+      const g = d3.select(this);
+      // Background pill
+      g.append("rect")
+        .attr("x", -label.length * 3 - 4)
+        .attr("y", d.r + 4)
+        .attr("width", label.length * 6 + 8)
+        .attr("height", 14)
+        .attr("rx", 3)
+        .attr("fill", "#0d0d0d")
+        .attr("fill-opacity", 0.75)
+        .attr("pointer-events", "none");
+      g.append("text")
+        .text(label)
+        .attr("text-anchor", "middle")
+        .attr("y", d.r + 14)
+        .attr("fill", "#e0e0e0")
+        .attr("font-size", 10)
+        .attr("pointer-events", "none");
+    });
+    // External endorsers: small label, no background
+    node.filter((d) => d.type === "external_endorser").append("text")
+      .text((d) => d.label.length > 10 ? d.label.slice(0, 9) + "…" : d.label)
       .attr("text-anchor", "middle")
-      .attr("y", (d) => d.r + 13)
-      .attr("fill", "#ccc").attr("font-size", 10)
+      .attr("y", (d) => d.r + 12)
+      .attr("fill", "#888").attr("font-size", 9)
       .attr("pointer-events", "none");
 
     // Skill label
@@ -640,6 +671,29 @@ export default function TrustGraph() {
 
     // Background click deselects
     svg.on("click", () => setSelected(null));
+
+    const zoomBehavior = d3.zoom().scaleExtent([0.1, 5])
+      .on("zoom", (ev) => g.attr("transform", ev.transform));
+    svg.call(zoomBehavior);
+
+    // Auto-fit to view once simulation settles
+    sim.on("end", () => {
+      if (!svgRef.current) return;
+      const padding = 40;
+      const xs = nodes.map((d) => d.x).filter(Boolean);
+      const ys = nodes.map((d) => d.y).filter(Boolean);
+      if (xs.length === 0) return;
+      const x0 = Math.min(...xs) - padding;
+      const y0 = Math.min(...ys) - padding;
+      const x1 = Math.max(...xs) + padding;
+      const y1 = Math.max(...ys) + padding;
+      const bw = x1 - x0, bh = y1 - y0;
+      const scale = Math.min(0.95, Math.min(w / bw, h / bh));
+      const tx = (w - bw * scale) / 2 - x0 * scale;
+      const ty = (h - bh * scale) / 2 - y0 * scale;
+      svg.transition().duration(600)
+        .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    });
 
     sim.on("tick", () => {
       link
