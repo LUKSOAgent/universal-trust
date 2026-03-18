@@ -125,15 +125,17 @@ export default function TrustGraph() {
         Promise.allSettled([
           Promise.allSettled(agentList.map((a) => fetchOnChainReputation(a.address))),
           Promise.allSettled(agentList.map((a) => fetchLSP26RegisteredFollowers(a.address, agentAddrsLower))),
-        ]).then(([repResults, lsp26Results]) => {
+        ]).then(([repOuter, lsp26Outer]) => {
             if (cancelled) return;
+            const repResults = repOuter.status === "fulfilled" ? repOuter.value : [];
+            const lsp26Results = lsp26Outer.status === "fulfilled" ? lsp26Outer.value : [];
             const enriched = agentList.map((agent, i) => {
-              const onChainScore = repResults.value?.[i]?.status === "fulfilled"
-                ? (repResults.value[i].value?.generalScore ?? null)
+              const onChainScore = repResults[i]?.status === "fulfilled"
+                ? (repResults[i].value?.generalScore ?? null)
                 : null;
               const skillCount = (skillMap[agent.address] || []).length;
-              const lsp26Data = lsp26Results.value?.[i]?.status === "fulfilled"
-                ? (lsp26Results.value[i].value ?? { count: 0, addresses: [] })
+              const lsp26Data = lsp26Results[i]?.status === "fulfilled"
+                ? (lsp26Results[i].value ?? { count: 0, addresses: [] })
                 : { count: 0, addresses: [] };
               const lsp26Score = lsp26Data.count * 5;
               const composite = computeCompositeScore(
