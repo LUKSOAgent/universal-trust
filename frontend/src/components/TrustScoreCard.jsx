@@ -379,11 +379,11 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
           {/* Stats */}
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: "Transactions",  value: onChainRep.transactionCount.toLocaleString() },
-              { label: "Followers",     value: onChainRep.followersCount.toLocaleString() },
-              { label: "Following",     value: onChainRep.followingCount.toLocaleString() },
-              { label: "Assets Issued", value: onChainRep.issuedAssetsCount.toLocaleString() },
-              { label: "Assets Held",   value: onChainRep.receivedAssetsCount.toLocaleString() },
+              { label: "Transactions",  value: (onChainRep.transactionCount ?? 0).toLocaleString() },
+              { label: "Followers",     value: (onChainRep.followersCount ?? 0).toLocaleString() },
+              { label: "Following",     value: (onChainRep.followingCount ?? 0).toLocaleString() },
+              { label: "Assets Issued", value: (onChainRep.issuedAssetsCount ?? 0).toLocaleString() },
+              { label: "Assets Held",   value: (onChainRep.receivedAssetsCount ?? 0).toLocaleString() },
               { label: "Account Age",   value: onChainRep.accountAge ?? "< 1d" },
             ].map(({ label, value }) => (
               <div key={label} className="bg-lukso-darker rounded-lg p-2.5 text-center border border-lukso-border/30">

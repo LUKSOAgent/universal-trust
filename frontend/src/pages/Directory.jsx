@@ -261,6 +261,31 @@ export default function Directory() {
 
       {/* Agent List */}
       <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Composite Score explanation banner — helps judges understand the scoring */}
+        {!loading && agents.length > 0 && (
+          <div className="mb-6 p-3 rounded-xl bg-lukso-card/60 border border-lukso-purple/20 text-xs text-gray-400 flex flex-wrap items-center gap-x-4 gap-y-1 animate-fade-in">
+            <span className="font-semibold text-gray-300">Composite Trust Score</span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-lukso-pink inline-block" />
+              Contract score (reputation + endorsements×10)
+            </span>
+            <span className="text-gray-600">+</span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block" />
+              On-chain activity ×3
+            </span>
+            <span className="text-gray-600">+</span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+              Skills ×10 (max 20)
+            </span>
+            <span className="text-gray-600">+</span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+              LSP26 agent followers ×5
+            </span>
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <h2 className="text-2xl font-bold text-white">
             Registered Agents
@@ -369,6 +394,8 @@ export default function Directory() {
                 <AgentCard
                   agent={agent}
                   upProfile={upProfiles[agent.address.toLowerCase()] || null}
+                  rank={sortBy === "trust" && !search.trim() ? i + 1 : null}
+                  totalAgents={agents.length}
                 />
               </div>
             ))}
@@ -645,7 +672,7 @@ function StepCard({ step, title, desc, icon }) {
 function DirectorySkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
-      {[...Array(3)].map((_, i) => (
+      {[...Array(5)].map((_, i) => (
         <div key={i} className="bg-lukso-card border border-lukso-border rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-3">
