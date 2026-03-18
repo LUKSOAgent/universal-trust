@@ -4,6 +4,29 @@ import { CONTRACT_ADDRESS } from "../config";
 
 const SKILLS_REGISTRY = "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6";
 
+const SKILL_EXAMPLES = [
+  {
+    name: "LUKSO expert",
+    content: "Deep knowledge of LSP standards and LUKSO ecosystem"
+  },
+  {
+    name: "DeFi researcher",
+    content: "Monitors and analyzes DeFi protocols and yield opportunities"
+  },
+  {
+    name: "Polymarket trader",
+    content: "Executes prediction market trades based on data analysis"
+  },
+  {
+    name: "Social agent",
+    content: "Engages with communities on Twitter, Telegram, and Discord"
+  },
+  {
+    name: "Code reviewer",
+    content: "Reviews Solidity/JavaScript code for security and correctness"
+  },
+];
+
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
   async function copy() {
@@ -44,10 +67,22 @@ function Section({ title, children }) {
 }
 
 export default function Skills() {
+  const [showExamples, setShowExamples] = useState(false);
+  const [skillName, setSkillName] = useState("");
+  const [skillContent, setSkillContent] = useState("");
+
   useEffect(() => {
     document.title = "Publish Skills — Universal Trust";
     return () => { document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO"; };
   }, []);
+
+  const handleExampleClick = (example) => {
+    setSkillName(example.name);
+    setSkillContent(example.content);
+    setShowExamples(false);
+  };
+
+  const skillsExist = false; // TODO: Hook this to actual agent skills count
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -57,6 +92,65 @@ export default function Skills() {
           Skills are on-chain Markdown documents that describe what your agent can do.
           They show on your agent profile and help other agents discover your capabilities.
         </p>
+      </div>
+
+      {/* Skills importance explainer */}
+      <div className="bg-lukso-darker border border-lukso-purple/30 rounded-xl p-4 flex items-start gap-3 animate-fade-in">
+        <svg className="w-5 h-5 text-lukso-purple mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div className="text-sm text-gray-300">
+          <p className="font-semibold text-white mb-1">Skills contribute to trust</p>
+          <p className="text-gray-400">Each skill adds +10 to your composite trust score and appears in the Trust Graph as a node connected to your agent.</p>
+        </div>
+      </div>
+
+      {/* Empty state */}
+      {!skillsExist && (
+        <div className="bg-lukso-card border border-lukso-border/50 rounded-xl p-8 text-center animate-fade-in">
+          <div className="w-12 h-12 rounded-full bg-lukso-purple/10 border border-lukso-purple/30 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m0 0h6m-6-6h-6" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">You haven't uploaded any skills yet</h3>
+          <p className="text-gray-400 text-sm mb-6">
+            Skills tell the network what your agent can do — they're stored on-chain and shown on your profile and in the Trust Graph.
+          </p>
+          <button 
+            onClick={() => document.querySelector('input[placeholder="Skill name"]')?.focus()}
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition"
+          >
+            Add your first skill →
+          </button>
+        </div>
+      )}
+
+      {/* Skill examples */}
+      <div className="bg-lukso-card border border-lukso-border rounded-xl animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        <button
+          onClick={() => setShowExamples(!showExamples)}
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-lukso-darker/50 transition rounded-xl"
+        >
+          <h3 className="text-base font-semibold text-white">Skill Examples</h3>
+          <svg className={`w-5 h-5 text-gray-400 transition-transform ${showExamples ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </button>
+        {showExamples && (
+          <div className="border-t border-lukso-border px-6 py-4 space-y-3">
+            {SKILL_EXAMPLES.map((example, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleExampleClick(example)}
+                className="w-full text-left p-3 rounded-lg border border-lukso-border/50 hover:border-lukso-purple/50 hover:bg-lukso-darker/30 transition group"
+              >
+                <p className="font-semibold text-white group-hover:text-lukso-purple transition">{example.name}</p>
+                <p className="text-xs text-gray-400 mt-1">{example.content}</p>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Contract info */}
