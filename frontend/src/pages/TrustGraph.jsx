@@ -58,7 +58,7 @@ export default function TrustGraph() {
 
   const [search, setSearch]       = useState("");
   const [selected, setSelected]   = useState(null); // node id
-  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: false, ecosystem: false, skill: false, endorsement: false, external_endorser: true, lsp26_follow: true });
+  const [filters, setFilters]     = useState({ agent_up: true, agent_eoa: true, agent_8004: false, ecosystem: false, skill: true, endorsement: true, external_endorser: true, lsp26_follow: true });
   const [dims, setDims]           = useState({ w: 900, h: 600 });
 
   // AI Query
@@ -285,62 +285,16 @@ export default function TrustGraph() {
       nodeIds.add(a.address);
     }
 
-    // ── Deduplication pass (agent nodes only) ─────────────────────────────────
-    // Group registered agent nodes by their resolved UP name.
-    // Nodes with no name (raw address label) are skipped — can't reliably deduplicate.
-    // For each group with >1 node: keep the "canonical" node (agent_up preferred, then highest score)
-    // and build a redirect map for all duplicates.
-    const redirectMap = {}; // { duplicateId -> canonicalId }
-    let mergedCount = 0;
+    // ── No name-based deduplication ──────────────────────────────────────────
+    // Two nodes with the same UP name are NOT necessarily the same entity.
+    // A controller EOA and its UP have different addresses; only an on-chain
+    // LSP6 KeyManager lookup (controller → UP via target()) can establish that
+    // link — and that data isn't available in the graph payload. Show all nodes.
+    const redirectMap = {}; // empty — kept so resolveId() below compiles
+    const mergedCount = 0;
 
-    // Only consider registered agent nodes (agent_up / agent_eoa)
-    const agentNodesByName = {};
-    for (const n of nodes) {
-      if (n.type !== "agent_up" && n.type !== "agent_eoa") continue;
-      // Skip nodes whose label looks like a truncated address (no real name)
-      const lbl = n.label || "";
-      if (!lbl || lbl.endsWith("…") && lbl.length <= 9) continue;
-
-      const key = lbl.toLowerCase().trim();
-      if (!agentNodesByName[key]) agentNodesByName[key] = [];
-      agentNodesByName[key].push(n);
-    }
-
-    for (const group of Object.values(agentNodesByName)) {
-      if (group.length < 2) continue;
-      // Pick canonical: prefer agent_up, then highest trustScore
-      group.sort((a, b) => {
-        if (a.type === "agent_up" && b.type !== "agent_up") return -1;
-        if (b.type === "agent_up" && a.type !== "agent_up") return  1;
-        return (b.trustScore ?? 0) - (a.trustScore ?? 0);
-      });
-      const canonical = group[0];
-      for (let i = 1; i < group.length; i++) {
-        redirectMap[group[i].id] = canonical.id;
-        mergedCount++;
-      }
-    }
-
-    // Remove duplicate nodes from the node list and nodeIds set
-    const dedupedNodes = nodes.filter((n) => !redirectMap[n.id]);
-    nodes.length = 0;
-    dedupedNodes.forEach((n) => nodes.push(n));
-    // Rebuild nodeIds from surviving nodes
-    nodeIds.clear();
-    for (const n of nodes) nodeIds.add(n.id);
-
-    // Helper: resolve an address through the redirect map (case-insensitive)
-    // Returns the canonical node id for a given address, or the original if not redirected.
-    const resolveId = (addr) => {
-      if (!addr) return addr;
-      // Direct match
-      if (redirectMap[addr]) return redirectMap[addr];
-      // Try case variations (redirectMap keys are original-case addresses from nodes)
-      for (const [dup, canon] of Object.entries(redirectMap)) {
-        if (dup.toLowerCase() === addr.toLowerCase()) return canon;
-      }
-      return addr;
-    };
+    // Simple identity resolver (no redirects)
+    const resolveId = (addr) => addr;
 
     // ERC-8004 agents (registered on ERC-8004 Identity Registry, may or may not be on Universal Trust)
     if (filters.agent_8004) {
@@ -1193,11 +1147,7 @@ export default function TrustGraph() {
                 <span className="text-emerald-500">{stats.ecosystem} eco</span>
                 <span>{stats.edges} endorse</span>
               </div>
-              {stats.merged > 0 && (
-                <span className="text-[10px] text-gray-600">
-                  Showing {stats.nodes} agents · {stats.merged} duplicate{stats.merged !== 1 ? "s" : ""} merged
-                </span>
-              )}
+
             </div>
           )}
         </div>
