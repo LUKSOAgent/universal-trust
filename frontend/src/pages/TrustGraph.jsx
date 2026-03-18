@@ -956,11 +956,20 @@ export default function TrustGraph() {
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-lukso-pink to-lukso-purple bg-clip-text text-transparent mb-1">
-              Trust Graph
-            </h1>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-lukso-pink to-lukso-purple bg-clip-text text-transparent">
+                Trust Graph
+              </h1>
+              <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-xs text-green-400 font-medium shrink-0">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+                </span>
+                Live
+              </span>
+            </div>
             <p className="text-gray-500 text-xs sm:text-sm hidden sm:block">
-              On-chain agent endorsement network — live from LUKSO mainnet.
+              Interactive on-chain agent endorsement network. Drag nodes, click to explore, zoom to navigate.
             </p>
           </div>
           {/* Mobile: sidebar toggle */}

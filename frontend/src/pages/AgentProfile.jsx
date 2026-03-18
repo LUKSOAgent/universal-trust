@@ -434,6 +434,14 @@ export default function AgentProfile() {
             <div className={`relative overflow-hidden border rounded-xl p-6 mb-4 ${lvl.bg}`}>
               {/* Animated gradient background */}
               <div className="absolute inset-0 bg-gradient-to-br from-lukso-pink/10 via-lukso-purple/5 to-lukso-pink/10 bg-[length:200%_200%] animate-gradient" />
+              {/* Live data indicator */}
+              <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-lukso-darker/60 backdrop-blur-sm border border-lukso-border/50 z-10">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                </span>
+                <span className="text-[10px] text-gray-400 font-medium">Live on-chain</span>
+              </div>
               <div className="relative z-10 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider mb-1">Composite Trust Score</p>
@@ -565,7 +573,9 @@ export default function AgentProfile() {
           <div className="flex flex-wrap gap-3">
             {lsp26Data.addresses.map((followerAddr) => {
               const profile = endorserProfiles[followerAddr.toLowerCase()];
-              const name = profile?.name || followerAddr.slice(0, 8) + "…";
+              // Also check allAgents for registered name fallback
+              const registeredAgent = allAgents.find((a) => a.address.toLowerCase() === followerAddr.toLowerCase());
+              const name = profile?.name || registeredAgent?.name || followerAddr.slice(0, 8) + "…";
               const avatar = profile?.profileImage || null;
               return (
                 <Link
@@ -600,7 +610,7 @@ export default function AgentProfile() {
           Endorsements ({endorsers.length})
         </h2>
         {endorsers.length === 0 ? (
-          <EmptyState icon="endorsements" message="No endorsements yet. Be the first to endorse this agent!" />
+          <EmptyState icon="endorsements" message="No endorsements yet. Be the first to endorse this agent!" address={address} />
         ) : (
           <div className="space-y-3">
             {endorsers.map((endorser) => {
@@ -854,7 +864,7 @@ function CopyButton({ text }) {
   );
 }
 
-function EmptyState({ icon, message }) {
+function EmptyState({ icon, message, address }) {
   return (
     <div className="py-8 text-center">
       <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-lukso-darker border border-lukso-border flex items-center justify-center">
@@ -868,7 +878,34 @@ function EmptyState({ icon, message }) {
           </svg>
         )}
       </div>
-      <p className="text-gray-500">{message}</p>
+      <p className="text-gray-500 mb-3">{message}</p>
+      {icon === "endorsements" && address && (
+        <Link
+          to={`/endorse?address=${address}`}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          Be the First to Endorse
+        </Link>
+      )}
+      {icon === "skills" && (
+        <div className="max-w-sm mx-auto">
+          <p className="text-xs text-gray-600 mb-2">Skills are published on-chain via the AgentSkillsRegistry contract.</p>
+          <a
+            href="https://github.com/LUKSOAgent/universal-trust#skills"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-lukso-purple hover:text-lukso-pink transition"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            Learn how to publish skills →
+          </a>
+        </div>
+      )}
     </div>
   );
 }
