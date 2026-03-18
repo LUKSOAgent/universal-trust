@@ -671,15 +671,17 @@ export default function Verify() {
                     value={result.endorsements.toString()}
                   />
                   <VerifyField
-                    label="Trust Score"
+                    label="Contract Score"
                     value={result.trustScore.toString()}
                   />
                 </div>
 
-                {/* Composite Score */}
-                {(onChainRep || skillsCount > 0 || lsp26Score > 0) && (
-                  <div className="bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border border-lukso-pink/30 rounded-xl p-4 mb-5">
-                    <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider mb-1">Composite Trust Score</p>
+                {/* Composite Score — always show once result is loaded; dims until Envio data arrives */}
+                <div className={`bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border border-lukso-pink/30 rounded-xl p-4 mb-5 transition-opacity ${onChainLoading ? "opacity-70" : "opacity-100"}`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider">Composite Trust Score</p>
+                    {onChainLoading && <span className="text-xs text-gray-500 animate-pulse">loading activity…</span>}
+                  </div>
                     <p className="text-4xl font-bold text-white tabular-nums">
                       {computeCompositeScore(result.trustScore, onChainRep?.generalScore ?? null, skillsCount, lsp26Score).toLocaleString()}
                     </p>
@@ -690,7 +692,6 @@ export default function Verify() {
                       {lsp26Score > 0 ? ` + ${lsp26Score} (LSP26 follows×5)` : ""}
                     </p>
                   </div>
-                )}
 
                 {/* Trust score breakdown */}
                 <div className="bg-lukso-darker rounded-lg p-4 mb-5">

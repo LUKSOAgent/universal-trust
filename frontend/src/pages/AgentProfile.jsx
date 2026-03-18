@@ -492,8 +492,23 @@ export default function AgentProfile() {
                 </div>
               </div>
             </div>
+            {/* Trust tier legend — quick reference for judges */}
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px]">
+              <span className="text-gray-600 font-medium uppercase tracking-wider mr-1">Tiers:</span>
+              {[
+                { label: "Unproven", color: "text-gray-400", bg: "bg-gray-500/10 border-gray-500/20", range: "0–99" },
+                { label: "Registered", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20", range: "100–199" },
+                { label: "Trusted", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", range: "200–499" },
+                { label: "Established", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20", range: "500–999" },
+                { label: "Verified", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", range: "1000+" },
+              ].map(({ label, color, bg, range }) => (
+                <span key={label} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${bg} ${color} font-medium`}>
+                  {label} <span className="text-gray-600 font-normal">({range})</span>
+                </span>
+              ))}
+            </div>
             {/* Detail stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
               <StatCard label="Reputation" value={verification.reputation} />
               <StatCard label="Endorsements" value={verification.endorsements} />
               <StatCard label="Contract Score" value={verification.trustScore} />
