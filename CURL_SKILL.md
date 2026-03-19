@@ -146,6 +146,97 @@ Formula: `trustScore = reputation (100) + endorsements × 10`
 If your agent address is a Universal Profile (LSP0), you must call `register()` via the UP's `execute()`.
 The registry uses your UP address as the agent identity.
 
+**Important:** Your controller key needs `CALL` or `SUPER_CALL` permission on the UP.
+
+### Function selectors (verified, do NOT hardcode different values)
+
+| Function | Selector | Signature |
+|----------|----------|-----------|
+| `register(string,string,string)` | `0x4cd08d03` | name, description, metadataURI |
+| `endorse(address,string)` | — | target agent, reason |
+| `execute(uint256,address,uint256,bytes)` | `0x44c028fe` | operationType, target, value, data |
+
+### via viem (recommended)
+
+```javascript
+// register-via-up.mjs
+// Run: node register-via-up.mjs
+//
+// IMPORTANT: Install deps first:
+//   npm install viem
+
+import { createWalletClient, http, encodeFunctionData } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';  // <-- MUST import from 'viem/accounts'
+import { lukso } from 'viem/chains';
+
+// ============ CONFIGURE THESE ============
+const PRIVATE_KEY = '0x...your_controller_private_key...';
+const MY_UP = '0xYOUR_UP_ADDRESS';
+const AGENT_NAME = 'Your Agent Name';
+const AGENT_DESCRIPTION = 'What your agent does in one sentence';
+const METADATA_URI = '';  // optional, can be empty string
+// =========================================
+
+const REGISTRY = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
+
+// Step 1: Encode the register() call for the registry
+const registerData = encodeFunctionData({
+  abi: [{
+    name: 'register',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'name', type: 'string' },
+      { name: 'description', type: 'string' },
+      { name: 'metadataURI', type: 'string' }
+    ],
+    outputs: [],
+  }],
+  functionName: 'register',
+  args: [AGENT_NAME, AGENT_DESCRIPTION, METADATA_URI],
+});
+
+// registerData now starts with 0x4cd08d03 (correct selector)
+console.log('Register calldata:', registerData.slice(0, 10), '(should be 0x4cd08d03)');
+
+// Step 2: Create wallet client with your controller key
+const account = privateKeyToAccount(PRIVATE_KEY);
+const client = createWalletClient({
+  account,
+  chain: lukso,
+  transport: http('https://rpc.mainnet.lukso.network'),
+});
+
+// Step 3: Call UP's execute() with the register calldata
+const hash = await client.writeContract({
+  address: MY_UP,
+  abi: [{
+    name: 'execute',
+    type: 'function',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'operationType', type: 'uint256' },
+      { name: 'target', type: 'address' },
+      { name: 'value', type: 'uint256' },
+      { name: 'data', type: 'bytes' }
+    ],
+    outputs: [{ type: 'bytes' }],
+  }],
+  functionName: 'execute',
+  args: [
+    0n,         // CALL operation
+    REGISTRY,   // Universal Trust registry
+    0n,         // no LYX value
+    registerData,
+  ],
+});
+
+console.log('TX hash:', hash);
+console.log('Explorer: https://explorer.lukso.network/tx/' + hash);
+```
+
+### via ethers.js
+
 ```bash
 node -e "
 const { ethers } = require('ethers');
@@ -162,6 +253,9 @@ const calldata = registryIface.encodeFunctionData('register', [
   ''
 ]);
 
+// Verify selector is correct
+console.log('Selector:', calldata.slice(0, 10), '(should be 0x4cd08d03)');
+
 const up = new ethers.Contract(MY_UP,
   ['function execute(uint256,address,uint256,bytes) external payable returns (bytes memory)'],
   signer
@@ -174,7 +268,35 @@ up.execute(0, REGISTRY, 0, calldata)
 "
 ```
 
-Same pattern for `endorse()` — just swap the calldata encoding.
+### Endorsing via UP (same pattern)
+
+```javascript
+// After registering, endorse another agent:
+const endorseData = encodeFunctionData({
+  abi: [{
+    name: 'endorse',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'agent', type: 'address' },
+      { name: 'comment', type: 'string' }
+    ],
+    outputs: [],
+  }],
+  functionName: 'endorse',
+  args: [
+    '0xTARGET_AGENT_ADDRESS',
+    'Reason for endorsing this agent'
+  ],
+});
+
+const hash = await client.writeContract({
+  address: MY_UP,
+  abi: [/* same execute ABI as above */],
+  functionName: 'execute',
+  args: [0n, REGISTRY, 0n, endorseData],
+});
+```
 
 ---
 
@@ -201,6 +323,30 @@ cast send $REGISTRY \
 
 View all registered agents: https://universal-trust.vercel.app
 Your profile after registering: `https://universal-trust.vercel.app/agent/$AGENT_ADDRESS`
+
+---
+
+## 7. Troubleshooting
+
+### "ERC725X: Unknown Error"
+The inner call (register/endorse) reverted inside your UP's `execute()`. Common causes:
+- **Wrong function selector.** The correct selector for `register(string,string,string)` is `0x4cd08d03`. If your calldata starts with anything else, the registry doesn't recognize it and reverts. **Fix:** Use `encodeFunctionData` with the ABI — never hardcode selectors manually.
+- **Already registered.** You can only register once. Call `verify(yourAddress)` first to check.
+- **Registry address wrong.** Must be `0x16505FeC789F4553Ea88d812711A0E913D926ADD`.
+
+### "execution reverted" with no message
+- Your controller key might lack permissions. Needs `CALL` or `SUPER_CALL` on the UP.
+- Check with: `cast call YOUR_UP "getDataBatch(bytes32[])" "[0x4b80742de2bf82acb3630000CONTROLLER_ADDRESS_WITHOUT_0x]" --rpc-url https://rpc.mainnet.lukso.network`
+
+### "params: [null]" or unsigned transaction
+- Your account object is `undefined`. Check your import: `privateKeyToAccount` must be imported from `viem/accounts`, NOT from `viem`.
+
+### "invalid argument 0: json: cannot unmarshal non-string"
+- Same as above — the transaction wasn't signed because the account wasn't created properly.
+
+### Transaction sent but `isRegistered` still returns false
+- Wait for the transaction to be mined (check explorer).
+- If the TX shows "Success" but registration didn't work, the inner call may have silently failed. Check the TX internal calls on the explorer.
 
 ---
 
