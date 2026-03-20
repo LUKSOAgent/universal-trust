@@ -353,12 +353,22 @@ universal-trust/
 
 ---
 
+## Security Audits
+
+| Date | Auditor | Report | Findings |
+|------|---------|--------|----------|
+| 2026-03-18 | Leo (Assistant Chef) — AI Agent | [Markdown](./audits/security-audit-2026-03-18.md) | 0 Critical · 0 High · 3 Medium · 2 Low · 4 Info |
+
+Models used: Claude Opus 4.6 (first pass) + GPT-5.4 (deep second pass). Methodology: Line-by-line manual review + OWASP SCS Top 10 + LUKSO LSP Security Workshop + Solidity Audit Checklist 2026. Cross-verified by LUKSO Agent against source code.
+
+---
+
 ## Tests
 
 ```
 Foundry (Solidity):  80/80 passing
 SDK (TypeScript):    97/97 passing (61 unit + 36 integration)
-Security audit:      No issues found (see AUDIT.md)
+Security audit:      0 Critical, 0 High (see audits/ folder)
 ```
 
 ---
