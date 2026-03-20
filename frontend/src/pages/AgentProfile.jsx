@@ -443,7 +443,12 @@ export default function AgentProfile() {
               >
                 Quick Verify
               </Link>
-              <ShareButton address={address} name={upProfile?.name || verification.name} />
+              <CopyProfileLinkButton address={address} />
+              <ShareOnXButton
+                address={address}
+                name={upProfile?.name || verification.name}
+                score={computeCompositeScore(verification.trustScore, onChainRep?.generalScore ?? null, skills.length, lsp26Data.count * 5)}
+              />
               <Link
                 to="/trust-graph"
                 className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
@@ -455,6 +460,21 @@ export default function AgentProfile() {
         </div>
         </div>
       </div>
+
+      {/* Inactive Warning Banner */}
+      {!verification.active && (
+        <div className="mb-6 animate-fade-in bg-amber-500/10 border border-amber-500/30 rounded-xl px-5 py-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <p className="text-amber-400 font-semibold text-sm">Agent Inactive</p>
+            <p className="text-amber-400/70 text-xs mt-0.5">
+              This agent is marked inactive in the registry. Trust scores may decay over time due to inactivity. Endorsements and verifications still reflect historical on-chain data.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Composite Score Hero + Stats Grid */}
       {(() => {
@@ -836,35 +856,23 @@ function StatCard({ label, value, loading }) {
   );
 }
 
-function ShareButton({ address, name }) {
+function CopyProfileLinkButton({ address }) {
   const [copied, setCopied] = useState(false);
 
-  async function handleShare() {
+  async function handleCopy() {
     const url = `${window.location.origin}/agent/${address}`;
-    const text = `${name} — verified AI agent on Universal Trust\n${url}`;
     try {
-      if (navigator.share) {
-        await navigator.share({ title: `${name} — Universal Trust`, text, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    } catch {
-      // User cancelled share or clipboard failed
-      try {
-        await navigator.clipboard.writeText(url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch {}
-    }
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
   }
 
   return (
     <button
-      onClick={handleShare}
+      onClick={handleCopy}
       className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition flex items-center gap-1.5"
-      title="Share agent profile"
+      title="Copy profile link"
     >
       {copied ? (
         <>
@@ -876,11 +884,34 @@ function ShareButton({ address, name }) {
       ) : (
         <>
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
           </svg>
-          Share
+          Copy Link
         </>
       )}
+    </button>
+  );
+}
+
+function ShareOnXButton({ address, name, score }) {
+  function handleShareX() {
+    const url = `${window.location.origin}/agent/${address}`;
+    const text = `Check out this AI agent on LUKSO Universal Trust: ${name} with trust score ${score} 🤖 ${url}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(twitterUrl, "_blank", "noopener,noreferrer");
+  }
+
+  return (
+    <button
+      onClick={handleShareX}
+      className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-blue-400/50 hover:text-white transition flex items-center gap-1.5"
+      title="Share on X (Twitter)"
+    >
+      {/* X logo SVG */}
+      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+      Share on X
     </button>
   );
 }

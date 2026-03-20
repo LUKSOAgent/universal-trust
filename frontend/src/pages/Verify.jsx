@@ -4,6 +4,7 @@ import { verifyAgent, getSkills } from "../useContract";
 import { CONTRACT_ADDRESS, EXPLORER_URL } from "../config";
 import TrustBadge, { TrustScoreBar } from "../components/TrustBadge";
 import { resolveIPFS, fetchUPProfile, fetchOnChainReputation, fetchLSP26RegisteredFollowers, computeCompositeScore } from "../envio";
+import { getTrustLevel } from "../components/TrustScoreCard";
 
 const ENVIO = "https://envio.lukso-mainnet.universal.tech/v1/graphql";
 
@@ -681,13 +682,22 @@ export default function Verify() {
                 </div>
 
                 {/* Composite Score — always show once result is loaded; dims until Envio data arrives */}
-                <div className={`bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border border-lukso-pink/30 rounded-xl p-4 mb-5 transition-opacity ${onChainLoading ? "opacity-70" : "opacity-100"}`}>
+                {(() => {
+                  const composite = computeCompositeScore(result.trustScore, onChainRep?.generalScore ?? null, skillsCount, lsp26Score);
+                  const lvl = getTrustLevel(composite);
+                  return (
+                <div className={`border rounded-xl p-4 mb-5 transition-opacity ${lvl.bg} ${onChainLoading ? "opacity-70" : "opacity-100"}`}>
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-xs font-semibold text-lukso-pink uppercase tracking-wider">Composite Trust Score</p>
-                    {onChainLoading && <span className="text-xs text-gray-500 animate-pulse">loading activity…</span>}
+                    <div className="flex items-center gap-2">
+                      {onChainLoading && <span className="text-xs text-gray-500 animate-pulse">loading activity…</span>}
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${lvl.bg} ${lvl.color}`}>
+                        {lvl.label}
+                      </span>
+                    </div>
                   </div>
                     <p className="text-4xl font-bold text-white tabular-nums">
-                      {computeCompositeScore(result.trustScore, onChainRep?.generalScore ?? null, skillsCount, lsp26Score).toLocaleString()}
+                      {composite.toLocaleString()}
                     </p>
                     <p className="text-xs text-gray-500 mt-1 font-mono">
                       {result.trustScore} (contract)
@@ -695,7 +705,24 @@ export default function Verify() {
                       {skillsCount > 0 ? ` + ${Math.min(skillsCount, 20) * 10} (${skillsCount} skills×10)` : ""}
                       {lsp26Score > 0 ? ` + ${lsp26Score} (LSP26 follows×5)` : ""}
                     </p>
+                    {/* Trust tier legend */}
+                    <div className="mt-3 pt-3 border-t border-lukso-border/30 flex flex-wrap items-center gap-1.5 text-[10px]">
+                      <span className="text-gray-600 font-medium uppercase tracking-wider mr-1">Tiers:</span>
+                      {[
+                        { label: "Unproven", color: "text-gray-400", bg: "bg-gray-500/10 border-gray-500/20", range: "0–99" },
+                        { label: "Registered", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20", range: "100–199" },
+                        { label: "Trusted", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", range: "200–499" },
+                        { label: "Established", color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20", range: "500–999" },
+                        { label: "Verified", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", range: "1000+" },
+                      ].map(({ label, color, bg, range }) => (
+                        <span key={label} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border ${bg} ${color} font-medium ${lvl.label === label ? "ring-1 ring-current" : ""}`}>
+                          {label} <span className="text-gray-600 font-normal">({range})</span>
+                        </span>
+                      ))}
+                    </div>
                   </div>
+                  );
+                })()}
 
                 {/* Trust score breakdown */}
                 <div className="bg-lukso-darker rounded-lg p-4 mb-5">
