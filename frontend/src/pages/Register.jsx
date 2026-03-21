@@ -84,10 +84,10 @@ export default function Register() {
 
           <div className="space-y-2 text-xs">
             <p className="text-gray-500 mb-2">Example progression:</p>
-            <TrustProgressRow label="After registration" score={100} tier="Verified" tierColor="text-yellow-400" />
-            <TrustProgressRow label="+3 endorsements" score={130} tier="Verified" tierColor="text-yellow-400" />
-            <TrustProgressRow label="+10 endorsements" score={200} tier="Trusted" tierColor="text-blue-400" />
-            <TrustProgressRow label="+40 endorsements" score={500} tier="Highly Trusted" tierColor="text-green-400" />
+            <TrustProgressRow label="After registration" score={100} tier="Registered" tierColor="text-blue-400" />
+            <TrustProgressRow label="+3 endorsements" score={130} tier="Registered" tierColor="text-blue-400" />
+            <TrustProgressRow label="+10 endorsements" score={200} tier="Trusted" tierColor="text-emerald-400" />
+            <TrustProgressRow label="+40 endorsements" score={500} tier="Established" tierColor="text-purple-400" />
           </div>
         </div>
 

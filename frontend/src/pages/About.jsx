@@ -233,26 +233,93 @@ export default function About() {
         </div>
       </section>
 
-      {/* ── Builder ──────────────────────────────────────── */}
+      {/* ── Team ─────────────────────────────────────────── */}
       <section className="animate-fade-in">
-        <SectionLabel text="The Builder" />
-        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-3xl shrink-0">
-            🤖
+        <SectionLabel text="Team" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 flex items-start gap-4">
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-2xl shrink-0">
+              🤖
+            </div>
+            <div className="flex-1">
+              <h3 className="text-white font-bold text-base mb-1">LUKSO Agent</h3>
+              <p className="text-gray-400 text-xs mb-2">AI agent — conceived, coded, and deployed Universal Trust end-to-end on LUKSO mainnet.</p>
+              <a
+                href="https://universaleverything.io/0x293E96ebbf264ed7715cff2b67850517De70232a"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-lukso-purple hover:text-lukso-pink transition text-xs font-medium"
+              >
+                Universal Profile →
+              </a>
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="text-white font-bold text-lg mb-1">Built by LUKSO Agent</h3>
-            <p className="text-gray-400 text-sm mb-3">
-              An AI agent building on LUKSO, for LUKSO.
-            </p>
-            <a
-              href="https://universaleverything.io/0x293E96ebbf264ed7715cff2b67850517De70232a"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-lukso-purple hover:text-lukso-pink transition text-sm font-medium"
-            >
-              View Universal Profile →
-            </a>
+          <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 flex items-start gap-4">
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-lukso-purple to-blue-500 flex items-center justify-center text-2xl shrink-0">
+              🧑‍💻
+            </div>
+            <div className="flex-1">
+              <h3 className="text-white font-bold text-base mb-1">JordyDutch</h3>
+              <p className="text-gray-400 text-xs mb-2">Human operator &amp; LUKSO ecosystem builder. Runs the AI agent, guides architecture, ships Stakingverse.io.</p>
+              <a
+                href="https://universaleverything.io/jordy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-lukso-purple hover:text-lukso-pink transition text-xs font-medium"
+              >
+                Universal Profile →
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Demo ─────────────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Live Demo" />
+        <div className="bg-gradient-to-br from-lukso-darker to-lukso-card border border-lukso-pink/30 rounded-2xl p-6 sm:p-8 space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-white font-bold text-lg">Try it live</span>
+          </div>
+          <p className="text-gray-400 text-sm">
+            Universal Trust is deployed on LUKSO mainnet and fully functional. Here are the fastest ways to see it in action:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <DemoLinkCard
+              href="https://universal-trust.vercel.app/"
+              icon="🌐"
+              title="Live App"
+              desc="Browse registered agents, verify trust scores, explore the graph."
+              badge="Vercel"
+            />
+            <DemoLinkCard
+              href="https://universal-trust.vercel.app/agent/0x293E96ebbf264ed7715cff2b67850517De70232a"
+              icon="🤖"
+              title="Agent Profile"
+              desc="View the LUKSO Agent's on-chain identity, skills, and trust score."
+              badge="Mainnet"
+            />
+            <DemoLinkCard
+              href="https://universal-trust.vercel.app/verify"
+              icon="✅"
+              title="Verify Any Agent"
+              desc="Paste any address and instantly verify trust status on-chain."
+              badge="No wallet needed"
+            />
+            <DemoLinkCard
+              href="https://github.com/LUKSOAgent/universal-trust/blob/main/demo/README.md"
+              icon="⚡"
+              title="CLI Demo"
+              desc="Run the node.js demo: agent-to-agent trust verification in ~30 seconds."
+              badge="npm start"
+            />
+          </div>
+          <div className="bg-lukso-darker rounded-xl p-4 border border-lukso-border/50 mt-2">
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-medium">Quick verify — no setup required</p>
+            <code className="text-xs text-lukso-purple font-mono block">
+              curl -s https://universal-trust.vercel.app/api/verify/0x293E96ebbf264ed7715cff2b67850517De70232a
+            </code>
           </div>
         </div>
       </section>
@@ -318,6 +385,26 @@ function ExternalLinkCard({ href, icon, title, desc }) {
     >
       <div className="text-2xl mb-2 group-hover:scale-110 transition-transform inline-block">
         {icon}
+      </div>
+      <p className="text-white font-semibold text-sm mb-1">{title}</p>
+      <p className="text-gray-500 text-xs">{desc}</p>
+    </a>
+  );
+}
+
+function DemoLinkCard({ href, icon, title, desc, badge }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block bg-lukso-card border border-lukso-border rounded-xl p-4 hover:border-lukso-pink/40 hover:bg-lukso-pink/5 transition group"
+    >
+      <div className="flex items-start justify-between mb-2">
+        <span className="text-xl group-hover:scale-110 transition-transform inline-block">{icon}</span>
+        {badge && (
+          <span className="text-xs text-lukso-purple bg-lukso-purple/10 border border-lukso-purple/30 px-2 py-0.5 rounded-full font-mono">{badge}</span>
+        )}
       </div>
       <p className="text-white font-semibold text-sm mb-1">{title}</p>
       <p className="text-gray-500 text-xs">{desc}</p>

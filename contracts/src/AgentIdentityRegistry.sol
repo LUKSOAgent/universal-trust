@@ -287,7 +287,7 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
         address agent,
         int256 delta,
         string calldata reason
-    ) external onlyReputationUpdater onlyRegistered(agent) {
+    ) external onlyReputationUpdater onlyRegistered(agent) onlyActive(agent) {
         AgentIdentity storage a = _agents[agent];
         uint256 oldRep = a.reputation;
 
