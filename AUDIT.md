@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-13  
 **Contracts:**
-- `AgentIdentityRegistry.sol` (deployed: `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7`)
+- `AgentIdentityRegistry.sol` (deployed: `0x16505FeC789F4553Ea88d812711A0E913D926ADD`)
 - `AgentSkillsRegistry.sol` (deployed: `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6`)
 
 **Solidity Version:** ^0.8.19 / ^0.8.24 (checked arithmetic overflow/underflow protection enabled)

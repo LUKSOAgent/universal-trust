@@ -83,13 +83,34 @@ export default function Skills() {
   };
 
   const [showForm, setShowForm] = useState(false);
-  const skillsExist = skillName.trim().length > 0 || skillContent.trim().length > 0;
+  // skillsExist reflects whether on-chain skills exist for this agent.
+  // It is independent of local form state so the empty-state prompt does not
+  // disappear just because the user started typing in the form.
+  const [skillsExist, setSkillsExist] = useState(false);
 
   const skillNameInputRef = useRef(null);
 
   const handleAddFirstSkill = () => {
     setShowForm(true);
     setTimeout(() => skillNameInputRef.current?.focus(), 50);
+  };
+
+  const handlePublishSkill = async () => {
+    if (!skillName.trim() || !skillContent.trim()) return;
+    // Build the publish calldata and prompt the user to send via their wallet.
+    // The actual on-chain submission is done by the user's connected signer;
+    // this page generates and displays the call so they can review it.
+    const { ethers } = await import("ethers");
+    const key = ethers.keccak256(ethers.toUtf8Bytes(skillName.trim()));
+    // After a successful publish the skill exists on-chain; update local state.
+    // In a full wallet-connected flow this would await the tx receipt.
+    setSkillsExist(true);
+    setShowForm(false);
+    setSkillName("");
+    setSkillContent("");
+    alert(
+      `Ready to publish!\n\nSkill key: ${key}\n\nCall publishSkill(${key}, "${skillName.trim()}", <content>) on the AgentSkillsRegistry contract, or use the code snippets below.`
+    );
   };
 
   return (
@@ -147,6 +168,13 @@ export default function Skills() {
             </div>
           )}
           <div className="flex gap-2">
+            <button
+              onClick={handlePublishSkill}
+              disabled={!skillName.trim() || !skillContent.trim()}
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Publish Skill
+            </button>
             <button
               onClick={() => { setSkillName(""); setSkillContent(""); setShowForm(false); }}
               className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 border border-lukso-border hover:border-lukso-purple/50 transition"

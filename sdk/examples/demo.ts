@@ -80,7 +80,7 @@ async function main() {
   console.log();
   console.log(`${C.bold}${C.magenta}╔══════════════════════════════════════════════════════╗${C.reset}`);
   console.log(`${C.bold}${C.magenta}║${C.reset}  ${C.bold}Universal Trust SDK${C.reset} — Live LUKSO Mainnet Demo     ${C.bold}${C.magenta}║${C.reset}`);
-  console.log(`${C.bold}${C.magenta}║${C.reset}  Registry: ${C.dim}0x1581BA9F…c6ec7${C.reset}  Chain: ${C.cyan}42 (LUKSO)${C.reset}   ${C.bold}${C.magenta}║${C.reset}`);
+  console.log(`${C.bold}${C.magenta}║${C.reset}  Registry: ${C.dim}0x16505FeC…926ADD${C.reset}  Chain: ${C.cyan}42 (LUKSO)${C.reset}   ${C.bold}${C.magenta}║${C.reset}`);
   console.log(`${C.bold}${C.magenta}╚══════════════════════════════════════════════════════╝${C.reset}`);
 
   // ─── Section 1: Registry Overview ──────────────────────────────────

@@ -26,7 +26,6 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     uint256 public constant MAX_REPUTATION = 10000;
     uint256 public constant MIN_ENDORSEMENT_WEIGHT = 10;
     uint256 public constant MAX_ENDORSEMENT_WEIGHT = 50;
-    uint256 public constant MIN_BASE_TOKEN_BALANCE = 50_000_000e18; // 50 million tokens
 
     // ─────────────────────────────────────────────────────────────────────────
     // Storage
@@ -283,6 +282,14 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     // Reputation
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * @notice Update the reputation of a registered, active agent.
+     * @dev The `onlyActive` guard is intentional: reputation updates also
+     *      reset `lastActiveAt` (to record keeper activity). Allowing this
+     *      on a deactivated agent would silently reactivate its activity
+     *      timestamp without going through the proper `reactivate()` flow.
+     *      Callers should reactivate the agent first if an update is needed.
+     */
     function updateReputation(
         address agent,
         int256 delta,
@@ -413,7 +420,7 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
      * @notice Detect if an address is a LUKSO Universal Profile.
      *         Two-strategy check:
      *         1. LSP0 interface ID 0x24871b3a
-     *         2. ERC725Account interface ID 0x629aa694
+     *         2. ERC725Y interface ID 0x629aa694
      */
     function isUniversalProfile(address account) public view returns (bool) {
         if (account.code.length == 0) return false;

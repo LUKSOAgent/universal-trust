@@ -276,7 +276,7 @@ export interface AgentTrustConfig {
 }
 
 /** Default deployed AgentIdentityRegistry on LUKSO mainnet */
-const DEFAULT_IDENTITY_REGISTRY = '0x8EAE36077D386Eb9A5B957dC8397d96804DA449D';
+const DEFAULT_IDENTITY_REGISTRY = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
 
 export interface VerifyResult {
   /** Whether the agent is registered in the identity registry */
