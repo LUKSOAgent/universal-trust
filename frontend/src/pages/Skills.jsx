@@ -33,7 +33,7 @@ function CopyButton({ text }) {
     try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
   }
   return (
-    <button onClick={copy} className="absolute top-3 right-3 inline-flex min-h-[44px] items-center gap-1 px-3 py-2 sm:min-h-0 sm:px-2 sm:py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition">
+    <button onClick={copy} className="absolute top-2.5 right-2.5 px-2 py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition flex items-center gap-1">
       {copied ? (
         <><svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><span className="text-green-400">Copied</span></>
       ) : (
@@ -49,8 +49,8 @@ function CodeBlock({ code, lang = "js" }) {
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs text-gray-600 bg-lukso-darker px-2 py-0.5 rounded font-mono">{lang}</span>
       </div>
-      <div className="relative max-w-full overflow-hidden">
-        <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre max-w-full">{code}</pre>
+      <div className="relative">
+        <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre">{code}</pre>
         <CopyButton text={code} />
       </div>
     </div>
@@ -83,34 +83,13 @@ export default function Skills() {
   };
 
   const [showForm, setShowForm] = useState(false);
-  // skillsExist reflects whether on-chain skills exist for this agent.
-  // It is independent of local form state so the empty-state prompt does not
-  // disappear just because the user started typing in the form.
-  const [skillsExist, setSkillsExist] = useState(false);
+  const skillsExist = skillName.trim().length > 0 || skillContent.trim().length > 0;
 
   const skillNameInputRef = useRef(null);
 
   const handleAddFirstSkill = () => {
     setShowForm(true);
     setTimeout(() => skillNameInputRef.current?.focus(), 50);
-  };
-
-  const handlePublishSkill = async () => {
-    if (!skillName.trim() || !skillContent.trim()) return;
-    // Build the publish calldata and prompt the user to send via their wallet.
-    // The actual on-chain submission is done by the user's connected signer;
-    // this page generates and displays the call so they can review it.
-    const { ethers } = await import("ethers");
-    const key = ethers.keccak256(ethers.toUtf8Bytes(skillName.trim()));
-    // After a successful publish the skill exists on-chain; update local state.
-    // In a full wallet-connected flow this would await the tx receipt.
-    setSkillsExist(true);
-    setShowForm(false);
-    setSkillName("");
-    setSkillContent("");
-    alert(
-      `Ready to publish!\n\nSkill key: ${key}\n\nCall publishSkill(${key}, "${skillName.trim()}", <content>) on the AgentSkillsRegistry contract, or use the code snippets below.`
-    );
   };
 
   return (
@@ -169,13 +148,6 @@ export default function Skills() {
           )}
           <div className="flex gap-2">
             <button
-              onClick={handlePublishSkill}
-              disabled={!skillName.trim() || !skillContent.trim()}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Publish Skill
-            </button>
-            <button
               onClick={() => { setSkillName(""); setSkillContent(""); setShowForm(false); }}
               className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 border border-lukso-border hover:border-lukso-purple/50 transition"
             >
@@ -210,7 +182,6 @@ export default function Skills() {
       <div className="bg-lukso-card border border-lukso-border rounded-xl animate-fade-in" style={{ animationDelay: "0.1s" }}>
         <button
           onClick={() => setShowExamples(!showExamples)}
-          aria-expanded={showExamples}
           className="w-full px-6 py-4 flex items-center justify-between hover:bg-lukso-darker/50 transition rounded-xl"
         >
           <h3 className="text-base font-semibold text-white">Skill Examples</h3>
@@ -238,7 +209,7 @@ export default function Skills() {
       <div className="bg-lukso-card border border-lukso-border rounded-xl p-4 flex flex-wrap gap-4 text-xs animate-fade-in" style={{ animationDelay: "0.05s" }}>
         <div>
           <p className="text-gray-500 mb-0.5">AgentSkillsRegistry</p>
-          <p className="font-mono text-lukso-purple break-all">{SKILLS_REGISTRY}</p>
+          <p className="font-mono text-lukso-purple">{SKILLS_REGISTRY}</p>
         </div>
         <div>
           <p className="text-gray-500 mb-0.5">Network</p>
@@ -425,10 +396,10 @@ const key = ethers.keccak256(ethers.toUtf8Bytes('lukso-expert'));
 
       {/* CTA */}
       <div className="flex flex-wrap gap-3 animate-fade-in">
-        <Link to="/register" className="inline-flex items-center min-h-[44px] px-4 py-3 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition">
+        <Link to="/register" className="px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition">
           Register Identity First →
         </Link>
-        <a href="https://github.com/LUKSOAgent/universal-trust/blob/main/SKILLS.md" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] px-4 py-3 rounded-lg text-sm font-semibold text-gray-300 bg-lukso-card border border-lukso-border hover:border-lukso-purple/50 transition">
+        <a href="https://github.com/LUKSOAgent/universal-trust/blob/main/SKILLS.md" target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-300 bg-lukso-card border border-lukso-border hover:border-lukso-purple/50 transition">
           Full Guide on GitHub →
         </a>
       </div>
