@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-13  
 **Contracts:**
-- `AgentIdentityRegistry.sol` (deployed: `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7`)
+- `AgentIdentityRegistry.sol` (deployed: `0x16505FeC789F4553Ea88d812711A0E913D926ADD`)
 - `AgentSkillsRegistry.sol` (deployed: `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6`)
 
 **Solidity Version:** ^0.8.19 / ^0.8.24 (checked arithmetic overflow/underflow protection enabled)
@@ -435,3 +435,253 @@ New tests added:
 
 **Second-Pass Audit Date:** 2026-03-14  
 **Status:** ✅ APPROVED — No new vulnerabilities found. Test coverage significantly improved.
+
+---
+
+## Known Comment Inaccuracy — 2026-03-22
+
+**Location:** `contracts/src/AgentIdentityRegistry.sol`, around line 423
+**Severity:** COSMETIC / INFORMATIONAL — no functional impact
+
+**Finding:**
+The NatSpec comment in `isUniversalProfile()` reads:
+```
+2. ERC725Account interface ID 0x629aa694
+```
+
+However, `0x629aa694` is the **ERC725Y** interface ID, not the ERC725Account (LSP0) interface ID.
+- ERC725Y interface ID: `0x629aa694` ✅ (what the code actually uses)
+- ERC725Account / LSP0 interface ID: `0x24871b3a` (checked on line 1 of the same function)
+
+**Impact:** None. The code is correct — it checks the right interface IDs in the right order. Only the comment label is wrong; the actual hex value used in the `supportsInterface()` call is accurate.
+
+**Status:** NOTED — contracts are already deployed and immutable. No fix required. This is a documentation-only inaccuracy with zero functional impact.
+
+---
+
+## Third-Pass Audit — 2026-03-22
+
+**Date:** 2026-03-22
+**Scope:** Full re-read of all four contracts: `AgentIdentityRegistry.sol`, `AgentSkillsRegistry.sol`, `ERC8004IdentityRegistry.sol`, `TrustedAgentGate.sol` + example `TrustedCouncil.sol`. Focus on newly deployed contracts and previously unaudited code.
+
+---
+
+### New Finding: INFO-01 — ERC8004IdentityRegistry Has Zero Test Coverage
+
+**Severity:** Informational
+**Contract:** `ERC8004IdentityRegistry.sol` (deployed: `0xe30B7514744D324e8bD93157E4c82230d6e6e8f3`)
+
+**Finding:**
+`ERC8004IdentityRegistry.sol` has **no Foundry test file**. A search of `contracts/test/` confirms only two test files exist:
+- `AgentIdentityRegistry.t.sol`
+- `TrustedAgentGate.t.sol`
+
+There are no tests for `ERC8004IdentityRegistry` or `AgentSkillsRegistry`.
+
+**Impact:**
+- The contract is deployed on LUKSO mainnet and is live. The `setAgentWallet` EIP-712 + ERC-1271 path, the metadata key/value store, the agentWallet-on-transfer clear logic, and the overloaded `register()` functions are all untested by automated tests.
+- Bugs in these code paths cannot be caught by the test suite.
+
+**Recommendation:**
+Add a Foundry test file `contracts/test/ERC8004IdentityRegistry.t.sol` covering:
+- `register()` (all three overloads)
+- `setAgentWallet()` — EOA path (ecrecover) and ERC-1271 path
+- `getAgentWallet()` fallback to `ownerOf()` after transfer (agentWallet cleared in `_update`)
+- `setMetadata()` + `getMetadata()`
+- `setMetadata()` with reserved key `agentWallet` reverts
+- `unsetAgentWallet()` reverts to `ownerOf()` fallback
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### New Finding: INFO-02 — AgentSkillsRegistry Has Zero Test Coverage
+
+**Severity:** Informational
+**Contract:** `AgentSkillsRegistry.sol` (deployed: `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6`)
+
+**Finding:**
+`AgentSkillsRegistry.sol` has no Foundry test file. Despite being a deployed mainnet contract, there are no on-chain unit tests for `publishSkill()`, `deleteSkill()`, the swap-and-pop index consistency, or the `getAllSkills()` return format.
+
+**Impact:**
+Low. The contract is simple (no access control beyond msg.sender, no upgradeability), but the lack of tests means any future integration changes carry unverified assumptions.
+
+**Recommendation:**
+Add `contracts/test/AgentSkillsRegistry.t.sol` with tests for:
+- `publishSkill()` new skill and update path (version increment)
+- `deleteSkill()` — swap-and-pop correctness with 1, 2, and 3+ skills
+- `getAllSkills()` — order matches `getSkillKeys()`
+- Edge cases: empty name/content reverts
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### New Finding: LOW-01 — `setDecayParams` Allows Zero `decayRate` (Silent No-Op Decay)
+
+**Severity:** Low
+**Contract:** `AgentIdentityRegistry.sol`
+**Function:** `setDecayParams()` / `applyDecay()`
+
+**Finding:**
+`setDecayParams(uint256 _decayRate, uint256 _gracePeriod)` has no input validation. The owner can set `_decayRate = 0`. If this happens, `applyDecay()` will:
+1. Pass all eligibility checks (inactiveSeconds > gracePeriod, daysInactive > 0)
+2. Compute `decay = daysInactive * 0 = 0`
+3. Apply no reputation change (`reputation` unchanged)
+4. **Reset `lastActiveAt` to `block.timestamp`**
+5. Emit `ReputationDecayed(agent, rep, rep, daysInactive)` — misleading event (oldRep == newRep)
+
+The misleading event could confuse off-chain indexers or monitoring tools into believing decay was applied when nothing changed.
+
+Similarly, `_gracePeriod = 0` means decay can trigger immediately after any activity, allowing aggressive reputation draining by keepers.
+
+**Impact:**
+Low. The `setDecayParams` function is owner-only, so exploitation requires a compromised or malicious owner. The broader trust assumption is that the owner is the agent's own Universal Profile. However:
+- A `decayRate = 0` misconfiguration silently neuters the decay mechanism with misleading events.
+- An overly aggressive `_gracePeriod = 0` + high `_decayRate` configuration could rapidly drain all agent reputations if the keeper bot runs frequently.
+
+**Recommendation:**
+Add minimum/maximum bounds to `setDecayParams`:
+```solidity
+require(_decayRate >= 1 && _decayRate <= 100, "decayRate out of bounds");
+require(_gracePeriod >= 1 days && _gracePeriod <= 365 days, "gracePeriod out of bounds");
+```
+Optionally add a separate `ReputationDecayed` guard to skip emission when `decay == 0`.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### New Finding: LOW-02 — `applyDecay` Is Permissionless and Can Be Called on Any Active Agent
+
+**Severity:** Low
+**Contract:** `AgentIdentityRegistry.sol`
+**Function:** `applyDecay()`
+
+**Finding:**
+`applyDecay()` is explicitly designed to be permissionless ("Anyone can call this to enforce upkeep"). However, this has a subtle side-effect: a malicious caller can intentionally delay calling `applyDecay` on a target agent until the maximum possible reputation has accumulated as pending decay, then call it in a single transaction to cause a maximum-impact reputation drop.
+
+Example:
+- An agent with `reputation = 10000` has been inactive for 365 days.
+- With `decayRate = 1` and 30-day grace period: `daysInactive = 335`, `decay = 335`.
+- A competitor waits until the ideal moment and triggers this in one call.
+
+**Impact:**
+Low. The decay is mathematically correct (the reputation drop is deserved per the rules), but the timing can be weaponized by a competitor to hit the drop at a maximally damaging moment (e.g., just before a governance vote). The agent could avoid this by calling any activity function before the grace period expires.
+
+**Recommendation:**
+Consider restricting `applyDecay` to authorized updaters (`onlyReputationUpdater`) or adding a maximum single-call decay cap (e.g., cap decay application at 30 days per call). Alternatively, document this behavior explicitly as a known trade-off.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### New Finding: INFO-03 — `clearBaseAddress` Reuses `BaseAddressLinked` Event With `address(0)`
+
+**Severity:** Informational
+**Contract:** `AgentIdentityRegistry.sol`
+**Function:** `clearBaseAddress()`
+
+**Finding:**
+```solidity
+function clearBaseAddress(address agent) external onlyOwner onlyRegistered(agent) {
+    _baseAddresses[agent] = address(0);
+    emit BaseAddressLinked(agent, address(0));  // Reuses "Linked" event for a "Cleared" action
+}
+```
+
+The `clearBaseAddress()` function emits `BaseAddressLinked(agent, address(0))` instead of a dedicated `BaseAddressCleared` event. Off-chain indexers and analytics tools that listen for `BaseAddressLinked` must handle `address(0)` as a special "cleared" case rather than a link.
+
+**Impact:**
+Informational only. No security or functional impact.
+
+**Recommendation:**
+Add a dedicated `event BaseAddressCleared(address indexed agent)` and emit it from `clearBaseAddress()`. This is a v2 improvement.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### New Finding: INFO-04 — `ERC8004IdentityRegistry` Domain Separator Not Cached
+
+**Severity:** Informational
+**Contract:** `ERC8004IdentityRegistry.sol`
+**Function:** `_domainSeparator()`
+
+**Finding:**
+The EIP-712 domain separator is recomputed on every `setAgentWallet()` call:
+```solidity
+function _domainSeparator() internal view returns (bytes32) {
+    return keccak256(abi.encode(
+        keccak256("EIP712Domain(...)"),
+        keccak256(bytes("ERC-8004 Identity Registry")),
+        keccak256(bytes("1")),
+        block.chainid,
+        address(this)
+    ));
+}
+```
+
+This involves 5 `keccak256` calls and is slightly more expensive than caching the domain separator in an immutable variable at construction time. The `block.chainid` inclusion is correct for cross-chain replay protection.
+
+**Impact:**
+Negligible gas overhead (~2000 extra gas per `setAgentWallet` call). Correctness is unaffected — this is actually the recommended approach when chain forks are a concern (e.g., in OZ's `EIP712` implementation).
+
+**Recommendation:**
+No change required. The inline computation is correct and fork-safe. If gas optimization is ever desired, cache the result in an immutable after checking that the deployment chain won't fork.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### New Finding: INFO-05 — Endorser Active Status Check Has Asymmetric Guard in `endorse()`
+
+**Severity:** Informational
+**Contract:** `AgentIdentityRegistry.sol`
+**Function:** `endorse()`
+
+**Finding:**
+```solidity
+function endorse(address endorsed, string calldata reason) external
+    onlyRegistered(endorsed)
+    onlyActive(endorsed)
+{
+    if (_agentIndex[msg.sender] != 0 && !_agents[msg.sender].isActive) revert AgentNotActive(msg.sender);
+    if (!isUniversalProfile(msg.sender)) revert EndorserMustBeUniversalProfile(msg.sender);
+    ...
+}
+```
+
+The guard `if (_agentIndex[msg.sender] != 0 && !_agents[msg.sender].isActive)` only blocks endorsement from **registered but deactivated** agents. An **unregistered** Universal Profile (any UP not in the registry) can freely endorse. This is intentional (allows discovery of new agents via endorsement) and aligns with the sybil analysis in the second-pass audit.
+
+However, the asymmetry creates a subtle inconsistency: a deactivated registered agent cannot endorse, but an unregistered agent with the same address can freely endorse (they're not in the registry). This is unlikely to be exploited but could confuse integrators reading the contract.
+
+**Impact:**
+Informational. No security risk. The sybil surface is the same either way — a deactivated agent could simply use a new address.
+
+**Recommendation:**
+Add a comment to `endorse()` explicitly documenting that unregistered UPs are permitted endorsers. This prevents future contributors from "fixing" the behavior by accident.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### Third-Pass Audit Summary
+
+| Finding | Severity | Contract | Status |
+|---------|----------|----------|--------|
+| INFO-01: ERC8004IdentityRegistry — zero test coverage | Informational | ERC8004IdentityRegistry | New |
+| INFO-02: AgentSkillsRegistry — zero test coverage | Informational | AgentSkillsRegistry | New |
+| LOW-01: setDecayParams allows zero/unbounded values | Low | AgentIdentityRegistry | New |
+| LOW-02: applyDecay permissionless timing attack surface | Low | AgentIdentityRegistry | New |
+| INFO-03: clearBaseAddress emits misleading event | Informational | AgentIdentityRegistry | New |
+| INFO-04: EIP-712 domain separator not cached | Informational | ERC8004IdentityRegistry | New |
+| INFO-05: Asymmetric endorser active-status guard | Informational | AgentIdentityRegistry | New |
+
+**No new Critical or High severity findings.**
+
+Overall risk posture remains **LOW**. All newly identified issues are Low or Informational severity. The contracts are deployed and immutable; the findings are documented for awareness and future v2 planning.
+
+**Third-Pass Audit Date:** 2026-03-22
+**Auditor:** Universal Trust Agent (subagent: ut-contract-audit)
+**Status:** ✅ NO NEW CRITICAL/HIGH FINDINGS — Safe for continued production use.
