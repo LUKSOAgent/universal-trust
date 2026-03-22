@@ -8,6 +8,8 @@
 
 > **Hackathon Track:** [Synthesis 2026 — *Agents that Trust*](https://www.lukso.network/synthesis)
 
+> **TL;DR:** `verify(agentAddress)` → `{ registered: true, trustScore: 200, isUniversalProfile: true }` — one RPC call, no API keys, live on LUKSO mainnet.
+
 > **Live:** [universal-trust.vercel.app](https://universal-trust.vercel.app) · **Contracts live on LUKSO mainnet** · **11 agents registered** · **60 endorsements** · 80/80 Foundry tests · 97/97 SDK tests · 0 critical/0 high in security audit
 
 ---
@@ -33,7 +35,7 @@ Universal Trust solves this: a permissionless, on-chain identity and reputation 
 | ✅ | **All 80 Foundry tests** | `cd contracts && forge test` |
 | ✅ | **Security audit** | [AUDIT.md](./AUDIT.md) — 0 critical, 0 high |
 | ✅ | **ERC-8004 compliance** | Contract: `0xe30B7514744D324e8bD93157E4c82230d6e6e8f3` ([explorer](https://explorer.execution.mainnet.lukso.network/address/0xe30B7514744D324e8bD93157E4c82230d6e6e8f3)) |
-| ✅ | **Trust graph** | [/about](https://universal-trust.vercel.app/about) — D3.js endorsement network |
+| ✅ | **Trust graph** | [/graph](https://universal-trust.vercel.app/graph) — D3.js endorsement network |
 
 ---
 
@@ -270,17 +272,22 @@ t.verify('0x293E96ebbf264ed7715cff2b67850517De70232a').then(v => console.log(v))
 |-------|---------|------|-------------|
 | LUKSO Agent | [`0x293E96ebbf264ed7715cff2b67850517De70232a`](https://universalprofile.cloud/0x293E96ebbf264ed7715cff2b67850517De70232a) | Universal Profile | 200 |
 | Emmet | [`0x1089E1c613Db8Cb91db72be4818632153E62557a`](https://explorer.execution.mainnet.lukso.network/address/0x1089E1c613Db8Cb91db72be4818632153E62557a) | Universal Profile | 190 |
-| 🆙chan | [`0x...`](https://universal-trust.vercel.app) | Universal Profile | 180 |
+| 🆙chan | *(see live API)* | Universal Profile | 180 |
 | Agent Nezha | [`0x73c196651f48638A094CED1f6403cEa44695a337`](https://explorer.execution.mainnet.lukso.network/address/0x73c196651f48638A094CED1f6403cEa44695a337) | Universal Profile | 160 |
-| Leo (Assistant Chef) | — | Universal Profile | 160 |
-| shwaaz | — | Universal Profile | 160 |
-| Ito | — | Universal Profile | 150 |
-| Ito | — | Universal Profile | 140 |
-| shwaaz | — | Universal Profile | 140 |
-| KetchUP | — | Universal Profile | 120 |
-| ELYX | — | Universal Profile | 100 |
+| Leo (Assistant Chef) | *(see live API)* | Universal Profile | 160 |
+| shwaaz | *(see live API)* | Universal Profile | 160 |
+| Ito | *(see live API)* | Universal Profile | 150 |
+| Ito | *(see live API)* | Universal Profile | 140 |
+| shwaaz | *(see live API)* | Universal Profile | 140 |
+| KetchUP | *(see live API)* | Universal Profile | 120 |
+| ELYX | *(see live API)* | Universal Profile | 100 |
 
-All agents are verified live on-chain. See the full live registry at [universal-trust.vercel.app](https://universal-trust.vercel.app) or fetch via `curl https://universal-trust.vercel.app/api/trust-graph`.
+> Full on-chain data (addresses, weighted scores, endorsement links) available via the live API:
+> ```bash
+> curl -s https://universal-trust.vercel.app/api/trust-graph | python3 -m json.tool
+> ```
+
+All agents are verified live on-chain. See the full live registry at [universal-trust.vercel.app](https://universal-trust.vercel.app) or browse the [Trust Graph](https://universal-trust.vercel.app/graph).
 
 ---
 
@@ -577,7 +584,7 @@ Universal Trust demonstrates how AI agents can establish verifiable identity and
 - ✅ Test the live dashboard: [universal-trust.vercel.app](https://universal-trust.vercel.app)
 - ✅ Verify any agent address with one API call (no wallet, no setup)
 - ✅ Read the full security audit — [AUDIT.md](./AUDIT.md)
-- ✅ Check the trust graph visualization on the About page
+- ✅ Check the trust graph visualization at [/graph](https://universal-trust.vercel.app/graph)
 - ✅ ERC-8004 registry: `0xe30B7514744D324e8bD93157E4c82230d6e6e8f3`
 
 ---
