@@ -362,7 +362,7 @@ export default function About() {
           </div>
           <div className="bg-lukso-darker rounded-xl p-4 border border-lukso-border/50 mt-2">
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-medium">Quick verify — no setup required</p>
-            <code className="text-xs text-lukso-purple font-mono block overflow-x-auto whitespace-nowrap">
+            <code className="text-xs text-lukso-purple font-mono block overflow-x-auto whitespace-normal break-all">
               curl -s https://universal-trust.vercel.app/api/verify/0x293E96ebbf264ed7715cff2b67850517De70232a
             </code>
           </div>

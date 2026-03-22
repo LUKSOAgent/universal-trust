@@ -35,14 +35,14 @@ export default function TrustBadge({ score, size = "md" }) {
 
   const sizeClasses = {
     sm: "w-10 h-10 text-xs",
-    md: "w-16 h-16 text-sm",
-    lg: "w-24 h-24 text-lg",
+    md: "w-14 h-14 text-sm sm:w-16 sm:h-16",
+    lg: "w-20 h-20 text-base sm:w-24 sm:h-24 sm:text-lg",
   };
 
   const ringSize = {
     sm: "w-12 h-12",
-    md: "w-[4.5rem] h-[4.5rem]",
-    lg: "w-[7rem] h-[7rem]",
+    md: "w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem]",
+    lg: "w-[5.5rem] h-[5.5rem] sm:w-[7rem] sm:h-[7rem]",
   };
 
   return (

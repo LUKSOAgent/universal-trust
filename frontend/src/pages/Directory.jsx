@@ -322,7 +322,7 @@ export default function Directory() {
                 </button>
               )}
             </div>
-            <div className="relative min-w-[160px]">
+            <div className="relative w-full sm:w-auto sm:min-w-[160px]">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -595,7 +595,7 @@ function TryVerify({ agents = [], upProfiles = {} }) {
                     {getTierLabel(result.trustScore).label}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                   <div className="text-center">
                     <p className="text-gray-500">Reputation</p>
                     <p className="text-lukso-purple font-semibold">{result.reputation}</p>

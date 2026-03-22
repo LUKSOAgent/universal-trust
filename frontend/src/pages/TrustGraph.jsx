@@ -1127,9 +1127,9 @@ export default function TrustGraph() {
         </div>
 
         {/* Controls row */}
-        <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           {/* Search */}
-          <div className="relative flex-1 min-w-36">
+          <div className="relative w-full sm:flex-1 sm:min-w-36">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -1143,7 +1143,7 @@ export default function TrustGraph() {
           </div>
 
           {/* Type filters — scroll horizontally on mobile */}
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide min-w-0 flex-1">
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide min-w-0 w-full sm:flex-1">
             {Object.entries(COLORS).map(([type, color]) => (
               <button
                 key={type}
@@ -1354,12 +1354,12 @@ export default function TrustGraph() {
                 <span className="text-sm font-semibold text-white">Graph Query</span>
                 <span className="text-xs text-gray-600 hidden sm:inline">— explore trust network data</span>
               </div>
-              <form onSubmit={handleAiQuery} className="flex gap-2">
+              <form onSubmit={handleAiQuery} className="flex flex-col gap-2 sm:flex-row">
                 <input value={aiQuery} onChange={(e) => setAiQuery(e.target.value)}
                   placeholder="Who has the highest score? Which agents have skills?"
                   className="flex-1 bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-lukso-pink/50 min-w-0" />
                 <button type="submit" disabled={aiLoading || !aiQuery.trim()}
-                  className="px-3 sm:px-4 py-2 bg-lukso-pink/10 border border-lukso-pink/30 text-lukso-pink text-sm font-medium rounded-lg hover:bg-lukso-pink/20 transition disabled:opacity-40 shrink-0">
+                  className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-lukso-pink/10 border border-lukso-pink/30 text-lukso-pink text-sm font-medium rounded-lg hover:bg-lukso-pink/20 transition disabled:opacity-40 shrink-0">
                   {aiLoading ? "…" : "Query"}
                 </button>
               </form>
