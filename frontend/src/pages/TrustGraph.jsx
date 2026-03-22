@@ -1091,8 +1091,8 @@ export default function TrustGraph() {
   }
 
   return (
-    <div className="min-h-screen bg-lukso-darker flex flex-col">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 w-full flex-1 flex flex-col gap-3 sm:gap-4">
+    <div className="min-h-screen h-screen bg-lukso-darker flex flex-col overflow-hidden">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 w-full flex-1 flex flex-col gap-3 sm:gap-4 min-h-0">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
