@@ -895,3 +895,70 @@ Overall risk posture remains **LOW**. Both new findings are Low or Informational
 **Additional Review Date:** 2026-03-22
 **Auditor:** Universal Trust Agent (subagent: audit-refresh-agent-c)
 **Status:** ✅ NO NEW CRITICAL/HIGH FINDINGS — AUDIT.md updated with 2 new findings.
+
+---
+
+## Sixth-Pass Audit — 2026-03-22
+
+> **Scope:** Deep review of cross-contract interactions, UUPS upgrade safety, and documentation accuracy against all five prior passes.
+
+---
+
+### NEW-7 [Info] — `transferOwnership()` Behavior Contradicts Second-Pass Audit Documentation
+
+**Severity:** Informational (Documentation only)
+
+The second-pass audit stated old reputation updaters remain authorized after ownership transfer. The actual code immediately revokes the old owner's updater status and grants it to the new owner — which is more secure. The NatSpec is correct; only the audit doc is stale (same class as NEW-4 for `updateReputation`).
+
+**Status:** Documentation correction only. No code change needed.
+
+---
+
+### NEW-8 [Informational/Low] — No `reinitializer()` for V2 Decay Storage Variables
+
+**Severity:** Informational/Low
+**Contract:** `AgentIdentityRegistry.sol`
+
+`decayRate` and `decayGracePeriod` have no `reinitializer(2)`. A UUPS upgrade from a pre-V2 implementation would leave both at `0`, silently disabling decay (LOW-01 path). The current deployment was a fresh V2 deploy so this is not currently exploitable. Owner can call `setDecayParams()` post-upgrade to restore defaults.
+
+**Recommendation (v3):** Add a `reinitializer(2)` that sets decay defaults if they are zero.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-9 [Info] — `linkBaseAddress()` Callable by Deactivated Agents
+
+**Severity:** Informational
+**Contract:** `AgentIdentityRegistry.sol`
+
+`linkBaseAddress()` requires `onlyRegistered` but not `onlyActive`. Deactivated agents can still assert a Base chain address. Likely intentional (cross-chain identity is not an active-participation action) but creates a minor asymmetry. No security impact.
+
+**Status:** New Finding (Informational — Do Not Modify)
+
+---
+
+### NEW-10 [Info] — `ERC8004IdentityRegistry` Burn Does Not Clear `agentWallet` Metadata
+
+**Severity:** Informational
+**Contract:** `ERC8004IdentityRegistry.sol`
+
+The `_update()` transfer hook clears `_metadata[tokenId][AGENT_WALLET_KEY]` on transfers but not burns (`to = address(0)`). Stale metadata persists in storage after burn. However: no `burn()` function is exposed, and all public read functions check `_exists()` first — the stale data is inaccessible via the public API. No practical impact in current deployment.
+
+**Status:** New Finding (Informational — No burn function exposed)
+
+---
+
+### Sixth-Pass Summary
+
+| Finding | Severity | Status |
+|---------|----------|--------|
+| NEW-7: transferOwnership audit doc outdated | Informational | Documentation note |
+| NEW-8: No reinitializer for V2 decay vars | Informational/Low | Future upgrade risk |
+| NEW-9: linkBaseAddress callable by deactivated agents | Informational | By design |
+| NEW-10: Burn doesn't clear agentWallet metadata | Informational | No burn fn exposed |
+
+**No new Critical or High findings. Six-pass total: 0 Critical · 0 High · 5 Low · 14 Informational.**
+
+**Sixth-Pass Date:** 2026-03-22
+**Status:** ✅ AUDIT COMPLETE — Safe for hackathon submission.
