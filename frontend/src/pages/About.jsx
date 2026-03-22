@@ -70,6 +70,16 @@ export default function About() {
         </div>
       </section>
 
+      {/* ── Stats Bar ────────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard value="80/80" label="Foundry Tests" color="emerald" />
+          <StatCard value="97/97" label="SDK Tests" color="emerald" />
+          <StatCard value="0 Critical" label="Security Audit" color="emerald" />
+          <StatCard value="Mainnet" label="Live on LUKSO" color="lukso" />
+        </div>
+      </section>
+
       {/* ── Problem ──────────────────────────────────────── */}
       <section className="animate-fade-in">
         <SectionLabel text="The Problem" />
@@ -84,12 +94,14 @@ export default function About() {
               that ties an agent address to its identity, capabilities, or track record.
             </p>
             <p>
-              Impersonation is trivial. Bad actors can spin up agents that mimic trusted ones,
-              drain wallets, or spread misinformation with zero accountability.
+              Impersonation is trivial. A malicious actor deploys a contract at any address, claims
+              to be a trusted trading agent, and requests a $50k token swap from your wallet.
+              How do you know it's not a drain attack?
             </p>
             <p>
               Without a verifiable trust layer, agent-to-agent collaboration is unsafe — there is
-              no way to know if another agent is legitimate, endorsed, or even competent.
+              no way to know if another agent is legitimate, peer-endorsed, or competent before
+              sharing data, funds, or execution rights.
             </p>
           </div>
         </div>
@@ -168,6 +180,34 @@ export default function About() {
         </div>
       </section>
 
+      {/* ── Agent-to-Agent Demo ──────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Agent-to-Agent Trust Demo" />
+        <div className="bg-lukso-darker border border-lukso-pink/30 rounded-2xl p-6 sm:p-8 space-y-4">
+          <p className="text-gray-300 text-sm leading-relaxed">
+            The real differentiator: two AI agents communicate over an on-chain trust handshake. No API keys. No middleware. One smart contract call.
+          </p>
+          <div className="bg-black/40 rounded-xl p-4 font-mono text-xs leading-relaxed overflow-x-auto border border-lukso-border/50">
+            <p className="text-emerald-400">[Agent A] Sending request to Agent B…</p>
+            <p className="text-gray-400">[Agent A] Identity: 0x293E…232a (trust score: 110)</p>
+            <p className="text-gray-400">[Agent B] Received request from 0x293E…232a</p>
+            <p className="text-gray-400">[Agent B] Verifying identity on-chain…</p>
+            <p className="text-emerald-400">[Agent B] ✓ Verified: LUKSO Agent (score: 110, 1 endorsement)</p>
+            <p className="text-emerald-400">[Agent B] Trust threshold met (≥ 100). Responding.</p>
+            <p className="text-gray-500 mt-2">[Agent B] Received request from 0xDeaD…beeF</p>
+            <p className="text-red-400">[Agent B] ✗ Not registered. Rejecting request.</p>
+          </div>
+          <a
+            href="https://github.com/LUKSOAgent/universal-trust/blob/main/demo/README.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-lukso-pink hover:text-lukso-purple transition text-sm font-semibold"
+          >
+            Run it yourself → <code className="text-xs font-mono bg-lukso-darker border border-lukso-border px-2 py-0.5 rounded">node demo/demo.js</code>
+          </a>
+        </div>
+      </section>
+
       {/* ── Tech Stack ───────────────────────────────────── */}
       <section className="animate-fade-in">
         <SectionLabel text="Tech Stack" />
@@ -213,6 +253,11 @@ export default function About() {
               icon: "⛓️",
               title: "Cross-chain signal",
               desc: "$LUKSO token holders on Base automatically receive a reputation boost via linkBaseAddress. Skin-in-the-game as a trust signal.",
+            },
+            {
+              icon: "📋",
+              title: "ERC-8004 compliant",
+              desc: "Implements the ERC-8004 Agent Identity standard — a machine-readable on-chain identity spec designed for AI agents across EVM chains.",
             },
             {
               icon: "🤖",
@@ -409,5 +454,19 @@ function DemoLinkCard({ href, icon, title, desc, badge }) {
       <p className="text-white font-semibold text-sm mb-1">{title}</p>
       <p className="text-gray-500 text-xs">{desc}</p>
     </a>
+  );
+}
+
+function StatCard({ value, label, color }) {
+  const colorMap = {
+    emerald: "text-emerald-400 border-emerald-500/30 bg-emerald-500/5",
+    lukso: "text-lukso-pink border-lukso-pink/30 bg-lukso-pink/5",
+  };
+  const styles = colorMap[color] || colorMap.emerald;
+  return (
+    <div className={`border rounded-2xl p-4 text-center ${styles}`}>
+      <p className="text-xl sm:text-2xl font-extrabold mb-1">{value}</p>
+      <p className="text-gray-400 text-xs font-medium">{label}</p>
+    </div>
   );
 }
