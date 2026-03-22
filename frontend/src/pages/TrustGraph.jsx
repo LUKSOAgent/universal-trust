@@ -964,7 +964,7 @@ export default function TrustGraph() {
             <p className="font-semibold text-white text-sm truncate">{selectedNode.label}</p>
             <p className="text-xs" style={{ color: nodeColor }}>{TYPE_LABELS[selectedNode.type]}</p>
           </div>
-          <button onClick={() => setSelected(null)} className="text-gray-600 hover:text-white shrink-0 p-1">
+          <button onClick={() => setSelected(null)} aria-label="Close node detail" className="text-gray-600 hover:text-white shrink-0 p-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -1392,6 +1392,7 @@ export default function TrustGraph() {
                     type="button"
                     onClick={() => { setAiAnswer(null); setAiQuery(""); }}
                     className="absolute top-2 right-2 text-gray-600 hover:text-white transition p-1"
+                    aria-label="Clear AI answer"
                     title="Clear"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

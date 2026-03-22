@@ -820,6 +820,7 @@ function SkillCard({ skill }) {
         <>
           <button
             onClick={() => setExpanded((e) => !e)}
+            aria-expanded={expanded}
             className="w-full flex items-center justify-between px-4 py-2 border-t border-lukso-border/30 text-xs text-gray-500 hover:text-gray-300 transition"
           >
             <span>{expanded ? "Hide skill content" : "Show skill content"}</span>
