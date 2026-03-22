@@ -962,3 +962,65 @@ The `_update()` transfer hook clears `_metadata[tokenId][AGENT_WALLET_KEY]` on t
 
 **Sixth-Pass Date:** 2026-03-22
 **Status:** ✅ AUDIT COMPLETE — Safe for hackathon submission.
+
+---
+
+## Seventh-Pass Audit — 2026-03-22
+
+> **Scope:** Deep read of all five contracts cross-referenced against all six prior passes. Focus on decay mechanism interactions and event coverage.
+
+---
+
+### NEW-11 [Informational/Low] — Third-Party Endorsement Resets Endorsed Agent's Decay Timer
+
+**Severity:** Informational/Low  
+**Contract:** `AgentIdentityRegistry.sol`  
+**Function:** `endorse()`
+
+**Finding:**
+`endorse()` writes `_agents[endorsed].lastActiveAt = ts` on the *endorsed* agent's record. Since `applyDecay()` measures inactivity via `block.timestamp - agent.lastActiveAt`, any third party endorsing an agent resets that agent's decay grace period — without any action from the agent themselves.
+
+This creates two vectors:
+1. **Artificial preservation:** A supporter can keep a dormant agent's decay clock reset indefinitely by periodically endorsing them, even if the agent has gone completely dark.
+2. **Timing asymmetry:** `removeEndorsement()` does NOT update `lastActiveAt`, so removing an endorsement cannot undo the timer reset.
+
+**Impact:** Low. The decay mechanism can be circumvented by any third party willing to pay endorsement gas. Affects fairness of the inactivity decay system for highly-reputed dormant agents.
+
+**Recommendation (v3):** Decouple endorsement activity from the endorsed agent's `lastActiveAt`. Only the endorsed agent's own direct actions (register, updateProfile, reactivate, updateReputation) should reset the decay timer. Or document this as intentional design — community endorsement signals active trust.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-12 [Informational] — `setDecayParams()` Emits No Event
+
+**Severity:** Informational  
+**Contract:** `AgentIdentityRegistry.sol`  
+**Function:** `setDecayParams()`
+
+**Finding:**
+`setDecayParams(uint256 _decayRate, uint256 _gracePeriod)` sets two global governance parameters but emits no event. Every other owner-level configuration change emits events (`ReputationUpdaterSet`, `OwnershipTransferred`, `BaseAddressLinked`). The absence of a `DecayParamsUpdated` event means off-chain indexers and monitoring bots cannot detect decay parameter changes without polling.
+
+If the owner misconfigures decay (e.g., sets `decayRate = 0` per LOW-01), there is no on-chain event trail for the change.
+
+**Recommendation (v3):** Add `event DecayParamsUpdated(uint256 decayRate, uint256 gracePeriod)` and emit it from `setDecayParams()`.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### Seventh-Pass Summary
+
+| Finding | Severity | Status |
+|---------|----------|--------|
+| NEW-11: Third-party endorsement resets decay timer | Informational/Low | New |
+| NEW-12: setDecayParams emits no event | Informational | New |
+
+**No new Critical or High findings.**
+
+**Seven-pass total: 0 Critical · 0 High · 5 Low · 16 Informational.**
+
+This is the final audit pass for the hackathon submission. The contracts are sound.
+
+**Seventh-Pass Date:** 2026-03-22  
+**Status:** ✅ AUDIT FINAL — Safe for hackathon submission.
