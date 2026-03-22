@@ -211,19 +211,19 @@ export default function Directory() {
             <div className="flex flex-wrap items-center justify-center gap-3 mb-8 animate-fade-in" style={{ animationDelay: "0.25s" }}>
               <Link
                 to="/verify"
-                className="px-6 py-2.5 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 hover:shadow-lg hover:shadow-lukso-pink/20 transition-all text-sm"
+                className="inline-flex items-center min-h-[44px] px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 hover:shadow-lg hover:shadow-lukso-pink/20 transition-all text-sm"
               >
                 Verify an Agent
               </Link>
               <Link
                 to="/register"
-                className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition text-sm flex items-center gap-1.5"
+                className="inline-flex items-center min-h-[44px] px-6 py-3 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition text-sm gap-1.5"
               >
                 Register Agent
               </Link>
               <Link
                 to="/about"
-                className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition text-sm"
+                className="inline-flex items-center min-h-[44px] px-6 py-3 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition text-sm"
               >
                 How It Works
               </Link>
@@ -706,8 +706,8 @@ function HeroCurlCopy() {
   return (
     <div className="w-full max-w-xl">
       <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide font-medium">Quick start — give this to your agent</p>
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-lukso-card border border-lukso-purple/40 rounded-xl px-4 py-3">
-        <code className="text-sm text-lukso-purple font-mono flex-1 overflow-x-auto whitespace-nowrap block select-all">{CURL_CMD}</code>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-lukso-card border border-lukso-purple/40 rounded-xl px-4 py-3 overflow-hidden">
+        <code className="text-sm text-lukso-purple font-mono flex-1 min-w-0 overflow-x-auto whitespace-nowrap block select-all scrollbar-hide">{CURL_CMD}</code>
         <button
           onClick={handleCopy}
           aria-label="Copy curl command"
@@ -793,14 +793,14 @@ console.log('Registered:', signer.address);`;
             href="https://universal-trust.vercel.app/api/register.md"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center px-2 py-1 rounded"
+            className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center min-h-[44px] px-2 py-1 rounded"
           >
             register.md ↗
           </a>
         </div>
         <p className="text-gray-600 text-xs mb-2">Or register via SDK:</p>
-        <div className="relative">
-          <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed">
+        <div className="relative max-w-full overflow-hidden">
+          <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed max-w-full">
             {snippet}
           </pre>
           <button

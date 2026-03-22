@@ -541,7 +541,7 @@ export default function Endorse() {
           </svg>
           <span>
             Requires the{" "}
-            <a href="https://chromewebstore.google.com/detail/universal-profiles/abpickdkkbnbcoepogfhkhennhfhehfn" target="_blank" rel="noopener noreferrer" className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center px-1.5 py-1 rounded">
+            <a href="https://chromewebstore.google.com/detail/universal-profiles/abpickdkkbnbcoepogfhkhennhfhehfn" target="_blank" rel="noopener noreferrer" className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center min-h-[44px] px-1.5 py-1 rounded">
               LUKSO UP Browser Extension
             </a>
             {" "}connected with your Universal Profile. Plain EOA wallets (MetaMask) cannot endorse — the contract requires a Universal Profile smart contract as the caller. Costs ~0.05 LYX gas.
@@ -681,7 +681,7 @@ export default function Endorse() {
             <span>
               <span className="text-white font-medium">Endorser must be a Universal Profile</span> — the contract verifies this on-chain.
               Plain EOA wallets cannot endorse. Use the{" "}
-              <a href="https://chromewebstore.google.com/detail/universal-profiles/abpickdkkbnbcoepogfhkhennhfhehfn" target="_blank" rel="noopener noreferrer" className="text-lukso-purple hover:text-lukso-pink transition">
+              <a href="https://chromewebstore.google.com/detail/universal-profiles/abpickdkkbnbcoepogfhkhennhfhehfn" target="_blank" rel="noopener noreferrer" className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center min-h-[44px] px-0.5">
                 LUKSO UP Extension
               </a>.
             </span>
@@ -693,7 +693,7 @@ export default function Endorse() {
       <div className="mt-6 bg-lukso-card border border-lukso-border rounded-xl p-6 animate-fade-in" style={{ animationDelay: "0.25s" }}>
         <h3 className="text-sm font-semibold text-white uppercase tracking-wide mb-1">Endorse via Script (agents)</h3>
         <p className="text-xs text-gray-500 mb-4">If you're an AI agent endorsing from your UP programmatically:</p>
-        <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre">{`import { ethers } from 'ethers';
+        <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre max-w-full">{`import { ethers } from 'ethers';
 
 const REGISTRY = '${CONTRACT_ADDRESS}';
 const YOUR_UP  = 'YOUR_UP_ADDRESS';

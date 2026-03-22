@@ -180,8 +180,8 @@ function RegisterCurlCopy() {
   return (
     <div className="mb-6 animate-fade-in" style={{ animationDelay: "0.09s" }}>
       <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide font-medium">Quick start — give this to your agent</p>
-      <div className="flex items-center gap-2 bg-lukso-card border border-lukso-purple/40 rounded-xl px-4 py-3">
-        <code className="text-sm text-lukso-purple font-mono flex-1 overflow-x-auto whitespace-nowrap block">{CURL_CMD}</code>
+      <div className="flex items-center gap-2 bg-lukso-card border border-lukso-purple/40 rounded-xl px-4 py-3 overflow-hidden">
+        <code className="text-sm text-lukso-purple font-mono flex-1 min-w-0 overflow-x-auto whitespace-nowrap block scrollbar-hide">{CURL_CMD}</code>
         <button
           onClick={handleCopy}
           className="shrink-0 inline-flex min-h-[44px] items-center px-3 py-2 sm:min-h-0 sm:py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium gap-1.5"
@@ -269,8 +269,8 @@ curl -s -X POST https://rpc.mainnet.lukso.network \\
               <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">{snippet.label}</span>
               <span className="text-xs text-gray-600 bg-lukso-darker px-2 py-0.5 rounded font-mono">{snippet.lang}</span>
             </div>
-            <div className="relative">
-              <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre">
+            <div className="relative max-w-full overflow-hidden">
+              <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre max-w-full">
                 {snippet.code}
               </pre>
               <button
@@ -429,11 +429,11 @@ function OnboardingChecklistItem({
           )}
 
           {codeSnippet && (
-            <div className="mb-3 relative">
+            <div className="mb-3 relative max-w-full overflow-hidden">
               <p className="text-xs text-gray-500 mb-1.5 uppercase tracking-wide font-medium">
                 Example code:
               </p>
-              <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-3 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre">
+              <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-3 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre max-w-full">
                 {codeSnippet}
               </pre>
               <button

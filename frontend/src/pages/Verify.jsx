@@ -854,7 +854,7 @@ export default function Verify() {
           </h3>
           <span className="text-xs text-gray-600 bg-lukso-darker px-2 py-1 rounded">ethers.js v6</span>
         </div>
-        <pre className="bg-lukso-darker rounded-lg p-4 text-sm text-gray-300 overflow-x-auto">
+        <pre className="bg-lukso-darker rounded-lg p-4 text-sm text-gray-300 overflow-x-auto max-w-full">
 {`const result = await contract.verify("${address || "0x..."}");
 // → { registered, active, isUP, reputation,
 //      endorsements, trustScore, name }`}
@@ -865,7 +865,7 @@ export default function Verify() {
             href="https://github.com/LUKSOAgent/universal-trust"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center px-2 py-1 rounded"
+            className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center min-h-[44px] px-2 py-1 rounded"
           >
             GitHub →
           </a>

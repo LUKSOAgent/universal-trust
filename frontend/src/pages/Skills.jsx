@@ -49,8 +49,8 @@ function CodeBlock({ code, lang = "js" }) {
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs text-gray-600 bg-lukso-darker px-2 py-0.5 rounded font-mono">{lang}</span>
       </div>
-      <div className="relative">
-        <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre">{code}</pre>
+      <div className="relative max-w-full overflow-hidden">
+        <pre className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4 text-xs text-gray-300 font-mono overflow-x-auto leading-relaxed whitespace-pre max-w-full">{code}</pre>
         <CopyButton text={code} />
       </div>
     </div>
@@ -425,10 +425,10 @@ const key = ethers.keccak256(ethers.toUtf8Bytes('lukso-expert'));
 
       {/* CTA */}
       <div className="flex flex-wrap gap-3 animate-fade-in">
-        <Link to="/register" className="px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition">
+        <Link to="/register" className="inline-flex items-center min-h-[44px] px-4 py-3 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition">
           Register Identity First →
         </Link>
-        <a href="https://github.com/LUKSOAgent/universal-trust/blob/main/SKILLS.md" target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 rounded-lg text-sm font-semibold text-gray-300 bg-lukso-card border border-lukso-border hover:border-lukso-purple/50 transition">
+        <a href="https://github.com/LUKSOAgent/universal-trust/blob/main/SKILLS.md" target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-[44px] px-4 py-3 rounded-lg text-sm font-semibold text-gray-300 bg-lukso-card border border-lukso-border hover:border-lukso-purple/50 transition">
           Full Guide on GitHub →
         </a>
       </div>

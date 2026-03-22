@@ -93,19 +93,19 @@ export default function About() {
             href="https://github.com/LUKSOAgent/universal-trust"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-2.5 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition text-sm"
+            className="inline-flex items-center min-h-[44px] px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition text-sm"
           >
             GitHub →
           </a>
           <Link
             to="/"
-            className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition text-sm"
+            className="inline-flex items-center min-h-[44px] px-6 py-3 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition text-sm"
           >
             Live App →
           </Link>
           <Link
             to="/verify"
-            className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition text-sm"
+            className="inline-flex items-center min-h-[44px] px-6 py-3 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition text-sm"
           >
             Verify an Agent →
           </Link>
@@ -130,21 +130,21 @@ export default function About() {
             No install. No wallet. Pick any of these to verify Universal Trust is live on LUKSO mainnet right now.
           </p>
           <div className="space-y-3">
-            <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto">
-              <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">① REST API — agent names + trust scores</p>
-              <p className="text-lukso-purple">curl -s https://universal-trust.vercel.app/api/trust-graph | \</p>
-              <p className="text-lukso-purple">&nbsp;&nbsp;python3 -c <span className="text-emerald-400">"import json,sys; [print(n['name'],n['trustScore']) for n in json.load(sys.stdin)['nodes']]"</span></p>
+            <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto scrollbar-hide">
+              <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold whitespace-normal">① REST API — agent names + trust scores</p>
+              <p className="text-lukso-purple whitespace-nowrap">curl -s https://universal-trust.vercel.app/api/trust-graph | \</p>
+              <p className="text-lukso-purple whitespace-nowrap">&nbsp;&nbsp;python3 -c <span className="text-emerald-400">"import json,sys; [print(n['name'],n['trustScore']) for n in json.load(sys.stdin)['nodes']]"</span></p>
             </div>
-            <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto">
-              <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">② Direct RPC call — verify LUKSO Agent on-chain (requires cast/foundry)</p>
-              <p className="text-lukso-pink">cast call <span className="text-gray-400">0x16505FeC789F4553Ea88d812711A0E913D926ADD</span></p>
-              <p className="text-lukso-pink">&nbsp;&nbsp;<span className="text-emerald-400">"verify(address)"</span> <span className="text-gray-400">0x293E96ebbf264ed7715cff2b67850517De70232a</span></p>
-              <p className="text-lukso-pink">&nbsp;&nbsp;--rpc-url https://rpc.mainnet.lukso.network</p>
+            <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto scrollbar-hide">
+              <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold whitespace-normal">② Direct RPC call — verify LUKSO Agent on-chain (requires cast/foundry)</p>
+              <p className="text-lukso-pink whitespace-nowrap">cast call <span className="text-gray-400">0x16505FeC789F4553Ea88d812711A0E913D926ADD</span></p>
+              <p className="text-lukso-pink whitespace-nowrap">&nbsp;&nbsp;<span className="text-emerald-400">"verify(address)"</span> <span className="text-gray-400">0x293E96ebbf264ed7715cff2b67850517De70232a</span></p>
+              <p className="text-lukso-pink whitespace-nowrap">&nbsp;&nbsp;--rpc-url https://rpc.mainnet.lukso.network</p>
             </div>
-            <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto">
-              <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">③ Agent-to-agent demo — full trust handshake (~30s)</p>
-              <p className="text-emerald-400">git clone https://github.com/LUKSOAgent/universal-trust.git</p>
-              <p className="text-gray-400">cd universal-trust && npm install && node demo/demo.js</p>
+            <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto scrollbar-hide">
+              <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold whitespace-normal">③ Agent-to-agent demo — full trust handshake (~30s)</p>
+              <p className="text-emerald-400 whitespace-nowrap">git clone https://github.com/LUKSOAgent/universal-trust.git</p>
+              <p className="text-gray-400 whitespace-nowrap">cd universal-trust && npm install && node demo/demo.js</p>
             </div>
           </div>
         </div>
@@ -176,10 +176,10 @@ export default function About() {
               </div>
             ))}
           </div>
-          <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto">
-            <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">Verify it now — no setup, no wallet</p>
-            <p className="text-lukso-purple">curl -s https://universal-trust.vercel.app/api/trust-graph | \</p>
-            <p className="text-lukso-purple">&nbsp;&nbsp;python3 -c <span className="text-emerald-400">"import json,sys; [print(n['name'],n['trustScore']) for n in json.load(sys.stdin)['nodes']]"</span></p>
+          <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto scrollbar-hide">
+            <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold whitespace-normal">Verify it now — no setup, no wallet</p>
+            <p className="text-lukso-purple whitespace-nowrap">curl -s https://universal-trust.vercel.app/api/trust-graph | \</p>
+            <p className="text-lukso-purple whitespace-nowrap">&nbsp;&nbsp;python3 -c <span className="text-emerald-400">"import json,sys; [print(n['name'],n['trustScore']) for n in json.load(sys.stdin)['nodes']]"</span></p>
           </div>
         </div>
       </section>
@@ -531,7 +531,7 @@ export default function About() {
           </ul>
           <Link
             to="/graph"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition text-sm"
+            className="inline-flex items-center gap-2 min-h-[44px] px-5 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition text-sm"
           >
             Open Trust Graph →
           </Link>
@@ -772,11 +772,13 @@ export default function About() {
               badge="npm start"
             />
           </div>
-          <div className="bg-lukso-darker rounded-xl p-4 border border-lukso-border/50 mt-2">
+          <div className="bg-lukso-darker rounded-xl p-4 border border-lukso-border/50 mt-2 overflow-hidden">
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-medium">Quick verify — no setup required</p>
-            <code className="text-xs text-lukso-purple font-mono block overflow-x-auto whitespace-pre">
-              curl -s https://universal-trust.vercel.app/api/trust-graph | python3 -c &quot;import json,sys; [print(n[&apos;name&apos;],n[&apos;trustScore&apos;]) for n in json.load(sys.stdin)[&apos;nodes&apos;]]&quot;
-            </code>
+            <div className="overflow-x-auto -webkit-overflow-scrolling-touch scrollbar-hide">
+              <code className="text-xs text-lukso-purple font-mono block whitespace-pre">
+                curl -s https://universal-trust.vercel.app/api/trust-graph | python3 -c &quot;import json,sys; [print(n[&apos;name&apos;],n[&apos;trustScore&apos;]) for n in json.load(sys.stdin)[&apos;nodes&apos;]]&quot;
+              </code>
+            </div>
           </div>
         </div>
       </section>
