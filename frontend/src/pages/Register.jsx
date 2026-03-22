@@ -409,7 +409,7 @@ function OnboardingChecklistItem({
         </div>
 
         {/* Content */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs text-gray-500 font-mono">
               {String(step).padStart(2, "0")}

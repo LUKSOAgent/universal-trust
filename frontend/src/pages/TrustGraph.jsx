@@ -1143,7 +1143,7 @@ export default function TrustGraph() {
           </div>
 
           {/* Type filters — scroll horizontally on mobile */}
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide min-w-0 flex-1">
             {Object.entries(COLORS).map(([type, color]) => (
               <button
                 key={type}
