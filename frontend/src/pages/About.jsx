@@ -129,7 +129,7 @@ export default function About() {
                   <span className="text-lg">{item.icon}</span>
                   <span className="text-white font-semibold text-sm">{item.title}</span>
                 </div>
-                <code className="text-xs text-lukso-purple font-mono block truncate">{item.cmd}</code>
+                <code className="text-xs text-lukso-purple font-mono block overflow-x-auto whitespace-nowrap scrollbar-hide">{item.cmd}</code>
                 <p className="text-gray-500 text-xs">{item.desc}</p>
               </div>
             ))}
@@ -156,15 +156,17 @@ export default function About() {
                   verified: false,
                 },
               ].map((c) => (
-                <div key={c.addr} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 bg-black/20 rounded-lg px-3 py-2">
+                <div key={c.addr} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 bg-black/20 rounded-lg px-3 py-2 min-w-0 overflow-hidden">
                   <span className="text-gray-400 text-xs w-full sm:w-64 shrink-0">{c.label}</span>
                   <a
                     href={`https://explorer.execution.mainnet.lukso.network/address/${c.addr}${c.verified ? "#code" : ""}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-mono text-xs text-lukso-purple hover:text-lukso-pink transition truncate"
+                    className="font-mono text-xs text-lukso-purple hover:text-lukso-pink transition break-all min-w-0"
+                    title={c.addr}
                   >
-                    {c.addr}
+                    <span className="hidden sm:inline">{c.addr}</span>
+                    <span className="sm:hidden">{c.addr.slice(0, 10)}…{c.addr.slice(-8)}</span>
                   </a>
                   {c.verified && (
                     <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium shrink-0">✓ Verified</span>

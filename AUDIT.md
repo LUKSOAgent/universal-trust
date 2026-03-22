@@ -685,3 +685,384 @@ Overall risk posture remains **LOW**. All newly identified issues are Low or Inf
 **Third-Pass Audit Date:** 2026-03-22
 **Auditor:** Universal Trust Agent (subagent: ut-contract-audit)
 **Status:** ✅ NO NEW CRITICAL/HIGH FINDINGS — Safe for continued production use.
+
+---
+
+## Fourth-Pass Audit — 2026-03-22
+
+**Date:** 2026-03-22  
+**Scope:** (1) Audit refresh after latest redeployment — `updateReputation()` gained `onlyActive` guard, `MIN_BASE_TOKEN_BALANCE` constant removed. (2) Recovery of findings from git passes 4–9 that were overwritten in the `fix/audit-bugs` PR merge. Full re-read of all five source contracts.
+
+> **Note:** Git history shows that earlier sub-agent passes (4–9, commits `4c7bf72` through `7e81561`) documented additional findings in AUDIT.md, but those were overwritten when the `fix/audit-bugs` PR branch introduced a fresh version at `0d704a1`. This pass recovers all material findings from those commits and confirms which still apply to the current deployed code.
+
+---
+
+### Deployment Change: `updateReputation()` Now Requires Agent to Be Active
+
+**Commits:** `7799898` + `e3923c6` (redeploy v4/v5, 2026-03-22)  
+**Contract:** `AgentIdentityRegistry.sol` (proxy: `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C`, impl: `0x794528C35903761CdA06A585dc5528B619f1C785`)
+
+**Change:**
+`updateReputation()` now carries `onlyActive(agent)` in addition to the existing `onlyReputationUpdater` and `onlyRegistered(agent)` guards:
+
+```solidity
+function updateReputation(address agent, int256 delta, string calldata reason)
+    external onlyReputationUpdater onlyRegistered(agent) onlyActive(agent) { ... }
+```
+
+A NatSpec comment was added explaining the rationale: reputation updates reset `lastActiveAt`; allowing this on a deactivated agent would silently advance the decay timer without going through the `reactivate()` flow.
+
+**Assessment:** The change is intentional and correct. The second-pass audit documented the *absence* of the active guard as "BY DESIGN", but the deployed code now intentionally reverses that decision. The NatSpec comment on the function explains why. No security regression introduced; the new guard is strictly more conservative.
+
+**Impact of change:** Callers (keepers) that previously called `updateReputation()` on deactivated agents will now receive `AgentNotActive` reverts. They must call `reactivate()` first. **Keeper scripts should be updated accordingly.**
+
+---
+
+### Deployment Change: `MIN_BASE_TOKEN_BALANCE` Constant Removed
+
+**Commit:** `e3923c6`  
+**Contract:** `AgentIdentityRegistry.sol`
+
+The constant `MIN_BASE_TOKEN_BALANCE` was removed from the contract and moved to keeper configuration off-chain. The storage layout is unchanged (it was a constant, not a state variable — no storage slot impact). No functional change to any deployed contract method.
+
+**Assessment:** Clean change. No storage collision risk.
+
+---
+
+### NEW-1 [Low] — `TrustedAgentGate._checkTrust()` Does Not Verify Agent Active Status
+
+**Severity:** Low  
+**Contract:** `TrustedAgentGate.sol`  
+**Functions:** `onlyTrustedAgent`, `onlyWeightedTrustedAgent`, `_checkTrust()`
+
+**Finding:**
+`_checkTrust()` checks registration (`isRegistered`) and score threshold but does **not** check whether the agent is currently active. A deactivated agent retains its trust score in storage (scores are not zeroed on deactivation) and can continue to pass `onlyTrustedAgent` gates.
+
+```solidity
+function _checkTrust(address agent, uint256 minScore, bool weighted) internal view {
+    if (!registry.isRegistered(agent)) revert AgentNotRegistered(agent);
+    uint256 score = weighted
+        ? registry.getWeightedTrustScore(agent)
+        : registry.getTrustScore(agent);
+    if (score < minScore) revert InsufficientTrustScore(agent, minScore, score);
+}
+```
+
+`AgentIdentityRegistry.getTrustScore()` and `getWeightedTrustScore()` only require `onlyRegistered`, not `onlyActive`, so they return valid scores for deactivated agents.
+
+**Impact:** Low. Integrators using `TrustedAgentGate` who expect deactivated agents to be excluded from gated functions will find that deactivation does not revoke gate access. This is a design-level inconsistency: the identity registry treats deactivation as a meaningful status change, but the gate ignores it.
+
+**Recommendation (v2):** Add an `isActive` check to `_checkTrust()`, or expose `isActive` via `IAgentIdentityRegistry` and check it in the gate. Alternatively, document this behavior explicitly in the NatSpec for `TrustedAgentGate`.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-2 [Low] — `updateProfile()` Resets Decay Timer for Deactivated Agents
+
+**Severity:** Low  
+**Contract:** `AgentIdentityRegistry.sol`  
+**Function:** `updateProfile()`
+
+**Finding:**
+`updateProfile()` requires only `onlyRegistered(msg.sender)`, not `onlyActive`. A deactivated agent can call `updateProfile()` to update their name/description/metadataURI. The function also writes `agent.lastActiveAt = uint64(block.timestamp)`, which **resets the decay timer** even though the agent is deactivated.
+
+```solidity
+function updateProfile(...) external onlyRegistered(msg.sender) {
+    ...
+    agent.lastActiveAt = uint64(block.timestamp);  // resets decay timer
+    emit AgentUpdated(msg.sender, name, description, metadataURI, uint64(block.timestamp));
+}
+```
+
+This means a deactivated agent can indefinitely prevent their reputation from decaying by periodically calling `updateProfile()` (gas: ~30-50K) without reactivating.
+
+**Impact:** Low. Decay evasion via `updateProfile()` is deliberate activity — the agent is clearly active. However, it allows reputational stasis for deactivated agents, which may be contrary to intended behavior.
+
+**Recommendation (v2):** If decay-during-deactivation is desired behavior, add `onlyActive` to `updateProfile()`. If profile updates by deactivated agents should be permitted but not reset the timer, omit the `lastActiveAt = block.timestamp` line for inactive agents.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-3 [Informational] — `TrustedCouncil.executed` Field Is Permanently Unused
+
+**Severity:** Informational  
+**Contract:** `TrustedCouncil.sol` (example)
+
+**Finding:**
+The `Proposal` struct has an `executed` boolean field, initialized to `false` on creation:
+
+```solidity
+struct Proposal {
+    ...
+    bool executed;
+}
+```
+
+No function in `TrustedCouncil.sol` ever sets `executed = true`. There is no `execute()` function. The field exists in storage but serves no purpose. Off-chain tooling reading proposals via `proposals(id)` will always see `executed = false`.
+
+**Impact:** Informational. The contract is an example/demo. No security impact.
+
+**Recommendation:** Either add a minimal `execute()` function or remove the `executed` field to avoid confusion. Since this is an example contract for demonstrating `TrustedAgentGate`, the unused field is acceptable but should be noted in docs.
+
+**Status:** Informational (Do Not Modify — Contract Not Deployed on Mainnet)
+
+---
+
+### NEW-4 [Low] — `onlyWeightedTrustedAgent` Introduces Unbounded Loop Into State-Changing Contexts
+
+**Severity:** Low  
+**Contract:** `TrustedAgentGate.sol` + `AgentIdentityRegistry.sol`
+
+**Finding:**
+`onlyWeightedTrustedAgent` calls `registry.getWeightedTrustScore(agent)`, which internally calls `_computeWeightedTrustScore()`. This function iterates over **all endorsers** of the agent:
+
+```solidity
+function _computeWeightedTrustScore(address agent) internal view returns (uint256) {
+    ...
+    address[] storage endorsers = _endorsers[agent];
+    uint256 len = endorsers.length;
+    for (uint256 i = 0; i < len; i++) { ... }  // O(n) over endorsers
+    ...
+}
+```
+
+When used as a modifier in a state-changing function (e.g., `propose()`, `vote()` in TrustedCouncil), this O(n) read is embedded in the state-changing call. With a heavily-endorsed agent (e.g., 1,000+ endorsers), the modifier alone could cost significant gas, potentially making the guarded function impossible to call within block gas limits.
+
+The `onlyTrustedAgent` modifier (flat score) does not have this issue — it is O(1).
+
+**Impact:** Low for current deployment (few agents, few endorsements). Becomes a practical concern at scale.
+
+**Recommendation:** Prefer `onlyTrustedAgent` (flat) over `onlyWeightedTrustedAgent` in state-changing functions. Use weighted score only in view/off-chain contexts. Document this in `TrustedAgentGate` NatSpec.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-5 [Low] — `setAgentWallet` EIP-712 Payload Has No Nonce (Signature Replay)
+
+**Severity:** Medium → Low (bounded by operator trust model)  
+**Contract:** `ERC8004IdentityRegistry.sol`  
+**Function:** `setAgentWallet()`
+
+**Finding:**
+The EIP-712 signed message `SetAgentWallet(uint256 agentId, address newWallet, uint256 deadline)` contains no nonce. A signed payload is valid for **every** call to `setAgentWallet` until `block.timestamp > deadline`.
+
+**Concrete attack path:**
+1. Owner collects signature from wallet X (deadline = 24 hours).
+2. Owner calls `setAgentWallet(agentId, X, deadline, sigX)` — wallet set to X.
+3. X is compromised. Owner immediately rotates to wallet Y.
+4. Any NFT owner or approved operator can replay `sigX` before its deadline, reverting the emergency rotation back to compromised wallet X.
+
+The attacker must be an NFT owner or token-level operator (must pass `_requireOwnerOrOperator()`), which bounds the severity.
+
+**Impact:** Emergency wallet rotation after key compromise can be silently undermined within the deadline window. Severity is bounded by the operator trust model — only trusted operators can exploit this, reducing real-world risk.
+
+**Recommendation (v2):** Add a per-agent nonce to the signed payload and increment on each successful wallet change. Use short deadlines (≤1 hour) as a near-term mitigation.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed. Disclose as known limitation.)
+
+---
+
+### NEW-6 [Informational] — `setAgentWallet` Uses Raw `ecrecover` Without EIP-2 Malleability Guard
+
+**Severity:** Informational  
+**Contract:** `ERC8004IdentityRegistry.sol`
+
+**Finding:**
+The signature recovery path uses raw `ecrecover` without checking that `s` is in the lower half of the curve order (per EIP-2):
+
+```solidity
+address recovered = ecrecover(digest, v, r, s);
+valid = (recovered == newWallet && recovered != address(0));
+```
+
+ECDSA signature malleability allows a valid `(v, r, s)` to be transformed into `(v', r, s')` that also passes `ecrecover` verification. In theory, this could be used to forge an apparently different signature from the same original signer.
+
+**Impact:** Informational in this context. `setAgentWallet` is owner/operator-only. The recovered address must equal `newWallet`, and `newWallet` must sign the payload — malleability does not allow a different `newWallet` to pass. There is no signature-uniqueness requirement here (the nonce issue above is the more relevant replay concern). OZ's `ECDSA.recover` would handle this cleanly.
+
+**Recommendation (v2):** Use OpenZeppelin's `ECDSA.recover()` which includes malleability protection. Low priority.
+
+**Status:** Informational (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-7 [Informational] — `linkBaseAddress()` Callable by Deactivated Agents
+
+**Severity:** Informational  
+**Contract:** `AgentIdentityRegistry.sol`
+
+**Finding:**
+`linkBaseAddress()` is guarded by `onlyRegistered(msg.sender)` but not `onlyActive`. A deactivated agent can link their Base address after deactivation. This is inconsistent with the general principle that deactivated agents cannot perform meaningful actions, though it is arguably harmless since Base address linking is voluntary and informational.
+
+**Impact:** Informational. No security risk.
+
+**Status:** Informational (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-8 [Informational] — `ERC8004IdentityRegistry` Burn Does Not Clear `agentWallet`
+
+**Severity:** Informational  
+**Contract:** `ERC8004IdentityRegistry.sol`
+
+**Finding:**
+The `_update()` hook clears `agentWallet` only on **transfers** (from != address(0) AND to != address(0)), not on burns (to == address(0)):
+
+```solidity
+function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
+    address from = _ownerOf(tokenId);
+    if (from != address(0) && to != address(0)) {  // transfer only — burn excluded
+        delete _metadata[tokenId][AGENT_WALLET_KEY];
+    }
+    return super._update(to, tokenId, auth);
+}
+```
+
+If an agent NFT is burned, the `agentWallet` metadata entry remains in storage (orphaned). Since `_exists()` returns false for burned tokens, `getAgentWallet()` will revert with `AgentDoesNotExist`. The orphaned metadata is inaccessible and effectively dead, but wastes a storage slot.
+
+**Impact:** Informational. The ERC-8004 spec does not mandate wallet clearance on burn. No user-facing impact since the agent is non-existent after burn. Storage waste is negligible at current scale.
+
+**Recommendation (v2):** Add burn support: `if (to == address(0)) { delete _metadata[tokenId][AGENT_WALLET_KEY]; }`.
+
+**Status:** Informational (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-9 [Informational] — `setDecayParams()` Emits No Event
+
+**Severity:** Informational  
+**Contract:** `AgentIdentityRegistry.sol`
+
+**Finding:**
+```solidity
+function setDecayParams(uint256 _decayRate, uint256 _gracePeriod) external onlyOwner {
+    decayRate = _decayRate;
+    decayGracePeriod = _gracePeriod;
+    // No event emitted
+}
+```
+
+All other owner-level state changes in the registry emit events (`OwnershipTransferred`, `ReputationUpdaterSet`). The absence of an event for `setDecayParams` means off-chain monitoring tools cannot detect changes to decay configuration without polling the state.
+
+**Impact:** Informational. No security impact. Monitoring/transparency concern only.
+
+**Recommendation (v2):** Add `event DecayParamsSet(uint256 decayRate, uint256 gracePeriod)` and emit it from `setDecayParams()`.
+
+**Status:** Informational (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-10 [Informational] — Third-Party Endorsement Resets Endorsed Agent's Decay Timer
+
+**Severity:** Informational  
+**Contract:** `AgentIdentityRegistry.sol`  
+**Function:** `endorse()`
+
+**Finding:**
+`endorse()` writes `_agents[endorsed].lastActiveAt = ts`. This resets the decay grace period for the endorsed agent — even though the endorsed agent took no action. A third party can indefinitely prevent any agent's reputation from decaying by endorsing them once every 30 days (gas: ~120K).
+
+```solidity
+_agents[endorsed].lastActiveAt = ts;  // set by endorser, not by endorsed agent
+```
+
+This could be used benevolently (keeping a trusted agent's reputation alive) or as decay manipulation (selectively resetting decay for friends, withholding resets for competitors).
+
+**Impact:** Informational. Given that endorsements are on-chain and transparent, and that decay is already permissionless (`applyDecay` can be called by anyone), this asymmetry is a known property of the design.
+
+**Recommendation:** Document in NatSpec that endorsements reset the endorsed agent's decay timer. No code change required.
+
+**Status:** Informational (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-11 [Informational] — Mixed OZ Package Imports (`contracts` + `contracts-upgradeable`)
+
+**Severity:** Informational  
+**Contract:** `AgentIdentityRegistry.sol`
+
+**Finding:**
+```solidity
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";  // upgradeable package
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";             // non-upgradeable package
+```
+
+`AgentIdentityRegistry` imports `Initializable` from the upgradeable package but `UUPSUpgradeable` from the non-upgradeable package. This works because OpenZeppelin's `contracts/proxy/utils/UUPSUpgradeable.sol` is itself abstract and does not carry its own initializer — it only requires the implementation contract to override `_authorizeUpgrade`. The mix is functionally correct for UUPS proxies but unusual and could confuse contributors.
+
+**Impact:** Informational. No security impact. The contract compiles and functions correctly.
+
+**Recommendation (v2):** Standardize on the upgradeable package for all imports: `@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol`.
+
+**Status:** Informational (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-12 [Informational] — `deactivate()` Error Semantics Are Ambiguous
+
+**Severity:** Informational  
+**Contract:** `AgentIdentityRegistry.sol`
+
+**Finding:**
+```solidity
+function deactivate() external onlyRegistered(msg.sender) {
+    if (!_agents[msg.sender].isActive) revert AgentNotActive(msg.sender);
+    ...
+}
+```
+
+The error `AgentNotActive` is reused here to mean "cannot deactivate an already-deactivated agent." But the name `AgentNotActive` reads as "the agent is not active" — which is semantically accurate but can be confusing because the error is also used elsewhere to mean "you cannot perform this action because the agent is inactive." Two different operational meanings share one error type.
+
+**Impact:** Informational. No functional impact. Off-chain tooling that catches `AgentNotActive` from `deactivate()` may misinterpret the failure reason.
+
+**Recommendation (v2):** Add a dedicated `error AlreadyDeactivated(address agent)` for the `deactivate()` case (similar to the existing `AgentAlreadyActive` used in `reactivate()`).
+
+**Status:** Informational (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-13 [Informational] — No Storage Gap (`__gap`) in Upgradeable Contract
+
+**Severity:** Informational  
+**Contract:** `AgentIdentityRegistry.sol`
+
+**Finding:**
+The contract uses UUPS upgradeability and follows append-only storage conventions (clearly documented with `// ⚠️ UPGRADE SAFETY` comments), but does not include an OpenZeppelin-style `uint256[50] private __gap` at the end of the storage section. Such gaps are standard practice for upgradeable contracts to reserve future storage slots and prevent collisions when adding new state variables in inherited contracts.
+
+Since `AgentIdentityRegistry` does not inherit from any custom base contract (only OZ's `Initializable` and `UUPSUpgradeable`, which have their own gaps), the risk of a collision is low — but the explicit gap provides a safeguard for future upgrades.
+
+**Impact:** Informational. Current storage layout is safe. Risk only materializes if future upgrades insert variables incorrectly (already mitigated by the append-only comment block).
+
+**Recommendation (v2):** Add `uint256[50] private __gap;` at the end of the state variable section as a safety buffer.
+
+**Status:** Informational (Do Not Modify — Contract Deployed)
+
+---
+
+### Fourth-Pass Summary
+
+| Finding | Severity | Contract | Status |
+|---------|----------|----------|--------|
+| Deployment change: `updateReputation()` + `onlyActive` | N/A (Behavioral change) | AgentIdentityRegistry | Confirmed correct |
+| Deployment change: `MIN_BASE_TOKEN_BALANCE` removed | N/A (Cleanup) | AgentIdentityRegistry | No impact |
+| NEW-1: TrustedAgentGate ignores agent active status | Low | TrustedAgentGate | New |
+| NEW-2: `updateProfile()` resets decay timer for inactive agents | Low | AgentIdentityRegistry | New |
+| NEW-3: `TrustedCouncil.executed` field unused | Informational | TrustedCouncil | New |
+| NEW-4: `onlyWeightedTrustedAgent` embeds O(n) loop in state-changing calls | Low | TrustedAgentGate | New |
+| NEW-5: `setAgentWallet` no nonce — replay within deadline | Low/Medium | ERC8004IdentityRegistry | New |
+| NEW-6: Raw `ecrecover` without EIP-2 malleability guard | Informational | ERC8004IdentityRegistry | New |
+| NEW-7: `linkBaseAddress()` callable by deactivated agents | Informational | AgentIdentityRegistry | New |
+| NEW-8: Burn does not clear `agentWallet` metadata | Informational | ERC8004IdentityRegistry | New |
+| NEW-9: `setDecayParams()` emits no event | Informational | AgentIdentityRegistry | New |
+| NEW-10: Third-party endorsement resets endorsed agent's decay timer | Informational | AgentIdentityRegistry | New |
+| NEW-11: Mixed OZ package imports | Informational | AgentIdentityRegistry | New |
+| NEW-12: `deactivate()` reuses ambiguous error type | Informational | AgentIdentityRegistry | New |
+| NEW-13: No `__gap` storage reserve | Informational | AgentIdentityRegistry | New |
+
+**Cumulative totals across all four passes: 0 Critical · 0 High · 1 Medium · 8 Low · 25+ Informational.**
+
+Overall risk posture remains **LOW**. All deployed contracts are safe for continued production use and hackathon submission.
+
+**Fourth-Pass Audit Date:** 2026-03-22  
+**Auditor:** Universal Trust Sub-Agent C (session: audit-refresh-agent-c)  
+**Status:** ✅ NO NEW CRITICAL/HIGH FINDINGS — Safe for hackathon submission and production use.

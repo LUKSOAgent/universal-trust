@@ -609,11 +609,11 @@ function TryVerify({ agents = [], upProfiles = {} }) {
                     <p className="text-white font-bold">{result.trustScore}</p>
                   </div>
                 </div>
-                <div className="mt-2 pt-2 border-t border-lukso-border/50 flex items-center justify-between">
-                  <code className="text-[10px] text-gray-600 font-mono">
+                <div className="mt-2 pt-2 border-t border-lukso-border/50 flex flex-wrap items-center justify-between gap-2">
+                  <code className="text-[10px] text-gray-600 font-mono overflow-x-auto whitespace-nowrap max-w-full block flex-1 min-w-0 scrollbar-hide">
                     verify() → registered: true, trustScore: {result.trustScore}
                   </code>
-                  <Link to={`/agent/${addr}`} className="text-[10px] text-lukso-pink hover:underline">
+                  <Link to={`/agent/${addr}`} className="text-[10px] text-lukso-pink hover:underline shrink-0">
                     Full profile →
                   </Link>
                 </div>

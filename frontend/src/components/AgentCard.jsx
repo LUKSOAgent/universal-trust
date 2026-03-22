@@ -14,19 +14,16 @@ function ScoreTooltip({ trustScore, onChainScore, skillCount, lsp26Score, compos
   const activityPts = onChainScore !== null && onChainScore !== undefined ? Math.round(onChainScore * 3) : null;
   const skillPts = Math.min(skillCount ?? 0, 20) * 10;
   return (
-    <div className="absolute bottom-full right-0 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 mb-2 z-50 pointer-events-none animate-fade-in">
-      <div className="bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 shadow-xl max-w-[calc(100vw-2rem)] sm:max-w-none">
-        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-semibold">Score Breakdown</p>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:flex sm:flex-nowrap sm:items-center sm:gap-x-2 sm:gap-y-0">
-          <span className="text-lukso-purple">Contract: <span className="text-white font-semibold">{trustScore}</span></span>
-          <span className="hidden sm:inline text-gray-600">|</span>
-          <span className="text-blue-400">Activity: <span className="text-white font-semibold">{activityPts !== null ? activityPts : "…"}</span></span>
-          <span className="hidden sm:inline text-gray-600">|</span>
-          <span className="text-amber-400">Skills: <span className="text-white font-semibold">{skillPts}</span></span>
-          <span className="hidden sm:inline text-gray-600">|</span>
-          <span className="text-emerald-400">Social: <span className="text-white font-semibold">{lsp26Score ?? 0}</span></span>
+    <div className="absolute bottom-full right-0 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 mb-2 z-50 pointer-events-none animate-fade-in w-max max-w-[min(260px,calc(100vw-1rem))]">
+      <div className="bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 shadow-xl w-full">
+        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-semibold whitespace-nowrap">Score Breakdown</p>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+          <span className="text-lukso-purple whitespace-nowrap">Contract: <span className="text-white font-semibold">{trustScore}</span></span>
+          <span className="text-blue-400 whitespace-nowrap">Activity: <span className="text-white font-semibold">{activityPts !== null ? activityPts : "…"}</span></span>
+          <span className="text-amber-400 whitespace-nowrap">Skills: <span className="text-white font-semibold">{skillPts}</span></span>
+          <span className="text-emerald-400 whitespace-nowrap">Social: <span className="text-white font-semibold">{lsp26Score ?? 0}</span></span>
         </div>
-        <p className="text-[10px] text-gray-600 mt-1">Total: {compositeScore}</p>
+        <p className="text-[10px] text-gray-600 mt-1 whitespace-nowrap">Total: {compositeScore}</p>
       </div>
       {/* Arrow — right-aligned on mobile (matches right-0 tooltip), centered on sm+ */}
       <div className="absolute right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 -bottom-1 w-2 h-2 bg-lukso-darker border-r border-b border-lukso-border rotate-45" />

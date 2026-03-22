@@ -385,8 +385,8 @@ export default function AgentProfile() {
               </div>
             </div>
             {agent?.metadataURI && (
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-gray-500 text-sm">Metadata:</span>
+              <div className="flex flex-wrap items-center gap-2 mt-2 min-w-0 overflow-hidden">
+                <span className="text-gray-500 text-sm shrink-0">Metadata:</span>
                 {agent.metadataURI.startsWith("data:") ? (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-lukso-darker border border-lukso-border text-xs text-gray-400">
                     <svg className="w-3 h-3 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -401,7 +401,8 @@ export default function AgentProfile() {
                       : agent.metadataURI}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-mono text-xs text-lukso-purple hover:text-lukso-pink transition truncate max-w-xs"
+                    className="font-mono text-xs text-lukso-purple hover:text-lukso-pink transition break-all min-w-0 overflow-hidden"
+                    title={agent.metadataURI}
                   >
                     {agent.metadataURI.length > 50
                       ? agent.metadataURI.slice(0, 30) + "..." + agent.metadataURI.slice(-15)

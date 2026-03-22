@@ -89,8 +89,9 @@ select option {
 }
 
 /* Prevent horizontal overflow on mobile */
-body {
+html, body {
   overflow-x: hidden;
+  max-width: 100%;
 }
 
 /* Better pre/code block scrolling on mobile */
@@ -112,6 +113,20 @@ pre {
   button, a[role="button"] {
     min-height: 36px;
   }
+}
+
+/* Ensure address strings never cause horizontal overflow */
+.font-mono.break-all {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+/* Prevent table overflow on mobile */
+table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Scrollbar hide utility for filter chips */
