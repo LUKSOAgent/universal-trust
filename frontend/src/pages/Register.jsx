@@ -346,16 +346,16 @@ function TrustStep({ step, title, desc, icon, active, delay }) {
 function TrustProgressRow({ label, score, tier, tierColor }) {
   const barPct = Math.min((score / 600) * 100, 100);
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-gray-400 w-36 shrink-0">{label}</span>
-      <div className="flex-1 relative h-3 bg-lukso-border/50 rounded-full overflow-hidden">
+    <div className="flex items-center gap-2">
+      <span className="text-gray-400 w-28 sm:w-36 shrink-0 text-xs sm:text-sm">{label}</span>
+      <div className="flex-1 relative h-3 bg-lukso-border/50 rounded-full overflow-hidden min-w-0">
         <div
           className="h-full rounded-full bg-gradient-to-r from-lukso-pink to-lukso-purple transition-all duration-700"
           style={{ width: `${barPct}%` }}
         />
       </div>
-      <span className="text-white font-mono w-10 text-right">{score}</span>
-      <span className={`${tierColor} w-24 text-right`}>{tier}</span>
+      <span className="text-white font-mono w-8 sm:w-10 text-right text-xs sm:text-sm shrink-0">{score}</span>
+      <span className={`${tierColor} w-20 sm:w-24 text-right text-xs sm:text-sm shrink-0`}>{tier}</span>
     </div>
   );
 }

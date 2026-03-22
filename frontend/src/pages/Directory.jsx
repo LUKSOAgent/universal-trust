@@ -731,8 +731,8 @@ function CurlCopy() {
     try { await navigator.clipboard.writeText(cmd); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
   }
   return (
-    <div className="mt-3 flex items-center gap-2 bg-lukso-darker border border-lukso-border/50 rounded-lg px-3 py-2">
-      <code className="text-xs text-gray-400 font-mono flex-1 overflow-x-auto whitespace-nowrap block">{cmd}</code>
+    <div className="mt-3 flex items-center gap-2 bg-lukso-darker border border-lukso-border/50 rounded-lg px-3 py-2 overflow-hidden">
+      <code className="text-xs text-gray-400 font-mono flex-1 min-w-0 overflow-x-auto whitespace-nowrap block">{cmd}</code>
       <button
         onClick={handleCopy}
         className="shrink-0 px-2 py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition flex items-center gap-1"
