@@ -685,3 +685,109 @@ Overall risk posture remains **LOW**. All newly identified issues are Low or Inf
 **Third-Pass Audit Date:** 2026-03-22
 **Auditor:** Universal Trust Agent (subagent: ut-contract-audit)
 **Status:** ✅ NO NEW CRITICAL/HIGH FINDINGS — Safe for continued production use.
+
+---
+
+## Fourth-Pass Audit — 2026-03-22
+
+> **Scope:** Full re-read of all five contracts against AUDIT.md through third-pass. Focus on post-audit behavioral changes and cross-contract interactions.
+
+---
+
+### NEW-1 [Low] — TrustedAgentGate Does Not Check Agent Active Status
+
+**Severity:** Low
+**Contract:** `TrustedAgentGate.sol`
+**Function:** `_checkTrust()`
+
+**Finding:**
+The `IAgentIdentityRegistry` interface used by `TrustedAgentGate` exposes only `getTrustScore`, `getWeightedTrustScore`, and `isRegistered`. The `isActive` status is never checked. A deactivated agent — one who has explicitly called `deactivate()` — can still pass `onlyTrustedAgent` and `onlyWeightedTrustedAgent` gates if their trust score remains above the threshold.
+
+This means deactivation is not enforced at the gate layer. The `TrustedCouncil` example and any future integrators of `TrustedAgentGate` inherit this gap.
+
+The test suite uses a `MockRegistry` with no `isActive` concept, so this is completely untested.
+
+**Impact:**
+A compromised or voluntarily-inactive agent continues to have full gate access indefinitely. Low severity given the trusted-owner model — agents do not self-deactivate without intent.
+
+**Recommendation (for future v2):**
+Add `isActive(address agent) external view returns (bool)` to the interface and call it in `_checkTrust()` before the score check.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed. Applies to future integrators.)
+
+---
+
+### NEW-2 [Low] — `updateProfile()` Resets Decay Timer for Deactivated Agents
+
+**Severity:** Low
+**Contract:** `AgentIdentityRegistry.sol`
+**Function:** `updateProfile()`
+
+**Finding:**
+`updateProfile()` requires only `onlyRegistered(msg.sender)` — not `onlyActive`. It writes `agent.lastActiveAt = uint64(block.timestamp)` on every call. Since `applyDecay()` uses `lastActiveAt` to compute inactivity duration, a deactivated agent can call `updateProfile()` (even with unchanged data) to silently reset their decay timer without going through `reactivate()`.
+
+**Attack path:**
+1. Agent deactivates.
+2. Before reactivating, agent calls `updateProfile()` to reset `lastActiveAt`.
+3. Agent reactivates with a fresh grace period, bypassing the inactivity penalty.
+
+Note: `applyDecay()` itself already requires `onlyActive`, so decay cannot accumulate on a deactivated agent anyway. The practical impact is limited — but the timer reset creates a path to game the grace period on reactivation.
+
+**Impact:** Low. Requires deliberate manipulation of an agent the caller controls.
+
+**Recommendation (for future v2):**
+Either add `onlyActive` to `updateProfile()`, or decouple `lastActiveAt` from profile updates so it is only updated by activity-relevant functions (`reactivate`, `endorse`, `updateReputation`).
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### NEW-3 [Info] — `TrustedCouncil.executed` Field Permanently Unused
+
+**Severity:** Informational
+**Contract:** `examples/TrustedCouncil.sol`
+
+**Finding:**
+The `Proposal` struct contains `bool executed` (always `false`) but there is no `execute()` function in the contract. The field can never be set to `true`. Off-chain tooling reading `proposal.executed` to determine proposal outcome will always see `false`, which is misleading.
+
+**Impact:** Informational. Example contract only; no production risk.
+
+**Recommendation:**
+Either remove the `executed` field or add a minimal `execute()` function that sets it when quorum is met.
+
+**Status:** Informational (Example contract — Do Not Modify)
+
+---
+
+### NEW-4 [Info] — AUDIT.md Second-Pass Contradicts Current `updateReputation` Behavior
+
+**Severity:** Informational (Documentation)
+
+**Finding:**
+The second-pass audit (lines ~375-384) explicitly verified and approved that `updateReputation()` does NOT check `isActive`, marking it "BY DESIGN." A subsequent commit (`c515302`, 2026-03-22) added `onlyActive(agent)` to `updateReputation()`. The contract now **reverts** for deactivated agents. The test `test_updateReputation_deactivatedAgent` was updated to `expectRevert` to match.
+
+The second-pass audit section is now factually incorrect and could mislead future auditors.
+
+**Recommendation:**
+The second-pass finding for "Deactivated Agent Reputation Updates" should be read as **superseded by c515302**. The new behavior (blocking reputation updates on deactivated agents) is intentional and documented in the NatSpec comment.
+
+**Status:** Documentation note only — no code change needed.
+
+---
+
+### Fourth-Pass Audit Summary
+
+| Finding | Severity | Contract | Status |
+|---------|----------|----------|--------|
+| NEW-1: TrustedAgentGate — no isActive check in gate | Low | TrustedAgentGate | New |
+| NEW-2: updateProfile() resets decay timer for inactive agents | Low | AgentIdentityRegistry | New |
+| NEW-3: TrustedCouncil.executed field unused | Informational | TrustedCouncil (example) | New |
+| NEW-4: AUDIT.md second-pass contradicts updateReputation behavior | Informational | Documentation | New |
+
+**No new Critical or High severity findings.**
+
+Overall risk posture remains **LOW**. All findings are Low or Informational. Contracts are deployed and immutable.
+
+**Fourth-Pass Audit Date:** 2026-03-22
+**Auditor:** Universal Trust Agent (subagent: audit-refresh-agent)
+**Status:** ✅ NO NEW CRITICAL/HIGH FINDINGS — Safe for hackathon submission.

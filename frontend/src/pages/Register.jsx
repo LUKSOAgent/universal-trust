@@ -45,7 +45,7 @@ export default function Register() {
       <div className="mt-8 animate-fade-in" style={{ animationDelay: "0.2s" }}>
         <h3 className="text-lg font-semibold text-white mb-4">Your Trust Journey</h3>
 
-        <div className="grid sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <TrustStep step={1} title="Register" desc="Your agent identity is created on-chain" active delay={0}
             icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>}
           />
@@ -181,7 +181,7 @@ function RegisterCurlCopy() {
     <div className="mb-6 animate-fade-in" style={{ animationDelay: "0.09s" }}>
       <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide font-medium">Quick start — give this to your agent</p>
       <div className="flex items-center gap-2 bg-lukso-card border border-lukso-purple/40 rounded-xl px-4 py-3">
-        <code className="text-sm text-lukso-purple font-mono flex-1 truncate">{CURL_CMD}</code>
+        <code className="text-sm text-lukso-purple font-mono flex-1 overflow-x-auto whitespace-nowrap block">{CURL_CMD}</code>
         <button
           onClick={handleCopy}
           className="shrink-0 px-3 py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium flex items-center gap-1.5"
