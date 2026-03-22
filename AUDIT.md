@@ -1106,3 +1106,77 @@ All production contracts reviewed. No new security risks identified. Codebase re
 **Eighth-Pass Date:** 2026-03-22  
 **Auditor:** Universal Trust Sub-Agent C (session: audit-refresh-agent-c)  
 **Status:** ✅ NO NEW CRITICAL/HIGH/LOW FINDINGS — Safe for hackathon submission.
+
+---
+
+## Ninth-Pass Audit — 2026-03-22
+
+> **Scope:** Independent re-read focusing on ERC8004IdentityRegistry signature handling and cross-function interaction patterns not covered in prior passes.
+
+---
+
+### MED-01 [Medium] — `setAgentWallet` Has No Nonce: Signed Payloads Replayable Until Deadline
+
+**Severity:** Medium  
+**Contract:** `ERC8004IdentityRegistry.sol`  
+**Function:** `setAgentWallet()`
+
+**Finding:**
+The EIP-712 signed message `SetAgentWallet(uint256 agentId, address newWallet, uint256 deadline)` contains no nonce. Once signed, the payload is valid for every call to `setAgentWallet` until `block.timestamp > deadline`.
+
+**Concrete attack path:**
+1. Owner collects signature from wallet X (deadline = 24 hours).
+2. Owner calls `setAgentWallet(agentId, X, deadline, sigX)` — wallet set to X.
+3. X is compromised. Owner immediately rotates: calls `setAgentWallet(agentId, Y, ...)` — wallet set to Y.
+4. Any NFT owner or operator can now replay the original `sigX` before its deadline, reverting the emergency rotation back to the compromised wallet X.
+
+The attacker must pass `_requireOwnerOrOperator()` — requires NFT ownership or token-level operator approval. This bounds the severity.
+
+**Impact:** Emergency wallet rotation (after key compromise) can be silently undermined within the deadline window. Medium severity — bounded by operator trust model and deadline.
+
+**Recommendation (v2):** Add a per-agent nonce to the signed payload and increment it on each successful wallet change. Use short deadlines (≤1 hour) as a near-term mitigation.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed. Disclose as known limitation in submission.)
+
+---
+
+### LOW-06 [Low] — `unsetAgentWallet` Emits Misleading Event
+
+**Severity:** Low  
+**Contract:** `ERC8004IdentityRegistry.sol`  
+**Function:** `unsetAgentWallet()`
+
+**Finding:**
+`unsetAgentWallet()` deletes the metadata slot and emits `MetadataSet(..., bytes(""))`. After this call, `getAgentWallet()` returns `ownerOf(agentId)` (the fallback), but the event implies wallet = empty bytes. Off-chain indexers decoding `MetadataSet` events to track `agentWallet` state will misinterpret this as wallet = address(0) rather than wallet = current owner.
+
+**Impact:** Low. On-chain `getAgentWallet()` is correct. Only off-chain tooling using event-sourcing is affected.
+
+**Recommendation (v2):** Emit a dedicated `AgentWalletUnset` event, or document that `bytes("")` in `MetadataSet` for `AGENT_WALLET_KEY` means "reverted to owner fallback."
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### INFO — ERC-721 Operator Semantics Extend to Wallet Configuration
+
+**Severity:** Informational  
+**Contract:** `ERC8004IdentityRegistry.sol`
+
+`_requireOwnerOrOperator` permits ERC-721 token-level operators (marketplace approvals) to call `setAgentWallet`. Agents should only approve trusted operators for agent identity NFTs. Documented as known design trade-off.
+
+**Status:** Informational (By design — document in integration guide)
+
+---
+
+### Ninth-Pass Summary
+
+| Finding | Severity | Status |
+|---------|----------|--------|
+| MED-01: setAgentWallet no nonce — replay within deadline | Medium | New |
+| LOW-06: unsetAgentWallet misleading MetadataSet event | Low | New |
+| INFO: ERC-721 operator scope extends to wallet config | Informational | New |
+
+**Nine-pass total: 0 Critical · 0 High · 1 Medium · 6 Low · 21 Informational.**
+
+**Ninth-Pass Date:** 2026-03-22  
+**Status:** ✅ SAFE FOR HACKATHON SUBMISSION — Medium finding disclosed above. No exploitable critical/high issues.

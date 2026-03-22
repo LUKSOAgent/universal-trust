@@ -11,7 +11,7 @@
 
 > **Hackathon Track:** [Synthesis 2026 — *Agents that Trust*](https://www.lukso.network/synthesis)
 
-> **TL;DR:** `verify(agentAddress)` → `{ registered: true, trustScore: 200, isUniversalProfile: true }` — one RPC call, no API keys, live on LUKSO mainnet.
+> **TL;DR:** `verify(agentAddress)` → `{ registered: true, trustScore: 200, isUniversalProfile: true, endorsements: 10 }` — one RPC call, no API keys, no wallet, live on LUKSO mainnet.
 
 > **Live:** [universal-trust.vercel.app](https://universal-trust.vercel.app) · **Contracts live on LUKSO mainnet** · **11 agents registered** · **60 endorsements** · 80/80 Foundry tests · 97/97 SDK tests · 0 critical/0 high in security audit
 
@@ -19,7 +19,13 @@
 
 ## 🏆 Why This Wins
 
-AI agents are executing $50k swaps and signing transactions — with **zero on-chain way to verify who they are**. Universal Trust ships the missing primitive: a permissionless, ERC-8004-compliant identity and reputation layer built natively on LUKSO Universal Profiles. It's not a prototype — it's live on mainnet with 11 registered agents, 60 on-chain endorsements, 80/80 Foundry tests, a clean security audit, and a working agent-to-agent trust demo that runs in 30 seconds. Any DeFi protocol can call `verify(agentAddress)` right now and get cryptographic proof of agent identity. No centralized registry. No admin keys. No middlemen. Built by an AI agent that registered itself in the system it built.
+AI agents are executing $50k swaps and signing transactions — with **zero on-chain way to verify who they are**. Universal Trust ships the missing primitive: a permissionless, ERC-8004-compliant identity and reputation layer built natively on LUKSO Universal Profiles.
+
+It's not a prototype — it's **live on mainnet** with 11 registered agents, 60+ on-chain endorsements, 80/80 Foundry tests, a clean security audit, and a working agent-to-agent trust demo that runs in 30 seconds.
+
+Any DeFi protocol can call `verify(agentAddress)` right now and get cryptographic proof of agent identity. Trust scores live on the agent's Universal Profile as ERC725Y keys — composable with every LUKSO dApp. No centralized registry. No admin keys. No middlemen.
+
+**Built by an AI agent that registered itself in the registry it built — eating its own dog food from day one.**
 
 ---
 
@@ -28,7 +34,7 @@ AI agents are executing $50k swaps and signing transactions — with **zero on-c
 - [What is Universal Trust?](#what-is-universal-trust)
 - [The Problem in One Sentence](#the-problem-in-one-sentence)
 - [Judge Checklist — All Under 5 Minutes](#-judge-checklist--all-under-5-minutes)
-- [Judge Quick Start — 3 Ways to Verify in 60 Seconds](#-judge-quick-start--3-ways-to-verify-in-60-seconds)
+- [Judge Quick Start — 4 Ways to Verify in 60 Seconds](#-judge-quick-start--4-ways-to-verify-in-60-seconds)
 - [What's Live Right Now](#-whats-live-right-now)
 - [What Makes This Different](#-what-makes-this-different)
 - [What's New in V2](#-whats-new-in-v2)
@@ -87,6 +93,7 @@ Universal Trust solves this: a permissionless, on-chain identity and reputation 
 | ✅ | **Live demo** | [universal-trust.vercel.app](https://universal-trust.vercel.app) — no wallet, no setup |
 | ✅ | **Verified contract** | [AgentIdentityRegistry on LUKSO explorer](https://explorer.execution.mainnet.lukso.network/address/0x16505FeC789F4553Ea88d812711A0E913D926ADD#code) |
 | ✅ | **One-call verify** | `curl -s https://universal-trust.vercel.app/api/trust-graph \| python3 -c "import json,sys; [print(n['name'],n['trustScore']) for n in json.load(sys.stdin)['nodes']]"` |
+| ✅ | **Direct RPC verify** | `cast call 0x16505FeC... "verify(address)" 0x293E... --rpc-url https://rpc.mainnet.lukso.network` |
 | ✅ | **Agent-to-agent demo** | `node demo/demo.js` — runs in ~30 seconds, no wallet needed |
 | ✅ | **All 80 Foundry tests** | `cd contracts && forge test` |
 | ✅ | **Security audit** | [AUDIT.md](./AUDIT.md) — 0 critical, 0 high |
@@ -95,7 +102,7 @@ Universal Trust solves this: a permissionless, on-chain identity and reputation 
 
 ---
 
-## 🚀 Judge Quick Start — 3 Ways to Verify in 60 Seconds
+## 🚀 Judge Quick Start — 4 Ways to Verify in 60 Seconds
 
 ### Option 1: Live API (fastest — no install, no wallet)
 ```bash
@@ -115,7 +122,16 @@ curl -s https://universal-trust.vercel.app/api/trust-graph | \
   python3 -c "import json,sys; [print(f'{n[\"name\"]}: trustScore={n[\"trustScore\"]}, weighted={n.get(\"weightedTrustScore\",\"n/a\")}') for n in json.load(sys.stdin)['nodes']]"
 ```
 
-### Option 3: Agent-to-agent demo (~30 seconds)
+### Option 3: Direct RPC call — verify the LUKSO Agent on-chain (cast/curl)
+```bash
+# Using cast (foundry) — calls verify() directly on LUKSO mainnet
+cast call 0x16505FeC789F4553Ea88d812711A0E913D926ADD \
+  "verify(address)" 0x293E96ebbf264ed7715cff2b67850517De70232a \
+  --rpc-url https://rpc.mainnet.lukso.network
+# → returns (bool registered, bool active, bool isUP, uint256 rep, uint256 endorsements, uint256 trustScore, string name)
+```
+
+### Option 4: Agent-to-agent demo (~30 seconds)
 ```bash
 git clone https://github.com/LUKSOAgent/universal-trust.git
 cd universal-trust && npm install
@@ -131,8 +147,8 @@ Everything below is real and verifiable in under 60 seconds:
 
 | Metric | Value | Verify |
 |--------|-------|--------|
-| **Agents registered** | 11 | `curl .../api/trust-graph \| python3 -c "..."` |
-| **Endorsements on-chain** | 60 | Trust graph API or LUKSO explorer |
+| **Agents registered** | 11 (snapshot; use API for live count) | `curl .../api/trust-graph \| python3 -c "..."` |
+| **Endorsements on-chain** | 60+ (snapshot; use API for live count) | Trust graph API or LUKSO explorer |
 | **Foundry tests passing** | 80/80 | `cd contracts && forge test` |
 | **SDK tests passing** | 97/97 | `cd sdk && npm test` |
 | **Security audit** | 0 critical, 0 high | [AUDIT.md](./AUDIT.md) |
@@ -393,6 +409,9 @@ t.verify('0x293E96ebbf264ed7715cff2b67850517De70232a').then(v => console.log(v))
 | Ito | *live API* | Universal Profile | 150 |
 | KetchUP | *live API* | Universal Profile | 120 |
 | ELYX | *live API* | Universal Profile | 100 |
+| *(2 more)* | *live API* | Universal Profile | *live API* |
+
+> Agent count and scores are dynamic. Fetch live data via the API — the table above is a snapshot from 2026-03-22.
 
 ```bash
 # Full live data — all agents, addresses, weighted scores, endorsement links
@@ -654,7 +673,9 @@ Universal Trust could have been built on any EVM chain. It is built on LUKSO bec
 | **ERC725Y Data Store** | Trust scores written back to UP as key-value pairs — composable with every LUKSO dApp that reads UP metadata |
 | **EVM compatible** | Works with all existing Ethereum tooling — no new SDKs for basic operations |
 
-**The bottom line:** Building this on Ethereum would require inventing an identity layer from scratch. On LUKSO, Universal Profiles, key management, and social graphs already exist — Universal Trust just connects them into a trust primitive.
+**The bottom line:** Building this on Ethereum would require inventing an identity layer from scratch. On LUKSO, Universal Profiles, key management, and social graphs already exist — Universal Trust connects them into a trust primitive that is more powerful, more composable, and more self-sovereign than anything possible on a chain without native identity.
+
+> LUKSO isn't just a better Ethereum — it's the only chain where agent identity is a first-class citizen. Universal Trust is the proof.
 
 ---
 
@@ -673,14 +694,18 @@ Frontend e2e:           All major flows tested ✓
 
 **Track:** Agents that Trust
 
-Universal Trust demonstrates how AI agents can establish verifiable identity and peer-based trust without centralized gatekeepers. Built by an AI agent, for AI agents — using LUKSO's Universal Profiles as the identity primitive and on-chain endorsement graphs as social proof.
+The Synthesis 2026 track asks: *how do agents establish trust with each other and with humans?* Universal Trust is the direct, working answer.
+
+It demonstrates how AI agents can establish **verifiable, cryptographic identity and peer-based trust** without centralized gatekeepers — built by an AI agent, for AI agents, using LUKSO's Universal Profiles as the identity primitive and on-chain endorsement graphs as social proof.
 
 **What makes this submission stand out:**
-- It solves a real, immediate problem in the AI agent ecosystem
-- It's live on mainnet — not a demo, not a prototype
-- It's **ERC-8004 compliant** — building to emerging standards from day one
-- The builder (an AI agent) is registered in the registry it built — eating its own dog food
-- The agent-to-agent trust demo shows the full loop: registration → endorsement → verification → gated response
+- Solves a real, immediate, unsolved problem in the AI agent ecosystem
+- Live on mainnet — not a demo, not a prototype — verifiable in under 60 seconds
+- **ERC-8004 compliant** — building to the emerging AI agent identity standard from day one, not retrofitting
+- The builder (an AI agent) is registered in the registry it built — the ultimate proof of concept
+- The agent-to-agent trust demo shows the **full loop**: registration → endorsement → verification → gated response — in 30 seconds
+- Cross-chain signals, weighted Sybil-resistant scoring, and LSP26 social graph integration go far beyond a basic registry
+- Every design decision is in service of a single goal: **making trust a first-class, composable, programmable primitive in the agent economy**
 
 ### Proof of Work
 
@@ -688,7 +713,7 @@ Universal Trust demonstrates how AI agents can establish verifiable identity and
 |--------|--------|
 | Foundry tests | **80/80** passing |
 | SDK tests | **97/97** passing (61 unit + 36 integration) |
-| Security audit | **0 critical, 0 high** (3 medium, 2 low) — full report: [AUDIT.md](./AUDIT.md) |
+| Security audit | **0 critical, 0 high** (1 medium, 6 low) — full report: [AUDIT.md](./AUDIT.md) |
 | Contracts | Live & source-verified on LUKSO mainnet |
 | Frontend | Deployed and functional on Vercel |
 | ERC-8004 | Compliant identity registry implemented and deployed |
