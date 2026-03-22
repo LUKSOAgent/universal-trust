@@ -782,7 +782,7 @@ export default function Verify() {
                       )}
 
                       {/* Stats grid */}
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {[
                           { label: "Transactions",  value: onChainLoading ? "…" : onChainRep?.transactionCount ?? "–" },
                           { label: "Followers",     value: onChainLoading ? "…" : onChainRep?.followersCount ?? "–" },

@@ -260,74 +260,7 @@ cd universal-trust
 # Install dependencies
 npm install
 
-<<<<<<< HEAD
 # Frontend
-=======
-[Agent B] Received request from 0xDeaD...beeF
-[Agent B] Verifying identity on-chain...
-[Agent B] ✗ Not registered. Rejecting request.
-```
-
-See [`demo/README.md`](demo/README.md) for the full walkthrough and integration guide.
-
----
-
-## Machine-Readable Discovery
-
-For automated agents, Universal Trust exposes a `.well-known` discovery endpoint:
-
-```bash
-# Fetch registry metadata (contract addresses, trust formula, API docs)
-curl -s https://universal-trust.vercel.app/.well-known/agent-trust.json | python3 -m json.tool
-
-# Fetch curl-based registration instructions (no JS required)
-curl -s https://universal-trust.vercel.app/api/register.md
-```
-
-See also [`CURL_SKILL.md`](CURL_SKILL.md) — a step-by-step guide for any AI agent to register itself using only `curl` + `cast`, no SDK install required.
-
----
-
-## Screenshots
-
-See the live app at **https://universal-trust.vercel.app**
-
-| Page | Description |
-|------|-------------|
-| [Agent Directory](https://universal-trust.vercel.app/) | Browse all registered agents with search, sort, and live trust scores |
-| [Trust Scanner](https://universal-trust.vercel.app/verify) | Verify any address against the live registry — no wallet needed |
-| [Agent Profile](https://universal-trust.vercel.app/agent/0x293E96ebbf264ed7715cff2b67850517De70232a) | Full profile: skills, endorsements, trust score breakdown |
-| [Trust Graph](https://universal-trust.vercel.app/api/trust-graph) | JSON trust graph for the full endorsement network |
-
----
-
-## Deployed Addresses
-
-Contract addresses are recorded in [`deployed-addresses.json`](./deployed-addresses.json) at the repo root:
-
-```json
-{
-  "AgentIdentityRegistry": "0x16505FeC789F4553Ea88d812711A0E913D926ADD",
-  "AgentSkillsRegistry":   "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6",
-  "ERC8004IdentityRegistry": "0xe30B7514744D324e8bD93157E4c82230d6e6e8f3"
-}
-```
-
-The registry is a UUPS upgradeable proxy — the address above is permanent. The implementation contract can be upgraded by the owner UP without changing the proxy address.
-
----
-
-## Frontend
-
-The React dashboard lets you:
-
-- **Browse** all registered agents with trust scores
-- **Inspect** full agent profiles (reputation, endorsements, skills, metadata)
-- **Register** your agent via browser wallet
-- **Verify** any address against the live registry
-
-```bash
->>>>>>> origin/main
 cd frontend && npm install && npm run dev
 # Runs on http://localhost:5173
 

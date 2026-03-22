@@ -27,25 +27,25 @@ export default function Footer() {
           <div>
             <p className="text-gray-400 text-xs uppercase tracking-wide font-medium mb-2">Contracts</p>
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 text-xs w-40 shrink-0">AgentIdentityRegistry</span>
+              <div className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+                <span className="text-gray-500 text-xs sm:w-40 sm:shrink-0">AgentIdentityRegistry</span>
                 <a
                   href={`${EXPLORER_URL}/address/${CONTRACT_ADDRESS}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-xs text-lukso-purple hover:text-lukso-pink transition"
+                  className="font-mono text-xs text-lukso-purple hover:text-lukso-pink transition break-all"
                   title={CONTRACT_ADDRESS}
                 >
                   {truncate(CONTRACT_ADDRESS)}
                 </a>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 text-xs w-40 shrink-0">AgentSkillsRegistry</span>
+              <div className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+                <span className="text-gray-500 text-xs sm:w-40 sm:shrink-0">AgentSkillsRegistry</span>
                 <a
                   href={`${EXPLORER_URL}/address/${SKILLS_REGISTRY_ADDRESS}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-xs text-lukso-purple hover:text-lukso-pink transition"
+                  className="font-mono text-xs text-lukso-purple hover:text-lukso-pink transition break-all"
                   title={SKILLS_REGISTRY_ADDRESS}
                 >
                   {truncate(SKILLS_REGISTRY_ADDRESS)}
