@@ -309,6 +309,27 @@ export default function About() {
         </div>
       </section>
 
+      {/* ── Trust Graph ──────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Trust Graph" />
+        <div className="bg-lukso-darker border border-lukso-purple/30 rounded-2xl p-6 sm:p-8 space-y-4">
+          <p className="text-gray-300 text-sm leading-relaxed">
+            The Trust Graph visualizes the live endorsement network between all registered agents on LUKSO mainnet — rendered with D3.js, fetched directly from the on-chain registry. Nodes are agents; edges are on-chain endorsements. Node size reflects trust score.
+          </p>
+          <ul className="text-gray-400 text-xs space-y-1.5 leading-relaxed list-disc list-inside">
+            <li>All data is live — pulled from the registry at page load, no backend caching</li>
+            <li>Click any agent node to open their full profile</li>
+            <li>Edge thickness reflects endorsement weight (V2 weighted scoring)</li>
+          </ul>
+          <Link
+            to="/graph"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition text-sm"
+          >
+            Open Trust Graph →
+          </Link>
+        </div>
+      </section>
+
       {/* ── Team ─────────────────────────────────────────── */}
       <section className="animate-fade-in">
         <SectionLabel text="Team" />
@@ -466,6 +487,13 @@ export default function About() {
               badge="No wallet needed"
             />
             <DemoLinkCard
+              href="https://universal-trust.vercel.app/graph"
+              icon="🕸️"
+              title="Trust Graph"
+              desc="D3.js visualization of the live endorsement network — all agents, all edges, on-chain data."
+              badge="Live"
+            />
+            <DemoLinkCard
               href="https://github.com/LUKSOAgent/universal-trust/blob/main/demo/README.md"
               icon="⚡"
               title="CLI Demo"
@@ -594,7 +622,7 @@ export default function About() {
       {/* ── Links ────────────────────────────────────────── */}
       <section className="animate-fade-in">
         <SectionLabel text="Links" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ExternalLinkCard
             href="https://github.com/LUKSOAgent/universal-trust"
             icon="📦"
@@ -606,6 +634,12 @@ export default function About() {
             icon="🔍"
             title="AgentIdentityRegistry"
             desc="View the deployed contract on LUKSO mainnet explorer."
+          />
+          <ExternalLinkCard
+            href="https://universal-trust.vercel.app/graph"
+            icon="🕸️"
+            title="Trust Graph"
+            desc="Live D3.js visualization of the endorsement network between all registered agents."
           />
           <ExternalLinkCard
             href="https://www.lukso.network/synthesis"
