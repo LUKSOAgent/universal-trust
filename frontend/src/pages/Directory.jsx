@@ -825,6 +825,8 @@ function TrustNetworkBg() {
   useEffect(() => {
     const svg = canvasRef.current;
     if (!svg) return;
+    // Clear any previous content (handles React StrictMode double-invoke)
+    svg.innerHTML = "";
 
     const w = 1200, h = 400;
     const nodeCount = 18;
