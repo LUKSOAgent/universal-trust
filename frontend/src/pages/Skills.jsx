@@ -210,6 +210,7 @@ export default function Skills() {
       <div className="bg-lukso-card border border-lukso-border rounded-xl animate-fade-in" style={{ animationDelay: "0.1s" }}>
         <button
           onClick={() => setShowExamples(!showExamples)}
+          aria-expanded={showExamples}
           className="w-full px-6 py-4 flex items-center justify-between hover:bg-lukso-darker/50 transition rounded-xl"
         >
           <h3 className="text-base font-semibold text-white">Skill Examples</h3>

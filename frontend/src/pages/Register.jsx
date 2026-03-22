@@ -503,6 +503,7 @@ function UPAddressExplainer() {
     <div className="bg-lukso-card border border-lukso-border rounded-xl overflow-hidden animate-fade-in mb-6" style={{ animationDelay: "0.11s" }}>
       <button
         onClick={toggleOpen}
+        aria-expanded={isOpen}
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-lukso-darker/50 transition"
       >
         <div className="flex items-center gap-2">
@@ -565,7 +566,7 @@ const upAddress = await km.target();`}
           <div className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-4">
             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-3">The Relationship</p>
             <div className="text-center space-y-2">
-              <div className="flex items-center justify-center gap-2 text-sm">
+              <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
                 <span className="bg-lukso-card border border-red-500/30 px-3 py-2 rounded text-red-300 font-mono text-xs">[Controller Key]</span>
                 <span className="text-gray-500">--signs--→</span>
                 <span className="bg-lukso-card border border-lukso-border px-3 py-2 rounded text-gray-300 font-mono text-xs">[KeyManager]</span>
@@ -573,7 +574,7 @@ const upAddress = await km.target();`}
               <div className="flex items-center justify-center gap-2 text-sm">
                 <span className="text-gray-500">--executes on--→</span>
               </div>
-              <div className="flex items-center justify-center gap-2 text-sm">
+              <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
                 <span className="bg-lukso-card border border-green-500/30 px-3 py-2 rounded text-green-300 font-mono text-xs">[Universal Profile]</span>
                 <span className="text-gray-500 ml-2">← <strong className="text-white">register THIS</strong></span>
               </div>

@@ -17,6 +17,36 @@
 
 ---
 
+## Table of Contents
+
+- [What is Universal Trust?](#what-is-universal-trust)
+- [The Problem in One Sentence](#the-problem-in-one-sentence)
+- [Judge Checklist — All Under 5 Minutes](#-judge-checklist--all-under-5-minutes)
+- [Judge Quick Start — 3 Ways to Verify in 60 Seconds](#-judge-quick-start--3-ways-to-verify-in-60-seconds)
+- [What's New in V2](#-whats-new-in-v2)
+- [Elevator Pitch](#-elevator-pitch)
+- [Why Universal Trust?](#why-universal-trust)
+- [Key Features](#-key-features)
+- [Architecture](#-architecture)
+- [Trust Score Formula](#-trust-score-formula)
+- [Live Demo — Deployed on LUKSO Mainnet](#-live-demo--deployed-on-lukso-mainnet)
+- [Registered Agents](#-registered-agents-live-on-mainnet--11-agents-60-endorsements)
+- [Tech Stack](#-tech-stack)
+- [SDK Quick Start](#sdk-quick-start)
+- [Getting Started (Local Development)](#getting-started-local-development)
+- [Security & Audits](#-security--audits)
+- [Project Structure](#-project-structure)
+- [Smart Contract — Key Functions](#smart-contract--key-functions)
+- [Agent-to-Agent Trust Demo](#-phase-3--agent-to-agent-trust-demo)
+- [Machine-Readable Discovery](#-machine-readable-discovery)
+- [Live Application](#-live-application)
+- [Why LUKSO?](#-why-lukso)
+- [Test Results](#-test-results)
+- [Hackathon Context: Synthesis 2026](#-hackathon-context-synthesis-2026)
+- [License](#-license)
+
+---
+
 ## What is Universal Trust?
 
 Universal Trust is a **permissionless, on-chain identity and reputation layer for AI agents** — built natively on LUKSO's Universal Profiles.
@@ -550,13 +580,17 @@ The React dashboard lets you:
 
 ## 🌟 Why LUKSO?
 
-LUKSO's Universal Profiles are the ideal identity primitive for AI agents:
+Universal Trust could have been built on any EVM chain. It is built on LUKSO because LUKSO's Universal Profiles are the **only identity primitive in Web3 designed from the ground up for this exact use case** — rich, composable, self-sovereign identity with built-in key management and a native social graph.
 
-1. **Native identity**: UPs have built-in metadata, permissions, and key management
-2. **Permission system**: LSP6 KeyManager lets agents delegate actions safely
-3. **Social graph**: LSP26 Followers is integrated — the Trust Graph API queries LSP26 to compute a social score from registered followers
-4. **Metadata standards**: LSP3 Profile Metadata provides structured identity
-5. **EVM compatible**: Works with all existing Ethereum tooling
+| LUKSO Primitive | How Universal Trust uses it |
+|---|---|
+| **LSP0 Universal Profiles** | Every agent registers with a UP — name, avatar, and metadata are on-chain natively, not an afterthought |
+| **LSP6 KeyManager** | Combine with trust scores for fine-grained agent permissions: `trustScore ≥ 200 → allow execute` |
+| **LSP26 Followers** | Native social graph queried for reputation signals — real on-chain social proof, not a mock |
+| **ERC725Y Data Store** | Trust scores written back to UP as key-value pairs — composable with every LUKSO dApp that reads UP metadata |
+| **EVM compatible** | Works with all existing Ethereum tooling — no new SDKs for basic operations |
+
+**The bottom line:** Building this on Ethereum would require inventing an identity layer from scratch. On LUKSO, Universal Profiles, key management, and social graphs already exist — Universal Trust just connects them into a trust primitive.
 
 ---
 
