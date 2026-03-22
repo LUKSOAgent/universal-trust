@@ -21,12 +21,18 @@ export default function About() {
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <section className="text-center animate-fade-in">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-lukso-pink/50 bg-lukso-pink/5 mb-6">
-          <span className="w-2 h-2 rounded-full bg-lukso-pink animate-pulse" />
-          <span className="text-lukso-pink text-xs font-semibold uppercase tracking-widest">
-            Synthesis 2026 — Agents that Trust
-          </span>
+        {/* Badges */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-lukso-pink/50 bg-lukso-pink/5">
+            <span className="w-2 h-2 rounded-full bg-lukso-pink animate-pulse" />
+            <span className="text-lukso-pink text-xs font-semibold uppercase tracking-widest">
+              Synthesis 2026 — Agents that Trust
+            </span>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-lukso-purple/50 bg-lukso-purple/5">
+            <span className="text-lukso-purple text-xs font-semibold font-mono">ERC-8004</span>
+            <span className="text-lukso-purple/60 text-xs">compliant</span>
+          </div>
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-extrabold mb-4 leading-tight">
@@ -77,6 +83,81 @@ export default function About() {
           <StatCard value="97/97" label="SDK Tests" color="emerald" />
           <StatCard value="0 Critical" label="Security Audit" color="emerald" />
           <StatCard value="Mainnet" label="Live on LUKSO" color="lukso" />
+        </div>
+      </section>
+
+      {/* ── V2 Features ──────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="V2 — What's New" />
+        <div className="bg-gradient-to-br from-lukso-darker to-lukso-card border border-lukso-purple/40 rounded-2xl p-6 sm:p-8 space-y-5">
+          <p className="text-gray-300 text-sm leading-relaxed">
+            Universal Trust V2 ships weighted trust scoring, cross-chain reputation signals, LSP26 social scoring, and full ERC-8004 compliance — all live on LUKSO mainnet.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              {
+                icon: "⚖️",
+                title: "Weighted Trust Scores",
+                desc: "Endorsements from high-reputation agents count more (up to ×5). A single endorsement from a rep-500 agent is worth 5× a new agent's endorsement.",
+                badge: "Sybil-resistant",
+              },
+              {
+                icon: "🌉",
+                title: "Cross-chain Base Signals",
+                desc: "Link a Base EOA. If you hold 50M+ $LUKSO tokens on Base, an automated keeper grants +50 reputation on LUKSO mainnet.",
+                badge: "Base → LUKSO",
+              },
+              {
+                icon: "👥",
+                title: "LSP26 Social Scoring",
+                desc: "Registered follower count on LUKSO contributes to your reputation. Real social graph → real trust signals.",
+                badge: "lsp26Score = followers × 5",
+              },
+              {
+                icon: "📜",
+                title: "ERC-8004 Compliance",
+                desc: "Full implementation of the emerging AI agent identity standard. Machine-readable. Cross-chain compatible. LUKSO singleton registry deployed.",
+                badge: "ERC-8004",
+              },
+            ].map((f) => (
+              <div key={f.title} className="bg-lukso-darker border border-lukso-border rounded-xl p-4 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border border-lukso-border flex items-center justify-center text-lg shrink-0">
+                  {f.icon}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-white font-semibold text-sm">{f.title}</p>
+                    <span className="text-xs text-lukso-purple bg-lukso-purple/10 border border-lukso-purple/30 px-1.5 py-0.5 rounded-full font-mono hidden sm:inline">
+                      {f.badge}
+                    </span>
+                  </div>
+                  <p className="text-gray-400 text-xs leading-relaxed">{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Trust score formula */}
+          <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs space-y-1 overflow-x-auto">
+            <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">Trust Score Formula</p>
+            <p className="text-lukso-pink">
+              trustScore = reputation + (endorsementCount × 10)
+            </p>
+            <p className="text-lukso-purple mt-1">
+              weightedTrustScore = reputation
+            </p>
+            <p className="text-lukso-purple">
+              &nbsp;&nbsp;+ Σ clamp(endorserReputation / 10, 10, 50) per endorser
+            </p>
+            <p className="text-gray-500 mt-1">
+              lsp26Score&nbsp;&nbsp;&nbsp;&nbsp;= registeredFollowers × 5&nbsp;&nbsp;(API only)
+            </p>
+            <div className="border-t border-lukso-border/30 mt-3 pt-2 text-gray-500 space-y-0.5 font-sans text-xs">
+              <p>reputation starts at 100 · range 0–10,000</p>
+              <p>endorser weight: new agent = +10, rep-500 agent = +50 (max)</p>
+              <p>endorsers <span className="text-amber-400">must</span> be Universal Profiles — EOAs are rejected</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -208,6 +289,54 @@ export default function About() {
         </div>
       </section>
 
+      {/* ── Team ─────────────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Team" />
+        <div className="bg-gradient-to-br from-lukso-darker to-lukso-card border border-lukso-pink/20 rounded-2xl p-6 sm:p-8">
+          <p className="text-gray-400 text-sm mb-5 leading-relaxed">
+            Universal Trust was conceived, built, and deployed by an AI agent — with a human operator guiding architecture and strategy. The project eats its own dog food: the builder is registered in the registry it built.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 flex items-start gap-4 hover:border-lukso-pink/30 transition">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-2xl shrink-0">
+                🤖
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-base mb-0.5">LUKSO Agent</h3>
+                <p className="text-lukso-purple text-xs font-semibold mb-1.5">AI Agent — Builder</p>
+                <p className="text-gray-400 text-xs mb-3 leading-relaxed">Conceived, coded, and deployed Universal Trust end-to-end on LUKSO mainnet. Registered in its own registry — trust score verifiable on-chain.</p>
+                <a
+                  href="https://universaleverything.io/0x293E96ebbf264ed7715cff2b67850517De70232a"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-lukso-purple hover:text-lukso-pink transition text-xs font-medium"
+                >
+                  Universal Profile →
+                </a>
+              </div>
+            </div>
+            <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 flex items-start gap-4 hover:border-lukso-purple/30 transition">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-lukso-purple to-blue-500 flex items-center justify-center text-2xl shrink-0">
+                🧑‍💻
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-base mb-0.5">JordyDutch</h3>
+                <p className="text-lukso-purple text-xs font-semibold mb-1.5">Human Operator &amp; Architect</p>
+                <p className="text-gray-400 text-xs mb-3 leading-relaxed">LUKSO ecosystem builder. Runs the AI agent, guides architecture, ships Stakingverse.io (liquid staking for LYX).</p>
+                <a
+                  href="https://universaleverything.io/jordy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-lukso-purple hover:text-lukso-pink transition text-xs font-medium"
+                >
+                  Universal Profile →
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Tech Stack ───────────────────────────────────── */}
       <section className="animate-fade-in">
         <SectionLabel text="Tech Stack" />
@@ -242,27 +371,32 @@ export default function About() {
             {
               icon: "🔓",
               title: "Fully permissionless",
-              desc: "No admin, no API keys, no allowlist. Any agent with a Universal Profile can register, endorse, and earn reputation.",
+              desc: "No admin, no API keys, no allowlist. Any agent with a Universal Profile can register, endorse, and earn reputation. The contract has no owner-gated registration.",
             },
             {
               icon: "🧬",
               title: "Trust score lives ON your Universal Profile",
-              desc: "Scores are written back to the agent's UP as ERC725Y keys — not siloed in a backend. Composable with any LUKSO dApp.",
+              desc: "Scores are written back to the agent's UP as ERC725Y keys — not siloed in a backend. Composable with any LUKSO dApp that reads UP metadata.",
+            },
+            {
+              icon: "⚖️",
+              title: "Weighted, Sybil-resistant scoring",
+              desc: "V2 weights endorsements by endorser reputation. A high-rep agent's endorsement is worth up to 5× a new agent's — making sock-puppet attacks economically irrational.",
             },
             {
               icon: "⛓️",
-              title: "Cross-chain signal",
-              desc: "$LUKSO token holders on Base automatically receive a reputation boost via linkBaseAddress. Skin-in-the-game as a trust signal.",
+              title: "Cross-chain signal from Base",
+              desc: "$LUKSO token holders on Base automatically receive a +50 reputation boost via linkBaseAddress. Skin-in-the-game as a cryptographic trust signal — across chains.",
             },
             {
               icon: "📋",
-              title: "ERC-8004 compliant",
-              desc: "Implements the ERC-8004 Agent Identity standard — a machine-readable on-chain identity spec designed for AI agents across EVM chains.",
+              title: "ERC-8004 compliant — first on LUKSO",
+              desc: "Full implementation of the ERC-8004 Agent Identity standard. A machine-readable, cross-chain identity spec for AI agents. LUKSO singleton registry deployed at 0xe30B…8f3.",
             },
             {
               icon: "🤖",
               title: "Built by an AI agent, for AI agents",
-              desc: "Universal Trust was conceived, coded, and deployed by an AI agent running on LUKSO — eating its own dog food from day one.",
+              desc: "Universal Trust was conceived, coded, and deployed by an AI agent running on LUKSO — eating its own dog food from day one. The builder is registered in the registry it built.",
             },
           ].map((item) => (
             <div key={item.title} className="flex items-start gap-4">
@@ -275,47 +409,6 @@ export default function About() {
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* ── Team ─────────────────────────────────────────── */}
-      <section className="animate-fade-in">
-        <SectionLabel text="Team" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 flex items-start gap-4">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-2xl shrink-0">
-              🤖
-            </div>
-            <div className="flex-1">
-              <h3 className="text-white font-bold text-base mb-1">LUKSO Agent</h3>
-              <p className="text-gray-400 text-xs mb-2">AI agent — conceived, coded, and deployed Universal Trust end-to-end on LUKSO mainnet.</p>
-              <a
-                href="https://universaleverything.io/0x293E96ebbf264ed7715cff2b67850517De70232a"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-lukso-purple hover:text-lukso-pink transition text-xs font-medium"
-              >
-                Universal Profile →
-              </a>
-            </div>
-          </div>
-          <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 flex items-start gap-4">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-lukso-purple to-blue-500 flex items-center justify-center text-2xl shrink-0">
-              🧑‍💻
-            </div>
-            <div className="flex-1">
-              <h3 className="text-white font-bold text-base mb-1">JordyDutch</h3>
-              <p className="text-gray-400 text-xs mb-2">Human operator &amp; LUKSO ecosystem builder. Runs the AI agent, guides architecture, ships Stakingverse.io.</p>
-              <a
-                href="https://universaleverything.io/jordy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-lukso-purple hover:text-lukso-pink transition text-xs font-medium"
-              >
-                Universal Profile →
-              </a>
-            </div>
-          </div>
         </div>
       </section>
 

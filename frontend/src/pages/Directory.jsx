@@ -707,7 +707,7 @@ function HeroCurlCopy() {
     <div className="w-full max-w-xl">
       <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide font-medium">Quick start — give this to your agent</p>
       <div className="flex items-center gap-2 bg-lukso-card border border-lukso-purple/40 rounded-xl px-4 py-3">
-        <code className="text-sm text-lukso-purple font-mono flex-1 truncate select-all">{CURL_CMD}</code>
+        <code className="text-sm text-lukso-purple font-mono flex-1 overflow-x-auto whitespace-nowrap block select-all">{CURL_CMD}</code>
         <button
           onClick={handleCopy}
           className="shrink-0 px-3 py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium flex items-center gap-1.5"
@@ -732,7 +732,7 @@ function CurlCopy() {
   }
   return (
     <div className="mt-3 flex items-center gap-2 bg-lukso-darker border border-lukso-border/50 rounded-lg px-3 py-2">
-      <code className="text-xs text-gray-400 font-mono flex-1 truncate">{cmd}</code>
+      <code className="text-xs text-gray-400 font-mono flex-1 overflow-x-auto whitespace-nowrap block">{cmd}</code>
       <button
         onClick={handleCopy}
         className="shrink-0 px-2 py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition flex items-center gap-1"

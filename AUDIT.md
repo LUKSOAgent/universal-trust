@@ -791,3 +791,107 @@ Overall risk posture remains **LOW**. All findings are Low or Informational. Con
 **Fourth-Pass Audit Date:** 2026-03-22
 **Auditor:** Universal Trust Agent (subagent: audit-refresh-agent)
 **Status:** ✅ NO NEW CRITICAL/HIGH FINDINGS — Safe for hackathon submission.
+
+---
+
+## Additional Review — 2026-03-22
+
+**Date:** 2026-03-22
+**Scope:** Full re-read of all five contracts against all prior passes (first through fourth). Focus on cross-contract interactions introduced by `TrustedAgentGate` and cryptographic correctness of `ERC8004IdentityRegistry`.
+
+---
+
+### NEW-5 [Low] — `onlyWeightedTrustedAgent` Modifier Introduces Unbounded Loop Into State-Changing Functions
+
+**Severity:** Low
+**Contracts:** `TrustedAgentGate.sol` → `AgentIdentityRegistry.sol`
+**Functions:** `_checkTrust()` (via `onlyWeightedTrustedAgent`) → `_computeWeightedTrustScore()`
+
+**Finding:**
+The first-pass audit correctly noted that `_computeWeightedTrustScore()` is a view function with an O(n) loop over `_endorsers[agent]`, and concluded that "reads are expensive by nature but clients can paginate." This was marked SAFE because loops in pure read-only calls do not affect state-changing operations.
+
+However, `TrustedAgentGate` (added post-audit) introduces `onlyWeightedTrustedAgent(minScore)` — a modifier that calls `_checkTrust()` → `registry.getWeightedTrustScore(agent)` → `_computeWeightedTrustScore()`. This means the O(n) endorser loop now executes inside **state-changing transaction gas budgets**.
+
+**Concrete path in `TrustedCouncil`:**
+```solidity
+function propose(string calldata description)
+    external
+    onlyTrustedAgent(MIN_TRUST_SCORE)   // flat score — O(1), safe
+    returns (uint256 proposalId)
+
+function vote(uint256 proposalId, bool support)
+    external
+    onlyTrustedAgent(MIN_TRUST_SCORE)   // flat score — O(1), safe
+```
+
+`TrustedCouncil` currently uses `onlyTrustedAgent` (flat, O(1)) rather than `onlyWeightedTrustedAgent`, so the immediate production contracts are unaffected. However:
+
+1. Any future integrator using `onlyWeightedTrustedAgent` in a write function inherits this risk.
+2. The `isWeightedTrustedAgent(agent, minScore)` external view helper also calls the loop, and is used by off-chain tooling — this is acceptable as a view call.
+3. If a highly-endorsed agent (e.g. 10,000+ endorsers) attempts to call a function guarded by `onlyWeightedTrustedAgent`, the transaction may revert out-of-gas, effectively locking them out of gated contracts.
+
+**Impact:**
+Low. No current production path uses `onlyWeightedTrustedAgent` in a state-changing function. The risk is latent and applies to future integrators who read the modifier name and assume symmetry with `onlyTrustedAgent`.
+
+**Recommendation (for future v2 integrators):**
+- Add a NatSpec warning to `onlyWeightedTrustedAgent`: "⚠️ Gas: O(n) over endorser count. Do not use in functions called by highly-endorsed agents in production."
+- Consider caching the weighted trust score in the registry (updated on each `endorse`/`removeEndorsement`) to make the modifier O(1).
+- For write functions, prefer `onlyTrustedAgent` (flat, O(1)) unless the endorser-weight distinction is critical.
+
+**Status:** New Finding (Contracts deployed and immutable. Guidance for integrators.)
+
+---
+
+### NEW-6 [Informational] — `setAgentWallet` Uses Raw `ecrecover` Without EIP-2 Malleability Guard
+
+**Severity:** Informational
+**Contract:** `ERC8004IdentityRegistry.sol`
+**Function:** `setAgentWallet()`
+
+**Finding:**
+The EOA signature path in `setAgentWallet` uses raw `ecrecover` without a check that the `s` component of the ECDSA signature is in the lower half of the secp256k1 curve order:
+
+```solidity
+address recovered = ecrecover(digest, v, r, s);
+valid = (recovered == newWallet && recovered != address(0));
+```
+
+ECDSA signatures are malleable: given a valid `(v, r, s)`, a second valid signature `(v', r, s')` where `s' = curveOrder - s` and `v' = odd/even swap` recovers to the same address. Ethereum protocol transactions are protected by EIP-155 nonces, but standalone `ecrecover` calls are not.
+
+**In the context of `setAgentWallet`:**
+- An observer who sees a valid `setAgentWallet` transaction in the mempool can compute the malleable counterpart signature and front-run or replay it.
+- However, `setAgentWallet` requires the **owner or operator** to call it (`_requireOwnerOrOperator`), and the function is not replay-protected by a nonce — only by the `deadline` timestamp.
+- Practical attack: A man-in-the-middle who observes the valid signature in-flight could call `setAgentWallet` themselves using the malleable signature before the original transaction lands — but would achieve the same outcome (setting the same `newWallet`). There is no way to use malleability to set a *different* wallet.
+- The `deadline` prevents long-term replay but does not prevent same-window replay within the deadline window.
+
+**Why the risk is bounded:**
+- The malleable signature still resolves to the same `newWallet`, so an attacker cannot redirect the wallet to their own address.
+- The result of a successful replay is idempotent: `_metadata[agentId][AGENT_WALLET_KEY]` is set to the same value.
+- Front-running does not benefit the attacker — the wallet set is the one `newWallet` signed for.
+
+**Recommendation (informational):**
+For defense-in-depth and to follow OpenZeppelin's ECDSA best practices, add:
+```solidity
+require(uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
+    "Invalid signature 's' value");
+```
+Or use OZ's `ECDSA.recover()` which includes this guard. Low priority given the idempotent outcome.
+
+**Status:** New Finding (Informational — no exploitable impact given idempotent wallet-set result. Document for v2.)
+
+---
+
+### Additional Review Summary
+
+| Finding | Severity | Contract | Status |
+|---------|----------|----------|--------|
+| NEW-5: onlyWeightedTrustedAgent — O(n) loop in state-changing modifier | Low | TrustedAgentGate / AgentIdentityRegistry | New |
+| NEW-6: setAgentWallet — ecrecover without malleability guard | Informational | ERC8004IdentityRegistry | New |
+
+**No new Critical or High severity findings.**
+
+Overall risk posture remains **LOW**. Both new findings are Low or Informational. All five contracts reviewed. Deployed contracts are immutable; findings are documented for future integrators and v2 planning.
+
+**Additional Review Date:** 2026-03-22
+**Auditor:** Universal Trust Agent (subagent: audit-refresh-agent-c)
+**Status:** ✅ NO NEW CRITICAL/HIGH FINDINGS — AUDIT.md updated with 2 new findings.
