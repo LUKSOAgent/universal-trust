@@ -1066,3 +1066,104 @@ Overall risk posture remains **LOW**. All deployed contracts are safe for contin
 **Fourth-Pass Audit Date:** 2026-03-22  
 **Auditor:** Universal Trust Sub-Agent C (session: audit-refresh-agent-c)  
 **Status:** ✅ NO NEW CRITICAL/HIGH FINDINGS — Safe for hackathon submission and production use.
+
+---
+
+## Fifth-Pass Audit — 2026-03-22
+
+> **Scope:** Deep re-read focusing on interaction patterns and cross-function logic not covered in prior passes. Read-only.
+
+---
+
+### FINDING-A [Medium] — `endorse()` CEI Violation: Reentrancy via `isUniversalProfile` External Call
+
+**Severity:** Medium  
+**Contract:** `AgentIdentityRegistry.sol`  
+**Function:** `endorse()` (line 329)
+
+**Finding:**
+`endorse()` calls `isUniversalProfile(msg.sender)` (which makes two external `supportsInterface()` calls to `msg.sender`) **before** the `_endorserIndex` duplicate check and all state writes:
+
+```solidity
+if (!isUniversalProfile(msg.sender)) revert ...;  // ← external call to msg.sender (line 329)
+if (_endorserIndex[endorsed][msg.sender] != 0) revert ...;  // ← check still 0 at reentry!
+// state writes below...
+```
+
+A malicious contract mimicking UP interface can reenter `endorse()` during the `supportsInterface` callback. At reentry time `_endorserIndex == 0`, so the duplicate check passes. Result: the attacker appears twice in `_endorsers[victim]`, `endorsementCount` is inflated by 2, and one entry is an orphaned permanent record unremovable via `removeEndorsement`.
+
+**Impact:** Medium. Requires a malicious smart-contract caller. Trust score inflation is permanent for the orphaned entry.
+
+**Recommendation (v2):** Add OpenZeppelin `nonReentrant` modifier to `endorse()`, or move the `isUniversalProfile` check after all state writes (pure CEI).
+
+**Status:** New Finding. NOT in any prior audit pass. Do not modify deployed contract.
+
+---
+
+### FINDING-B [Medium] — `linkBaseAddress()` Has No Ownership Proof and No Uniqueness Constraint
+
+**Severity:** Medium  
+**Contract:** `AgentIdentityRegistry.sol`  
+**Function:** `linkBaseAddress()` (line 192)
+
+**Finding:**
+Any registered agent can claim any Base chain EOA as their own without any cryptographic proof of control — no signature required from the Base address:
+
+```solidity
+function linkBaseAddress(address baseAddress) external onlyRegistered(msg.sender) {
+    if (_baseAddresses[msg.sender] != address(0)) revert BaseAddressAlreadySet(...);
+    _baseAddresses[msg.sender] = baseAddress;
+```
+
+Two problems:
+1. **No ownership proof:** An agent can link a whale wallet they don't control and receive the associated reputation boost from the keeper.
+2. **No uniqueness constraint:** Multiple LUKSO agents can all link the same Base address simultaneously. The same token balance could be claimed by unlimited agents.
+
+The README explicitly describes `linkBaseAddress` as Sybil resistance via skin-in-the-game — but neither control proof nor uniqueness is enforced on-chain.
+
+**Impact:** Medium. Off-chain keeper grants reputation boosts based on linked address holdings. The mechanism provides no Sybil resistance as implemented.
+
+**Recommendation (v2):** Require an EIP-712 signature from the Base address proving control, and add a reverse mapping to enforce uniqueness per Base address.
+
+**Status:** New Finding. NEW-7 (fourth-pass) covers deactivated agents only — ownership proof and multi-claim are separate issues not in any prior pass.
+
+---
+
+### FINDING-C [Low] — `applyDecay()` Permanently DoS'd by Large `decayRate`
+
+**Severity:** Low  
+**Contract:** `AgentIdentityRegistry.sol`
+
+`setDecayParams()` has no upper bound on `_decayRate`. A value where `daysInactive * decayRate > type(uint256).max` causes every `applyDecay()` call to revert (Solidity 0.8 checked arithmetic). Decay becomes permanently non-functional for all agents until owner resets it.
+
+Complement to LOW-01 (zero decayRate) — both extremes are unvalidated.
+
+**Recommendation (v2):** Add bounds: `require(_decayRate >= 1 && _decayRate <= 1000)`.
+
+**Status:** New Finding (Do Not Modify — Contract Deployed)
+
+---
+
+### FINDING-D [Informational] — Zero-Reputation Endorsers Permanently Contribute Floor Weight
+
+**Severity:** Informational
+
+`_computeWeightedTrustScore()` clamps endorser contribution to `[10, 50]`. An endorser with 0 reputation still contributes 10 points. Since only the endorser can call `removeEndorsement()`, the endorsed party cannot remove stale zero-reputation endorsers. Floor contribution is permanent.
+
+**Status:** Informational by design — document in NatSpec.
+
+---
+
+### Fifth-Pass Summary
+
+| Finding | Severity | Status |
+|---------|----------|--------|
+| FINDING-A: endorse() reentrancy via isUniversalProfile | Medium | New |
+| FINDING-B: linkBaseAddress() no ownership proof + no uniqueness | Medium | New |
+| FINDING-C: applyDecay() overflow DoS from large decayRate | Low | New |
+| FINDING-D: zero-rep endorsers contribute permanent floor weight | Informational | New |
+
+**Five-pass cumulative: 0 Critical · 0 High · 3 Medium · 9 Low · 30+ Informational.**
+
+**Fifth-Pass Date:** 2026-03-22  
+**Status:** ✅ NO NEW CRITICAL/HIGH FINDINGS. Deployed contracts safe for continued use.
