@@ -6,9 +6,64 @@
 [![CI](https://github.com/LUKSOAgent/universal-trust/workflows/CI/badge.svg)](https://github.com/LUKSOAgent/universal-trust/actions)
 [![Audited](https://img.shields.io/badge/Security-Audited-blue.svg)](./AUDIT.md)
 
-> **Hackathon Track:** Synthesis 2026 — *Agents that Trust*
+> **Hackathon Track:** [Synthesis 2026 — *Agents that Trust*](https://www.lukso.network/synthesis)
 
 > **Live:** [universal-trust.vercel.app](https://universal-trust.vercel.app) · **Contracts deployed on LUKSO mainnet** · 80/80 Foundry tests · 97/97 SDK tests · 0 critical/0 high in security audit
+
+---
+
+## ✅ Judge Checklist — All Under 5 Minutes
+
+| | Check | How |
+|---|-------|-----|
+| ✅ | **Live demo** | [universal-trust.vercel.app](https://universal-trust.vercel.app) — no wallet, no setup |
+| ✅ | **Verified contract** | [AgentIdentityRegistry on LUKSO explorer](https://explorer.execution.mainnet.lukso.network/address/0x16505FeC789F4553Ea88d812711A0E913D926ADD#code) |
+| ✅ | **One-call verify** | `curl https://universal-trust.vercel.app/api/verify/0x293E96ebbf264ed7715cff2b67850517De70232a` |
+| ✅ | **Agent-to-agent demo** | `node demo/demo.js` — runs in ~30 seconds, no wallet needed |
+| ✅ | **All 80 Foundry tests** | `cd contracts && forge test` |
+| ✅ | **Security audit** | [AUDIT.md](./AUDIT.md) — 0 critical, 0 high |
+| ✅ | **ERC-8004 compliance** | Contract: `0xe30B7514744D324e8bD93157E4c82230d6e6e8f3` ([explorer](https://explorer.execution.mainnet.lukso.network/address/0xe30B7514744D324e8bD93157E4c82230d6e6e8f3)) |
+| ✅ | **Trust graph** | [/about](https://universal-trust.vercel.app/about) — D3.js endorsement network |
+
+---
+
+## 🚀 Judge Quick Start — 3 Ways to Verify in 60 Seconds
+
+**Option 1: Live API (no setup)**
+```bash
+# Verify a registered agent — returns trust score, endorsements, UP status
+curl -s https://universal-trust.vercel.app/api/verify/0x293E96ebbf264ed7715cff2b67850517De70232a | python3 -m json.tool
+```
+
+**Option 2: Trust graph data**
+```bash
+# Fetch all registered agents with trust scores
+curl -s https://universal-trust.vercel.app/api/trust-graph | \
+  python3 -c "import json,sys; [print(f'{n[\"name\"]}: trustScore={n[\"trustScore\"]}, weighted={n.get(\"weightedTrustScore\",\"n/a\")}') for n in json.load(sys.stdin)['nodes']]"
+```
+
+**Option 3: Agent-to-agent demo**
+```bash
+git clone https://github.com/LUKSOAgent/universal-trust.git
+cd universal-trust && npm install
+node demo/demo.js
+# Output in ~15 seconds — no wallet, no env vars needed
+```
+
+---
+
+## 🆕 What's New in V2
+
+| Feature | Description |
+|---------|-------------|
+| **Weighted Trust Scores** | Endorsements from high-rep agents count more (up to ×5 multiplier) — Sybil-resistant |
+| **Cross-chain Base Signals** | Link a Base EOA; $LUKSO token holders (50M+) get +50 reputation via automated keeper |
+| **LSP26 Social Scoring** | Registered follower count → reputation signal; `lsp26Score = followers × 5` |
+| **ERC-8004 Compliance** | Full implementation of the emerging AI agent identity standard on LUKSO |
+| **`verifyV2()` endpoint** | Single call returns both flat and weighted trust scores plus UP detection |
+| **Decay parameters** | Owner-configurable inactivity decay rate and grace period |
+
+---
 
 ## 🎯 Elevator Pitch
 
@@ -24,15 +79,15 @@ A single `verify(address)` call tells you if an AI agent is registered, endorsed
 
 **The Problem:**
 
-AI agents are everywhere. They trade tokens, manage portfolios, write code, execute contracts, and interact with other agents — often autonomously.
+AI agents are executing $50,000 token swaps, managing DeFi positions, and signing transactions — often without human oversight. They're proliferating faster than any trust framework can track them.
 
-**The critical gap:** there's no way to know if an agent is trustworthy.
+**The critical gap: there is no on-chain way to know if an agent is who it claims to be.**
 
-- An agent requests a $50k token swap from your wallet. Is it legitimate?
-- Two AI systems want to collaborate on a task. How do they verify each other?
-- A DeFi protocol wants to allow agent access. How does it screen out bad actors?
+- A malicious bot deploys at any address and claims to be a trusted trading agent. Your protocol can't tell the difference.
+- Two AI systems want to collaborate. Before sharing funds or execution rights, how do they verify each other isn't a drain attack?
+- A DeFi protocol wants to open access to agents. Without a trust layer, it opens itself to every script kiddie with a deployer wallet.
 
-Today, agent trust is **centralized**: API keys, platform accounts, corporate-controlled registries. If the platform goes down or revokes access, the agent's identity disappears.
+Today, agent trust is **centralized and fragile**: API keys, platform accounts, corporate-controlled registries. If the platform goes down, gets hacked, or revokes access — the agent's identity vanishes. There is no cryptographic record. No social proof. Nothing.
 
 **The Solution: On-Chain, Permissionless Identity**
 
@@ -153,22 +208,26 @@ Rogue bot tries to impersonate a trusted agent:
 | **AgentIdentityRegistry** (proxy) | `0x16505FeC789F4553Ea88d812711A0E913D926ADD` | [View ✓ Verified](https://explorer.execution.mainnet.lukso.network/address/0x16505FeC789F4553Ea88d812711A0E913D926ADD#code) |
 | AgentIdentityRegistry (impl) | `0x80a6e250fA06D8619C7d4DDC0D50efB03Ca29277` | [View](https://explorer.execution.mainnet.lukso.network/address/0x80a6e250fA06D8619C7d4DDC0D50efB03Ca29277) |
 | **AgentSkillsRegistry** | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` | [View ✓ Verified](https://explorer.execution.mainnet.lukso.network/address/0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6#code) |
-| ERC-8004 Identity Registry | `0xe30B7514744D324e8bD93157E4c82230d6e6e8f3` | [View](https://explorer.execution.mainnet.lukso.network/address/0xe30B7514744D324e8bD93157E4c82230d6e6e8f3) |
+| **ERC-8004 Identity Registry** | `0xe30B7514744D324e8bD93157E4c82230d6e6e8f3` | [View ✓ ERC-8004](https://explorer.execution.mainnet.lukso.network/address/0xe30B7514744D324e8bD93157E4c82230d6e6e8f3) |
 
 ### Try it now (no wallet needed):
 
 ```bash
-npm install @universal-trust/sdk
+# Fastest: verify an agent via REST (no install, no wallet)
+curl -s https://universal-trust.vercel.app/api/verify/0x293E96ebbf264ed7715cff2b67850517De70232a
+# → {"registered":true,"active":true,"isUniversalProfile":true,"trustScore":110,"weightedTrustScore":110,"name":"LUKSO Agent"}
 
+# Trust graph — all agents, scores, and endorsement links
+curl -s https://universal-trust.vercel.app/api/trust-graph | jq '.nodes[] | {name, id, trustScore, weightedTrustScore, lsp26Score}'
+
+# Via SDK
+npm install @universal-trust/sdk
 node -e "
 const { AgentTrust } = require('@universal-trust/sdk');
 const t = new AgentTrust({});
 t.getAgentCount().then(n => console.log('Registered agents:', n));
 t.verify('0x293E96ebbf264ed7715cff2b67850517De70232a').then(v => console.log(v));
 "
-
-# Or via Trust Graph API (no SDK, no wallet):
-curl https://universal-trust.vercel.app/api/trust-graph | jq '.nodes[] | {name, id, trustScore, weightedTrustScore, lsp26Score}'
 ```
 
 ---
@@ -462,7 +521,7 @@ Universal Trust demonstrates how AI agents can establish verifiable identity and
 | Frontend | Deployed and functional on Vercel |
 | ERC-8004 | Compliant identity registry implemented |
 
-### Judge Checklist (all under 5 minutes)
+### Judge Checklist (see top of README for full checklist)
 
 - ✅ Run the agent-to-agent demo in ~30 seconds (`node demo/demo.js`)
 - ✅ Inspect verified contract source on LUKSO explorer
@@ -470,6 +529,7 @@ Universal Trust demonstrates how AI agents can establish verifiable identity and
 - ✅ Verify any agent address with one API call (no wallet, no setup)
 - ✅ Read the full security audit — [AUDIT.md](./AUDIT.md)
 - ✅ Check the trust graph visualization on the About page
+- ✅ ERC-8004 registry: `0xe30B7514744D324e8bD93157E4c82230d6e6e8f3`
 
 ---
 
@@ -479,6 +539,10 @@ MIT — See [LICENSE](LICENSE)
 
 ---
 
-**Built by [LUKSO Agent](https://universalprofile.cloud/0x293E96ebbf264ed7715cff2b67850517De70232a)** for the [Synthesis Hackathon 2026](https://synthesis.so).
+---
 
-Edited: 2026-03-22 (Hackathon submission prep)
+**Built by [LUKSO Agent](https://universalprofile.cloud/0x293E96ebbf264ed7715cff2b67850517De70232a)** · [JordyDutch](https://universaleverything.io/jordy)
+
+Submitted to **[Synthesis Hackathon 2026](https://www.lukso.network/synthesis)** — Track: *Agents that Trust*
+
+Last updated: 2026-03-22

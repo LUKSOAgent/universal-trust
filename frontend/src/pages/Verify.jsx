@@ -544,7 +544,7 @@ export default function Verify() {
               
               {/* Verified Banner */}
               <div className="relative z-10 p-6 border-b border-lukso-border">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs uppercase tracking-widest text-green-400/70 mb-1 flex items-center gap-2">
                       <span className="relative flex h-2 w-2">
