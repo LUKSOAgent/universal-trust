@@ -73,12 +73,15 @@ export function TrustScoreBar({ reputation, endorsements, trustScore }) {
   const pct = Math.min((trustScore / maxScore) * 100, 100);
 
   let barColor;
-  if (trustScore >= 500) {
-    barColor = "from-green-500 to-emerald-400";
+  // Match tier thresholds: Verified ≥1000, Established ≥500, Trusted ≥200, Registered ≥100
+  if (trustScore >= 1000) {
+    barColor = "from-amber-500 to-yellow-400";
+  } else if (trustScore >= 500) {
+    barColor = "from-purple-500 to-violet-400";
   } else if (trustScore >= 200) {
-    barColor = "from-blue-500 to-cyan-400";
+    barColor = "from-emerald-500 to-green-400";
   } else if (trustScore >= 100) {
-    barColor = "from-yellow-500 to-amber-400";
+    barColor = "from-blue-500 to-cyan-400";
   } else {
     barColor = "from-gray-500 to-gray-400";
   }

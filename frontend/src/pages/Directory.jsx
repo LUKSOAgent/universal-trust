@@ -710,7 +710,7 @@ function HeroCurlCopy() {
         <code className="text-sm text-lukso-purple font-mono flex-1 overflow-x-auto whitespace-nowrap block select-all">{CURL_CMD}</code>
         <button
           onClick={handleCopy}
-          className="shrink-0 px-3 py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium flex items-center gap-1.5"
+          className="shrink-0 inline-flex min-h-[44px] items-center px-3 py-2 sm:min-h-0 sm:py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium gap-1.5"
         >
           {copied ? (
             <><svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>Copied!</>
@@ -804,7 +804,7 @@ console.log('Registered:', signer.address);`;
           </pre>
           <button
             onClick={handleCopy}
-            className="absolute top-2.5 right-2.5 px-2 py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition flex items-center gap-1"
+            className="absolute top-3 right-3 inline-flex min-h-[44px] items-center px-3 py-2 sm:min-h-0 sm:px-2 sm:py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition gap-1"
           >
             {copied ? (
               <><svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Copied</>
