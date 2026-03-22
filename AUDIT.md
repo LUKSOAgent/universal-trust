@@ -1024,3 +1024,85 @@ This is the final audit pass for the hackathon submission. The contracts are sou
 
 **Seventh-Pass Date:** 2026-03-22  
 **Status:** ✅ AUDIT FINAL — Safe for hackathon submission.
+
+---
+
+## Eighth-Pass Audit — 2026-03-22 (Sub-Agent C)
+
+> **Scope:** Independent fresh read of all four production contracts (`AgentIdentityRegistry.sol`, `AgentSkillsRegistry.sol`, `ERC8004IdentityRegistry.sol`, `TrustedAgentGate.sol`) and `TrustedCouncil.sol` example, cross-referenced against all seven prior passes. Focus: access control, logic errors, gas, missing events, ERC-8004 compliance, and post-March-17 changes.
+
+---
+
+### NEW-13 [Informational] — Mixed OZ Package Imports in `AgentIdentityRegistry`
+
+**Severity:** Informational  
+**Contract:** `AgentIdentityRegistry.sol`  
+**Location:** Import block (lines 3–4)
+
+**Finding:**
+```solidity
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";  // upgradeable package
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";            // non-upgradeable package
+```
+
+The contract mixes imports from two different OZ packages: `Initializable` from `contracts-upgradeable` and `UUPSUpgradeable` from the non-upgradeable `contracts`. This is functionally safe — the non-upgradeable `UUPSUpgradeable` is tagged `@custom:stateless` and introduces no storage variables, so there is no storage collision risk.
+
+However, this inconsistency:
+1. Creates confusion for future maintainers auditing storage layout or bumping OZ versions.
+2. May cause version drift if the two packages are updated independently — the upgradeable and non-upgradeable variants have matched releases, and using one from each increases the risk of subtle ABI or behavioral divergence in future upgrades.
+3. The recommended pattern is to import both from `contracts-upgradeable` when writing upgradeable contracts.
+
+**Impact:** None currently. The contracts compile and function correctly.
+
+**Recommendation (v3):** Standardize on a single OZ package. Change the `UUPSUpgradeable` import to:
+```solidity
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+```
+Contracts are deployed and immutable — this applies to future deployments only.
+
+**Status:** New Finding (Informational — Do Not Modify deployed contract)
+
+---
+
+### NEW-14 [Informational] — `deactivate()` Error Semantics Are Ambiguous
+
+**Severity:** Informational  
+**Contract:** `AgentIdentityRegistry.sol`  
+**Function:** `deactivate()`
+
+**Finding:**
+```solidity
+function deactivate() external onlyRegistered(msg.sender) {
+    if (!_agents[msg.sender].isActive) revert AgentNotActive(msg.sender);
+    ...
+}
+```
+
+The guard reverts with `AgentNotActive` when an agent tries to deactivate but is already deactivated. The same error type is used in the `onlyActive` modifier to block endorsements and reputation updates on inactive agents. Off-chain tooling that catches `AgentNotActive` from a `deactivate()` call receives the same error type as "cannot endorse an inactive agent" — potentially confusing SDK error handling.
+
+By contrast, `reactivate()` correctly uses a dedicated `AgentAlreadyActive` error, suggesting this was an oversight.
+
+**Impact:** Informational. No security or functional impact. SDK/frontend may need special-case handling when catching `AgentNotActive` from `deactivate()`.
+
+**Recommendation (v3):** Add `error AlreadyDeactivated(address agent)` and use it in `deactivate()` for symmetry with `AgentAlreadyActive`.
+
+**Status:** New Finding (Informational — Do Not Modify deployed contract)
+
+---
+
+### Eighth-Pass Summary
+
+| Finding | Severity | Contract | Status |
+|---------|----------|----------|--------|
+| NEW-13: Mixed OZ upgradeable/non-upgradeable imports | Informational | AgentIdentityRegistry | New |
+| NEW-14: `deactivate()` reuses ambiguous error type | Informational | AgentIdentityRegistry | New |
+
+**No new Critical, High, or Low severity findings.**
+
+**Eight-pass total: 0 Critical · 0 High · 5 Low · 18 Informational.**
+
+All production contracts reviewed. No new security risks identified. Codebase remains safe for hackathon submission and production use.
+
+**Eighth-Pass Date:** 2026-03-22  
+**Auditor:** Universal Trust Sub-Agent C (session: audit-refresh-agent-c)  
+**Status:** ✅ NO NEW CRITICAL/HIGH/LOW FINDINGS — Safe for hackathon submission.

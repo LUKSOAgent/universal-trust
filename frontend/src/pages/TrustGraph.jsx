@@ -33,6 +33,17 @@ const TYPE_LABELS = {
   external_endorser: "External Endorser",
 };
 
+// Short labels for mobile filter chips (max ~8 chars)
+const TYPE_SHORT_LABELS = {
+  agent_up:          "UP",
+  agent_eoa:         "EOA",
+  agent_8004:        "8004",
+  ecosystem:         "eco",
+  skill:             "skill",
+  endorsement:       "endorse",
+  external_endorser: "ext.",
+};
+
 const NODE_R = { agent_up: 16, agent_eoa: 13, agent_8004: 13, ecosystem: 11, skill: 9, endorsement: 7, external_endorser: 11 };
 const SCORE_SCALE_MAX = 2.5; // max multiplier for trust score scaling
 
@@ -1157,7 +1168,7 @@ export default function TrustGraph() {
               >
                 <span className="w-1.5 h-1.5 rounded-full inline-block shrink-0" style={{ background: color }} />
                 <span className="hidden sm:inline">{TYPE_LABELS[type]}</span>
-                <span className="sm:hidden">{type.replace("agent_", "").replace("ecosystem", "eco")}</span>
+                <span className="sm:hidden">{TYPE_SHORT_LABELS[type] ?? type}</span>
               </button>
             ))}
             <button

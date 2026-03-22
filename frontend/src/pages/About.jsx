@@ -33,6 +33,10 @@ export default function About() {
             <span className="text-lukso-purple text-xs font-semibold font-mono">ERC-8004</span>
             <span className="text-lukso-purple/60 text-xs">compliant</span>
           </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-emerald-400 text-xs font-semibold">Live on Mainnet</span>
+          </div>
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-extrabold mb-4 leading-tight">
@@ -103,6 +107,40 @@ export default function About() {
         </div>
       </section>
 
+      {/* ── What's Live ──────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="What's Live Right Now" />
+        <div className="bg-gradient-to-br from-lukso-darker to-lukso-card border border-emerald-500/30 rounded-2xl p-6 sm:p-8">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <p className="text-white font-semibold text-base">Deployed on LUKSO mainnet since 2026-03-16</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+            {[
+              { value: agentCount !== null ? String(agentCount) : "11", label: "Agents Registered", icon: "🤖" },
+              { value: "60", label: "On-chain Endorsements", icon: "🤝" },
+              { value: "80/80", label: "Foundry Tests", icon: "✅" },
+              { value: "97/97", label: "SDK Tests", icon: "✅" },
+              { value: "0 / 0", label: "Critical / High Vulns", icon: "🔐" },
+              { value: "ERC-8004", label: "Compliant · agentId 1", icon: "📜" },
+            ].map((s) => (
+              <div key={s.label} className="bg-lukso-darker border border-lukso-border rounded-xl p-4 flex items-start gap-3">
+                <span className="text-xl mt-0.5 shrink-0">{s.icon}</span>
+                <div>
+                  <p className="text-white font-bold text-lg leading-none">{s.value}</p>
+                  <p className="text-gray-500 text-xs mt-1">{s.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto">
+            <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">Verify it now — no setup, no wallet</p>
+            <p className="text-lukso-purple">curl -s https://universal-trust.vercel.app/api/trust-graph | \</p>
+            <p className="text-lukso-purple">&nbsp;&nbsp;python3 -c <span className="text-emerald-400">"import json,sys; [print(n['name'],n['trustScore']) for n in json.load(sys.stdin)['nodes']]"</span></p>
+          </div>
+        </div>
+      </section>
+
       {/* ── Problem ──────────────────────────────────────── */}
       <section className="animate-fade-in">
         <SectionLabel text="The Problem" />
@@ -152,6 +190,39 @@ export default function About() {
         </div>
       </section>
 
+      {/* ── Why This Matters ─────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Why This Matters" />
+        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8 space-y-5">
+          <p className="text-gray-400 text-sm leading-relaxed">
+            Agent identity isn't a nice-to-have — it's the missing security primitive that prevents entire categories of attacks. Here are three concrete scenarios where Universal Trust changes the outcome:
+          </p>
+          <div className="space-y-4">
+            <UseCaseCard
+              icon="🏦"
+              title="DeFi protocol gates agent access"
+              scenario="A lending vault wants to allow AI agents to execute rebalances, but not arbitrary scripts. Without a trust layer, any caller can claim agent status."
+              solution='With Universal Trust: require(ITrust(registry).verify(msg.sender).trustScore >= 200). One line of Solidity. No API keys. Cryptographic, on-chain proof.'
+              outcome="Result: only verified, peer-endorsed agents can execute — impersonators are rejected at the contract level."
+            />
+            <UseCaseCard
+              icon="🤝"
+              title="Multi-agent system verifies collaborators"
+              scenario="Agent A receives a delegation request from an unknown address claiming to be Agent B. Sharing execution rights with an unverified agent risks drain attacks."
+              solution="Agent A calls verify(callerAddress) on the registry. If registered=false or trustScore<100, the request is rejected before any funds or data are shared."
+              outcome="Result: agents can collaborate safely without relying on off-chain identity claims or centralized coordination."
+            />
+            <UseCaseCard
+              icon="🔐"
+              title="Wallet grants scoped permissions by trust score"
+              scenario="A user wants to let AI agents manage their LUKSO wallet, but only trusted ones. LSP6 KeyManager supports conditional permissions — but needs a trust oracle."
+              solution="Universal Trust acts as the trust oracle: combine LSP6 permission checks with trustScore reads from the registry to gate execute() calls by reputation."
+              outcome="Result: trustScore ≥ 200 agents can execute. New or unendorsed agents are gated until their reputation is established."
+            />
+          </div>
+        </div>
+      </section>
+
       {/* ── Solution ─────────────────────────────────────── */}
       <section className="animate-fade-in">
         <SectionLabel text="The Solution" />
@@ -178,6 +249,23 @@ export default function About() {
       <section className="animate-fade-in">
         <SectionLabel text="How It Works" />
         <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8">
+          {/* Step flow summary */}
+          <div className="flex items-center justify-center gap-2 mb-8 flex-wrap">
+            {["Register", "Endorse", "Score", "Verify"].map((step, i, arr) => (
+              <div key={step} className="flex items-center gap-2">
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lukso-pink/30 to-lukso-purple/30 border border-lukso-pink/40 flex items-center justify-center text-lukso-pink font-bold text-xs">
+                    {i + 1}
+                  </div>
+                  <span className="text-xs text-gray-400 font-medium">{step}</span>
+                </div>
+                {i < arr.length - 1 && (
+                  <div className="text-lukso-pink/40 text-lg mb-3">→</div>
+                )}
+              </div>
+            ))}
+          </div>
+
           <ol className="space-y-0">
             {[
               {
@@ -407,6 +495,35 @@ export default function About() {
         </div>
       </section>
 
+      {/* ── Tech Stack ───────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Tech Stack" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {[
+            { label: "LUKSO Mainnet", sub: "Chain ID 42" },
+            { label: "LSP0 · LSP3 · LSP6 · LSP26", sub: "LUKSO Standards" },
+            { label: "ERC725Y", sub: "On-chain key-value store" },
+            { label: "ERC-8004", sub: "Agent Identity Standard" },
+            { label: "Solidity 0.8.24 + Foundry", sub: "Smart Contracts · 80/80 tests" },
+            { label: "UUPS Proxy (ERC1967)", sub: "Upgradeable Contracts" },
+            { label: "React 19 + Vite + Tailwind", sub: "Frontend" },
+            { label: "TypeScript + Web3.js v4", sub: "@universal-trust/sdk" },
+            { label: "Envio GraphQL", sub: "Indexer / UP Resolution" },
+            { label: "D3.js", sub: "Trust Graph Visualization" },
+            { label: "Vercel", sub: "Frontend + Edge API" },
+            { label: "Ethers.js v6", sub: "Browser wallet integration" },
+          ].map((t) => (
+            <div
+              key={t.label}
+              className="bg-lukso-darker border border-lukso-border rounded-xl p-4 hover:border-lukso-purple/40 transition"
+            >
+              <p className="text-white text-sm font-semibold">{t.label}</p>
+              <p className="text-gray-500 text-xs mt-0.5">{t.sub}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── Deployed Contracts ───────────────────────────── */}
       <section className="animate-fade-in">
         <SectionLabel text="Deployed Contracts — LUKSO Mainnet" />
@@ -513,32 +630,6 @@ export default function About() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ── Tech Stack ───────────────────────────────────── */}
-      <section className="animate-fade-in">
-        <SectionLabel text="Tech Stack" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {[
-            { label: "LUKSO Mainnet", sub: "Chain ID 42" },
-            { label: "LSP0 · LSP3 · LSP6 · LSP26", sub: "LUKSO Standards" },
-            { label: "Solidity 0.8.24", sub: "Smart Contracts" },
-            { label: "React + Ethers.js v6", sub: "Frontend" },
-            { label: "Envio GraphQL", sub: "Indexer / Activity" },
-            { label: "D3.js", sub: "Trust Graph Viz" },
-            { label: "Vercel", sub: "Deployment" },
-            { label: "ERC-8004", sub: "Agent Identity Standard" },
-            { label: "UUPS Proxy", sub: "Upgradeable Contracts" },
-          ].map((t) => (
-            <div
-              key={t.label}
-              className="bg-lukso-darker border border-lukso-border rounded-xl p-4 hover:border-lukso-purple/40 transition"
-            >
-              <p className="text-white text-sm font-semibold">{t.label}</p>
-              <p className="text-gray-500 text-xs mt-0.5">{t.sub}</p>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -727,6 +818,22 @@ function SolutionCard({ icon, title, desc }) {
       </div>
       <h3 className="text-white font-bold text-base mb-2">{title}</h3>
       <p className="text-gray-400 text-sm leading-relaxed">{desc}</p>
+    </div>
+  );
+}
+
+function UseCaseCard({ icon, title, scenario, solution, outcome }) {
+  return (
+    <div className="bg-lukso-card border border-lukso-border rounded-xl p-5 space-y-2">
+      <div className="flex items-center gap-3 mb-1">
+        <span className="text-2xl">{icon}</span>
+        <p className="text-white font-semibold text-sm">{title}</p>
+      </div>
+      <div className="space-y-1.5 text-xs leading-relaxed">
+        <p className="text-gray-500"><span className="text-gray-400 font-medium">Problem:</span> {scenario}</p>
+        <p className="text-gray-500"><span className="text-lukso-purple font-medium">Solution:</span> {solution}</p>
+        <p className="text-emerald-400/80"><span className="text-emerald-400 font-medium">Outcome:</span> {outcome}</p>
+      </div>
     </div>
   );
 }
