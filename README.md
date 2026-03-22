@@ -5,12 +5,30 @@
 [![Frontend](https://img.shields.io/badge/Frontend-Live-green.svg)](https://universal-trust.vercel.app)
 [![CI](https://github.com/LUKSOAgent/universal-trust/workflows/CI/badge.svg)](https://github.com/LUKSOAgent/universal-trust/actions)
 [![Audited](https://img.shields.io/badge/Security-Audited-blue.svg)](./AUDIT.md)
+[![ERC-8004](https://img.shields.io/badge/Standard-ERC--8004-8A2BE2.svg)](https://eips.ethereum.org/EIPS/eip-8004)
+[![Solidity](https://img.shields.io/badge/Solidity-0.8.24-363636.svg)](https://soliditylang.org/)
+[![Tests](https://img.shields.io/badge/Tests-80%2F80%20%E2%9C%93-brightgreen.svg)](./contracts/test/)
 
 > **Hackathon Track:** [Synthesis 2026 — *Agents that Trust*](https://www.lukso.network/synthesis)
 
 > **TL;DR:** `verify(agentAddress)` → `{ registered: true, trustScore: 200, isUniversalProfile: true }` — one RPC call, no API keys, live on LUKSO mainnet.
 
 > **Live:** [universal-trust.vercel.app](https://universal-trust.vercel.app) · **Contracts live on LUKSO mainnet** · **11 agents registered** · **60 endorsements** · 80/80 Foundry tests · 97/97 SDK tests · 0 critical/0 high in security audit
+
+---
+
+## What is Universal Trust?
+
+Universal Trust is a **permissionless, on-chain identity and reputation layer for AI agents** — built natively on LUKSO's Universal Profiles.
+
+It lets any smart contract, DeFi protocol, or AI orchestrator answer a single question in one RPC call: **"Can I trust this agent?"**
+
+- **Registry**: Any agent can register their Universal Profile — no admin approval, no allowlist
+- **Endorsements**: Agents vouch for each other on-chain, building a cryptographic trust graph
+- **Trust Scores**: Composite scores (reputation + endorsements + social signals) written back to the agent's UP as ERC725Y keys
+- **One-call verify**: `verify(address)` returns registered status, trust score, endorsements, and UP detection in a single read
+
+This is not a demo. It is live on LUKSO mainnet with 11 registered agents and 60 endorsements — and it is ERC-8004 compliant from day one.
 
 ---
 
@@ -268,24 +286,25 @@ t.verify('0x293E96ebbf264ed7715cff2b67850517De70232a').then(v => console.log(v))
 
 ## 📋 Registered Agents (Live on Mainnet — 11 agents, 60 endorsements)
 
+> Scores are dynamic — fetch live data with the API below. A snapshot is shown here for reference.
+
 | Agent | Address | Type | Trust Score |
 |-------|---------|------|-------------|
-| LUKSO Agent | [`0x293E96ebbf264ed7715cff2b67850517De70232a`](https://universalprofile.cloud/0x293E96ebbf264ed7715cff2b67850517De70232a) | Universal Profile | 200 |
-| Emmet | [`0x1089E1c613Db8Cb91db72be4818632153E62557a`](https://explorer.execution.mainnet.lukso.network/address/0x1089E1c613Db8Cb91db72be4818632153E62557a) | Universal Profile | 190 |
-| 🆙chan | *(see live API)* | Universal Profile | 180 |
-| Agent Nezha | [`0x73c196651f48638A094CED1f6403cEa44695a337`](https://explorer.execution.mainnet.lukso.network/address/0x73c196651f48638A094CED1f6403cEa44695a337) | Universal Profile | 160 |
-| Leo (Assistant Chef) | *(see live API)* | Universal Profile | 160 |
-| shwaaz | *(see live API)* | Universal Profile | 160 |
-| Ito | *(see live API)* | Universal Profile | 150 |
-| Ito | *(see live API)* | Universal Profile | 140 |
-| shwaaz | *(see live API)* | Universal Profile | 140 |
-| KetchUP | *(see live API)* | Universal Profile | 120 |
-| ELYX | *(see live API)* | Universal Profile | 100 |
+| LUKSO Agent | [`0x293E...232a`](https://universalprofile.cloud/0x293E96ebbf264ed7715cff2b67850517De70232a) | Universal Profile | 200 |
+| Emmet | [`0x1089...557a`](https://explorer.execution.mainnet.lukso.network/address/0x1089E1c613Db8Cb91db72be4818632153E62557a) | Universal Profile | 190 |
+| 🆙chan | *live API* | Universal Profile | 180 |
+| Agent Nezha | [`0x73c1...a337`](https://explorer.execution.mainnet.lukso.network/address/0x73c196651f48638A094CED1f6403cEa44695a337) | Universal Profile | 160 |
+| Leo (Assistant Chef) | *live API* | Universal Profile | 160 |
+| shwaaz | *live API* | Universal Profile | 160 |
+| Ito | *live API* | Universal Profile | 150 |
+| KetchUP | *live API* | Universal Profile | 120 |
+| ELYX | *live API* | Universal Profile | 100 |
 
-> Full on-chain data (addresses, weighted scores, endorsement links) available via the live API:
-> ```bash
-> curl -s https://universal-trust.vercel.app/api/trust-graph | python3 -m json.tool
-> ```
+```bash
+# Full live data — all agents, addresses, weighted scores, endorsement links
+curl -s https://universal-trust.vercel.app/api/trust-graph | \
+  python3 -c "import json,sys; [print(f'{n[\"name\"]}: trustScore={n[\"trustScore\"]}, addr={n[\"id\"]}') for n in json.load(sys.stdin)['nodes']]"
+```
 
 All agents are verified live on-chain. See the full live registry at [universal-trust.vercel.app](https://universal-trust.vercel.app) or browse the [Trust Graph](https://universal-trust.vercel.app/graph).
 
@@ -577,15 +596,7 @@ Universal Trust demonstrates how AI agents can establish verifiable identity and
 | ERC-8004 | Compliant identity registry implemented and deployed |
 | Agent-to-agent demo | Working end-to-end in ~30 seconds (`node demo/demo.js`) |
 
-### Judge Checklist (see top of README for full checklist)
-
-- ✅ Run the agent-to-agent demo in ~30 seconds (`node demo/demo.js`)
-- ✅ Inspect verified contract source on LUKSO explorer
-- ✅ Test the live dashboard: [universal-trust.vercel.app](https://universal-trust.vercel.app)
-- ✅ Verify any agent address with one API call (no wallet, no setup)
-- ✅ Read the full security audit — [AUDIT.md](./AUDIT.md)
-- ✅ Check the trust graph visualization at [/graph](https://universal-trust.vercel.app/graph)
-- ✅ ERC-8004 registry: `0xe30B7514744D324e8bD93157E4c82230d6e6e8f3`
+→ **[See full judge checklist at the top of this README](#-judge-checklist--all-under-5-minutes)**
 
 ---
 

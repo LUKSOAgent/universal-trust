@@ -237,7 +237,7 @@ export default function Skills() {
       <div className="bg-lukso-card border border-lukso-border rounded-xl p-4 flex flex-wrap gap-4 text-xs animate-fade-in" style={{ animationDelay: "0.05s" }}>
         <div>
           <p className="text-gray-500 mb-0.5">AgentSkillsRegistry</p>
-          <p className="font-mono text-lukso-purple">{SKILLS_REGISTRY}</p>
+          <p className="font-mono text-lukso-purple break-all">{SKILLS_REGISTRY}</p>
         </div>
         <div>
           <p className="text-gray-500 mb-0.5">Network</p>

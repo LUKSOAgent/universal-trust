@@ -370,8 +370,8 @@ export default function AgentProfile() {
               {agent?.description || "No description provided."}
             </p>
             
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-start gap-2 min-w-0">
+            <div className="flex flex-wrap items-center gap-3 min-w-0">
+              <div className="flex items-start gap-2 min-w-0 w-full sm:w-auto">
                 <span className="text-gray-500 text-sm shrink-0">Address:</span>
                 <a
                   href={`${EXPLORER_URL}/address/${address}`}
