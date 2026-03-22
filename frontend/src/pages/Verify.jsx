@@ -651,7 +651,7 @@ export default function Verify() {
 
               {/* Stats Grid */}
               <div className="relative z-10 p-6">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
                   <VerifyField
                     label="Registered"
                     value={result.registered ? "Yes" : "No"}
@@ -1023,7 +1023,7 @@ function CopyButton({ text }) {
   return (
     <button
       onClick={handleCopy}
-      className="text-gray-500 hover:text-white transition p-1"
+      className="text-gray-500 hover:text-white transition p-2.5 min-h-[44px] min-w-[44px] sm:p-1 sm:min-h-0 sm:min-w-0 inline-flex items-center justify-center"
       title="Copy address"
     >
       {copied ? (

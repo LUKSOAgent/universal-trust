@@ -655,7 +655,7 @@ export default function About() {
         <p className="text-gray-600 text-xs">
           Universal Trust · Synthesis 2026 — Agents that Trust · Last updated March 22, 2026
         </p>
-        <p className="text-gray-700 text-xs mt-1">
+        <p className="text-gray-500 text-xs mt-1">
           Built by{" "}
           <a
             href="https://universaleverything.io/0x293E96ebbf264ed7715cff2b67850517De70232a"

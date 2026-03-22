@@ -221,8 +221,8 @@ function AgentCardInner({ agent, upProfile, rank, totalAgents }) {
             )}
             {/* LSP26 social signal badge */}
             {(agent.lsp26FollowerCount ?? 0) > 0 && (
-              <span className="hidden sm:inline-flex px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0 font-medium items-center gap-0.5">
-                👥 {agent.lsp26FollowerCount} agent{agent.lsp26FollowerCount === 1 ? "" : "s"}
+              <span className="inline-flex px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0 font-medium items-center gap-0.5">
+                👥 {agent.lsp26FollowerCount}<span className="hidden sm:inline">&nbsp;agent{agent.lsp26FollowerCount === 1 ? "" : "s"}</span>
               </span>
             )}
           </div>
@@ -295,6 +295,8 @@ function AgentCardInner({ agent, upProfile, rank, totalAgents }) {
             className="relative cursor-help"
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
+            onTouchStart={() => setShowTooltip((v) => !v)}
+            onTouchEnd={(e) => e.preventDefault()}
           >
             <ScoreTooltip
               trustScore={trustScore}
@@ -351,7 +353,7 @@ function AgentCardInner({ agent, upProfile, rank, totalAgents }) {
           <Link
             to={`/endorse?address=${agent.address}`}
             onClick={(e) => e.stopPropagation()}
-            className="text-[10px] px-2.5 py-1 rounded-md border border-lukso-pink/20 text-lukso-pink hover:bg-lukso-pink/10 transition"
+            className="text-[10px] px-2.5 py-1 sm:py-1 min-h-[44px] sm:min-h-0 inline-flex items-center justify-center rounded-md border border-lukso-pink/20 text-lukso-pink hover:bg-lukso-pink/10 transition"
           >
             + Endorse
           </Link>

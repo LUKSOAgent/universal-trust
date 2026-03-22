@@ -1203,7 +1203,7 @@ export default function TrustGraph() {
             border-r border-lukso-border sm:border-0
           `}>
             {/* Close button mobile */}
-            <button onClick={() => setSidebarOpen(false)} className="sm:hidden self-end text-gray-500 hover:text-white p-1">
+            <button onClick={() => setSidebarOpen(false)} className="sm:hidden self-end text-gray-500 hover:text-white p-2 min-h-[44px] min-w-[44px] flex items-center justify-end">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
 
