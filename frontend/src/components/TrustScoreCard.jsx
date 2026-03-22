@@ -331,7 +331,7 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
       {!onChainRep && (
         <div className="space-y-3 animate-pulse">
           <p className="text-xs text-gray-500 uppercase tracking-wide">On-Chain Activity</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="bg-lukso-darker rounded-lg p-2.5 text-center border border-lukso-border/30">
                 <div className="h-5 w-10 bg-lukso-border/50 rounded mx-auto mb-1" />
@@ -377,7 +377,7 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
             </div>
           </div>
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {[
               { label: "Transactions",  value: (onChainRep.transactionCount ?? 0).toLocaleString() },
               { label: "Followers",     value: (onChainRep.followersCount ?? 0).toLocaleString() },
