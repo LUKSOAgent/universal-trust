@@ -28,8 +28,8 @@ function ScoreTooltip({ trustScore, onChainScore, skillCount, lsp26Score, compos
         </div>
         <p className="text-[10px] text-gray-600 mt-1">Total: {compositeScore}</p>
       </div>
-      {/* Arrow */}
-      <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-lukso-darker border-r border-b border-lukso-border rotate-45" />
+      {/* Arrow — right-aligned on mobile (matches right-0 tooltip), centered on sm+ */}
+      <div className="absolute right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 -bottom-1 w-2 h-2 bg-lukso-darker border-r border-b border-lukso-border rotate-45" />
     </div>
   );
 }

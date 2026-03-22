@@ -141,11 +141,11 @@ export default function TrustScoreCard({ verification, agent, address, allAgents
   return (
     <div className="bg-lukso-card border border-lukso-border rounded-xl p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-white uppercase tracking-wide">
           Trust Score
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isUP && (
             <a
               href={`https://universaleverything.io/${address}`}
