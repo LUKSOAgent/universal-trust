@@ -1,0 +1,20 @@
+{
+  "network": "lukso-mainnet",
+  "chainId": 42,
+  "deployedAt": "2026-03-22",
+  "contracts": {
+    "AgentIdentityRegistry": {
+      "proxy": "0x064b9576f37BdD7CED4405185a5DB3bc7be5614C",
+      "implementation": "0x794528c35903761cda06a585dc5528b619f1c785",
+      "deployTxProxy": "0x313d50b8b5e5501ffea38c3b4e6724c865ce6de75f4907a3296b474b8966bee4",
+      "deployTxImpl": "0xb8dcc2e1472c7d01f770f914c53a9d0218c3a45c2c1c603488078b79e8e4f872",
+      "notes": "UUPS upgradeable proxy. Use proxy address for all interactions."
+    },
+    "AgentSkillsRegistry": {
+      "address": "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6",
+      "notes": "Not upgraded — no changes to this contract."
+    }
+  },
+  "owner": "0x293E96ebbf264ed7715cff2b67850517De70232a",
+  "controller": "0xA1D8703e52d8992bFeFbd276Bf0957c125583Fc0"
+}
