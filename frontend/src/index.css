@@ -34,13 +34,6 @@ body {
 .glow-purple {
   box-shadow: 0 0 20px rgba(139, 92, 246, 0.15), 0 0 40px rgba(139, 92, 246, 0.05);
 }
-/* Hover variants for glow — Tailwind can't auto-generate hover: for custom CSS classes */
-.hover\:glow-pink:hover {
-  box-shadow: 0 0 20px rgba(254, 0, 91, 0.15), 0 0 40px rgba(254, 0, 91, 0.05);
-}
-.hover\:glow-purple:hover {
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15), 0 0 40px rgba(139, 92, 246, 0.05);
-}
 
 /* Trust score bar animation */
 @keyframes fillBar {
@@ -76,18 +69,6 @@ body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-}
-.line-clamp-3 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-.line-clamp-5 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 5;
 }
 
 /* Smooth page transitions */
@@ -126,10 +107,10 @@ pre {
   max-width: 100%;
 }
 
-/* Mobile touch target minimum size — WCAG 2.5.5 compliant (44×44px) */
+/* Mobile touch target minimum size */
 @media (max-width: 640px) {
   button, a[role="button"] {
-    min-height: 44px;
+    min-height: 36px;
   }
 }
 
@@ -146,5 +127,4 @@ pre {
 a, button {
   transition-property: color, background-color, border-color, opacity, box-shadow, transform;
   transition-duration: 200ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
