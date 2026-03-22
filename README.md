@@ -8,7 +8,7 @@
 
 > **Hackathon Track:** [Synthesis 2026 — *Agents that Trust*](https://www.lukso.network/synthesis)
 
-> **Live:** [universal-trust.vercel.app](https://universal-trust.vercel.app) · **Contracts live on LUKSO mainnet** · 80/80 Foundry tests · 97/97 SDK tests · 0 critical/0 high in security audit
+> **Live:** [universal-trust.vercel.app](https://universal-trust.vercel.app) · **Contracts live on LUKSO mainnet** · **11 agents registered** · **60 endorsements** · 80/80 Foundry tests · 97/97 SDK tests · 0 critical/0 high in security audit
 
 ---
 
@@ -28,7 +28,7 @@ Universal Trust solves this: a permissionless, on-chain identity and reputation 
 |---|-------|-----|
 | ✅ | **Live demo** | [universal-trust.vercel.app](https://universal-trust.vercel.app) — no wallet, no setup |
 | ✅ | **Verified contract** | [AgentIdentityRegistry on LUKSO explorer](https://explorer.execution.mainnet.lukso.network/address/0x16505FeC789F4553Ea88d812711A0E913D926ADD#code) |
-| ✅ | **One-call verify** | `curl https://universal-trust.vercel.app/api/verify/0x293E96ebbf264ed7715cff2b67850517De70232a` |
+| ✅ | **One-call verify** | `curl -s https://universal-trust.vercel.app/api/trust-graph \| python3 -c "import json,sys; [print(n['name'],n['trustScore']) for n in json.load(sys.stdin)['nodes']]"` |
 | ✅ | **Agent-to-agent demo** | `node demo/demo.js` — runs in ~30 seconds, no wallet needed |
 | ✅ | **All 80 Foundry tests** | `cd contracts && forge test` |
 | ✅ | **Security audit** | [AUDIT.md](./AUDIT.md) — 0 critical, 0 high |
@@ -41,8 +41,12 @@ Universal Trust solves this: a permissionless, on-chain identity and reputation 
 
 **Option 1: Live API (no setup)**
 ```bash
-# Verify a registered agent — returns trust score, endorsements, UP status
-curl -s https://universal-trust.vercel.app/api/verify/0x293E96ebbf264ed7715cff2b67850517De70232a | python3 -m json.tool
+# Trust graph — all 11 registered agents with trust scores (JSON API)
+curl -s https://universal-trust.vercel.app/api/trust-graph | python3 -m json.tool | head -80
+
+# One-liner: just agent names + trust scores
+curl -s https://universal-trust.vercel.app/api/trust-graph | \
+  python3 -c "import json,sys; [print(n['name'],n['trustScore']) for n in json.load(sys.stdin)['nodes']]"
 ```
 
 **Option 2: Trust graph data**
@@ -214,7 +218,7 @@ Rogue bot tries to impersonate a trusted agent:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Example:** An agent with `reputation=200` endorsed by 8 peers has `trustScore = 200 + 80 = 280`.
+**Example:** An agent with `reputation=100` endorsed by 10 peers has `trustScore = 100 + 100 = 200` — which is exactly what the LUKSO Agent scores live on-chain today.
 
 **V2 Weighted example:** Same agent endorsed by 2 high-rep agents (rep=500) + 6 new agents (rep=100):
 `weightedTrustScore = 200 + (2×50) + (6×10) = 200 + 100 + 60 = 360`
@@ -233,9 +237,17 @@ Rogue bot tries to impersonate a trusted agent:
 ### Try it now (no wallet needed):
 
 ```bash
-# Fastest: verify an agent via REST (no install, no wallet)
-curl -s https://universal-trust.vercel.app/api/verify/0x293E96ebbf264ed7715cff2b67850517De70232a
-# → {"registered":true,"active":true,"isUniversalProfile":true,"trustScore":110,"weightedTrustScore":110,"name":"LUKSO Agent"}
+# Fastest: trust graph via REST (no install, no wallet)
+# Returns all 11 registered agents with trust scores, endorsements, and metadata
+curl -s https://universal-trust.vercel.app/api/trust-graph | python3 -m json.tool | head -60
+
+# One-liner: agent names and scores
+curl -s https://universal-trust.vercel.app/api/trust-graph | \
+  python3 -c "import json,sys; [print(f'{n[\"name\"]}: {n[\"trustScore\"]}') for n in json.load(sys.stdin)['nodes']]"
+# → LUKSO Agent: 200
+# → Emmet: 190
+# → 🆙chan: 180
+# → ...
 
 # Trust graph — all agents, scores, and endorsement links
 curl -s https://universal-trust.vercel.app/api/trust-graph | jq '.nodes[] | {name, id, trustScore, weightedTrustScore, lsp26Score}'
@@ -252,14 +264,23 @@ t.verify('0x293E96ebbf264ed7715cff2b67850517De70232a').then(v => console.log(v))
 
 ---
 
-## 📋 Registered Agents (Live on Mainnet)
+## 📋 Registered Agents (Live on Mainnet — 11 agents, 60 endorsements)
 
 | Agent | Address | Type | Trust Score |
 |-------|---------|------|-------------|
-| Deployer EOA | [`0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b`](https://explorer.execution.mainnet.lukso.network/address/0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b) | EOA | 100 |
-| LUKSO UP Agent | [`0x293E96ebbf264ed7715cff2b67850517De70232a`](https://universalprofile.cloud/0x293E96ebbf264ed7715cff2b67850517De70232a) | Universal Profile | 110 |
+| LUKSO Agent | [`0x293E96ebbf264ed7715cff2b67850517De70232a`](https://universalprofile.cloud/0x293E96ebbf264ed7715cff2b67850517De70232a) | Universal Profile | 200 |
+| Emmet | [`0x1089E1c613Db8Cb91db72be4818632153E62557a`](https://explorer.execution.mainnet.lukso.network/address/0x1089E1c613Db8Cb91db72be4818632153E62557a) | Universal Profile | 190 |
+| 🆙chan | [`0x...`](https://universal-trust.vercel.app) | Universal Profile | 180 |
+| Agent Nezha | [`0x73c196651f48638A094CED1f6403cEa44695a337`](https://explorer.execution.mainnet.lukso.network/address/0x73c196651f48638A094CED1f6403cEa44695a337) | Universal Profile | 160 |
+| Leo (Assistant Chef) | — | Universal Profile | 160 |
+| shwaaz | — | Universal Profile | 160 |
+| Ito | — | Universal Profile | 150 |
+| Ito | — | Universal Profile | 140 |
+| shwaaz | — | Universal Profile | 140 |
+| KetchUP | — | Universal Profile | 120 |
+| ELYX | — | Universal Profile | 100 |
 
-Both agents are verified live on-chain. The UP agent has been endorsed once (trustScore = 100 + 10 = 110).
+All agents are verified live on-chain. See the full live registry at [universal-trust.vercel.app](https://universal-trust.vercel.app) or fetch via `curl https://universal-trust.vercel.app/api/trust-graph`.
 
 ---
 
@@ -296,8 +317,8 @@ const result = await trust.verify('0x293E96ebbf264ed7715cff2b67850517De70232a');
 //   active: true,
 //   isUniversalProfile: true,
 //   reputation: 100,
-//   endorsements: 1,
-//   trustScore: 110,
+//   endorsements: 10,
+//   trustScore: 200,
 //   name: "LUKSO Agent"
 // }
 
@@ -454,10 +475,10 @@ node demo/demo.js
 
 ```
 [Agent A] Sending request to Agent B...
-[Agent A] Identity: 0x293E...232a (trust score: 110)
+[Agent A] Identity: 0x293E...232a (trust score: 200)
 [Agent B] Received request from 0x293E...232a
 [Agent B] Verifying identity on-chain...
-[Agent B] ✓ Verified: LUKSO Agent (trust score: 110, 1 endorsements)
+[Agent B] ✓ Verified: LUKSO Agent (trust score: 200, 10 endorsements)
 [Agent B] Trust threshold met (≥ 100). Responding.
 [Agent B] Response: "Hello! I trust you. Here's my data."
 [Agent A] Received trusted response from Agent B.
