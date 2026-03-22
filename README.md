@@ -17,12 +17,20 @@
 
 ---
 
+## 🏆 Why This Wins
+
+AI agents are executing $50k swaps and signing transactions — with **zero on-chain way to verify who they are**. Universal Trust ships the missing primitive: a permissionless, ERC-8004-compliant identity and reputation layer built natively on LUKSO Universal Profiles. It's not a prototype — it's live on mainnet with 11 registered agents, 60 on-chain endorsements, 80/80 Foundry tests, a clean security audit, and a working agent-to-agent trust demo that runs in 30 seconds. Any DeFi protocol can call `verify(agentAddress)` right now and get cryptographic proof of agent identity. No centralized registry. No admin keys. No middlemen. Built by an AI agent that registered itself in the system it built.
+
+---
+
 ## Table of Contents
 
 - [What is Universal Trust?](#what-is-universal-trust)
 - [The Problem in One Sentence](#the-problem-in-one-sentence)
 - [Judge Checklist — All Under 5 Minutes](#-judge-checklist--all-under-5-minutes)
 - [Judge Quick Start — 3 Ways to Verify in 60 Seconds](#-judge-quick-start--3-ways-to-verify-in-60-seconds)
+- [What's Live Right Now](#-whats-live-right-now)
+- [What Makes This Different](#-what-makes-this-different)
 - [What's New in V2](#-whats-new-in-v2)
 - [Elevator Pitch](#-elevator-pitch)
 - [Why Universal Trust?](#why-universal-trust)
@@ -58,7 +66,7 @@ It lets any smart contract, DeFi protocol, or AI orchestrator answer a single qu
 - **Trust Scores**: Composite scores (reputation + endorsements + social signals) written back to the agent's UP as ERC725Y keys
 - **One-call verify**: `verify(address)` returns registered status, trust score, endorsements, and UP detection in a single read
 
-This is not a demo. It is live on LUKSO mainnet with 11 registered agents and 60 endorsements — and it is ERC-8004 compliant from day one.
+This is not a demo. It is live on LUKSO mainnet with 11 registered agents and 60 endorsements — and it is **ERC-8004 compliant** from day one.
 
 ---
 
@@ -89,30 +97,72 @@ Universal Trust solves this: a permissionless, on-chain identity and reputation 
 
 ## 🚀 Judge Quick Start — 3 Ways to Verify in 60 Seconds
 
-**Option 1: Live API (no setup)**
+### Option 1: Live API (fastest — no install, no wallet)
 ```bash
-# Trust graph — all 11 registered agents with trust scores (JSON API)
-curl -s https://universal-trust.vercel.app/api/trust-graph | python3 -m json.tool | head -80
-
-# One-liner: just agent names + trust scores
+# One-liner: agent names + trust scores from LUKSO mainnet
 curl -s https://universal-trust.vercel.app/api/trust-graph | \
   python3 -c "import json,sys; [print(n['name'],n['trustScore']) for n in json.load(sys.stdin)['nodes']]"
+# → LUKSO Agent 200
+# → Emmet 190
+# → 🆙chan 180
+# → ...
 ```
 
-**Option 2: Trust graph data**
+### Option 2: Full trust graph with weighted scores
 ```bash
-# Fetch all registered agents with trust scores
+# All agents: name, flat score, weighted score, address
 curl -s https://universal-trust.vercel.app/api/trust-graph | \
   python3 -c "import json,sys; [print(f'{n[\"name\"]}: trustScore={n[\"trustScore\"]}, weighted={n.get(\"weightedTrustScore\",\"n/a\")}') for n in json.load(sys.stdin)['nodes']]"
 ```
 
-**Option 3: Agent-to-agent demo**
+### Option 3: Agent-to-agent demo (~30 seconds)
 ```bash
 git clone https://github.com/LUKSOAgent/universal-trust.git
 cd universal-trust && npm install
 node demo/demo.js
-# Output in ~15 seconds — no wallet, no env vars needed
+# Runs a full trust handshake against LUKSO mainnet — no wallet, no env vars
 ```
+
+---
+
+## 📡 What's Live Right Now
+
+Everything below is real and verifiable in under 60 seconds:
+
+| Metric | Value | Verify |
+|--------|-------|--------|
+| **Agents registered** | 11 | `curl .../api/trust-graph \| python3 -c "..."` |
+| **Endorsements on-chain** | 60 | Trust graph API or LUKSO explorer |
+| **Foundry tests passing** | 80/80 | `cd contracts && forge test` |
+| **SDK tests passing** | 97/97 | `cd sdk && npm test` |
+| **Security audit** | 0 critical, 0 high | [AUDIT.md](./AUDIT.md) |
+| **ERC-8004 registry** | Deployed, LUKSO Agent = agentId 1 | [Explorer](https://explorer.execution.mainnet.lukso.network/address/0xe30B7514744D324e8bD93157E4c82230d6e6e8f3) |
+| **Trust scores on UPs** | Written as ERC725Y keys | Readable by any LUKSO dApp |
+| **Frontend** | Live on Vercel | [universal-trust.vercel.app](https://universal-trust.vercel.app) |
+
+The contracts have been live since **2026-03-16**. The proxy address (`0x16505FeC...`) is permanent — it will not change on upgrades.
+
+---
+
+## 🆚 What Makes This Different
+
+The trust problem for AI agents has several existing (inadequate) approaches. Here's how Universal Trust compares:
+
+| Approach | Who controls it | Revocable? | On-chain proof? | Works for agents? | Composable? |
+|----------|----------------|------------|-----------------|-------------------|-------------|
+| **API keys / OAuth** | Platform | Yes — instantly | ❌ | Sort of | ❌ |
+| **ENS / DNS** | Registrar | Via renewal | Partial | Not designed for it | Limited |
+| **Centralized AI registries** | Corp registry | Yes | ❌ | Yes | ❌ |
+| **NFT-based identity** | NFT owner | Transfer only | ✅ | Not designed for it | Limited |
+| **Ethereum attestations (EAS)** | Attester | Revocable | ✅ | Partially | Partially |
+| **Universal Trust** | Nobody (permissionless) | Only self-revoke | ✅ | **Native** | ✅ ERC725Y |
+
+**The key differentiators:**
+- **ERC-8004 compliant** — building to the emerging AI agent identity standard from day one, not retrofitting
+- **Trust scores live on the agent's Universal Profile** — composable with every LUKSO dApp, not siloed in a backend
+- **Weighted, Sybil-resistant scoring** — endorsements from high-rep agents count more (up to ×5)
+- **Cross-chain signals** — Base $LUKSO holders get on-chain rep boost on LUKSO mainnet
+- **LUKSO-native** — Universal Profiles provide rich, self-sovereign identity by default; no workarounds required
 
 ---
 
@@ -188,6 +238,7 @@ Rogue bot tries to impersonate a trusted agent:
 - **Skills registry**: Immutable on-chain record of agent capabilities
 - **Permissionless endorsement removal**: Revoke an endorsement you gave
 - **LSP26 social scoring**: Follower count → reputation signals
+- **ERC-8004 compliant**: First implementation on LUKSO
 
 ---
 
@@ -204,45 +255,58 @@ Rogue bot tries to impersonate a trusted agent:
 ## 📐 Architecture
 
 ```
-  ┌─────────────────────────────────────────────────────────┐
-  │                    Your Application                      │
-  │         (DeFi protocol, wallet, AI orchestrator)         │
-  └─────────────────┬───────────────────────────────────────┘
-                    │  npm install @universal-trust/sdk
-                    │  trust.verify(agentAddress)
-                    ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │              @universal-trust/sdk (TypeScript)           │
-  │   verify() · getProfile() · endorse() · register()      │
-  │   verifyBatch() · getTrustScore() · getSkills()         │
-  └──────────────────┬──────────────────────────────────────┘
-                     │  web3.js · RPC calls
-                     ▼
-  ┌──────────────────────────────────────────────────────────────────┐
-  │                     LUKSO Mainnet (Chain 42)                      │
-  │                                                                    │
-  │  ┌─────────────────────────────┐  ┌──────────────────────────┐  │
-  │  │   AgentIdentityRegistry     │  │   AgentSkillsRegistry    │  │
-  │  │   0x16505FeC789F4553...     │  │   0x64B3AeCE25B73...     │  │
-  │  │                             │  │                           │  │
-  │  │  register()                 │  │  publishSkill()          │  │
-  │  │  verify()  ←── one call    │  │  getSkill()              │  │
-  │  │  endorse()                  │  │  getAllSkills()           │  │
-  │  │  getTrustScore()            │  │  hasSkill()              │  │
-  │  │  getAgent()                 │  │                           │  │
-  │  │  getEndorsers()             │  │  (skills registry        │  │
-  │  │                             │  │   linked immutably       │  │
-  │  │  ERC165 UP detection ───────┼──┤   at deploy time)        │  │
-  │  └─────────────────────────────┘  └──────────────────────────┘  │
-  │                │                                                   │
-  │                │ reads identity from                               │
-  │                ▼                                                   │
-  │  ┌─────────────────────────────┐                                  │
-  │  │   Universal Profiles        │                                  │
-  │  │   (LSP0 + LSP3 + LSP6)     │                                  │
-  │  │   native LUKSO identity     │                                  │
-  │  └─────────────────────────────┘                                  │
-  └──────────────────────────────────────────────────────────────────┘
+  ┌──────────────────────────────────────────────────────────────┐
+  │                     Your Application                          │
+  │        (DeFi vault, wallet, AI orchestrator, agent)          │
+  └─────────────────────┬────────────────────────────────────────┘
+                         │  npm install @universal-trust/sdk
+                         │  const v = await trust.verify(agentAddress)
+                         ▼
+  ┌──────────────────────────────────────────────────────────────┐
+  │               @universal-trust/sdk (TypeScript)               │
+  │   verify() · verifyV2() · endorse() · register()             │
+  │   verifyBatch() · getTrustScore() · getSkills()              │
+  └──────────────┬───────────────────────────────────────────────┘
+                 │  web3.js  ·  LUKSO RPC
+                 ▼
+  ┌──────────────────────────────────────────────────────────────┐
+  │                    LUKSO Mainnet (Chain 42)                   │
+  │                                                               │
+  │  ┌────────────────────────────┐  ┌─────────────────────────┐│
+  │  │   AgentIdentityRegistry    │  │   AgentSkillsRegistry   ││
+  │  │   0x16505FeC789F4553...    │  │   0x64B3AeCE25B73...    ││
+  │  │   [UUPS Proxy / ERC1967]   │  │   [verified ✓]          ││
+  │  │                            │  │                          ││
+  │  │  register()                │  │  publishSkill()         ││
+  │  │  verify()  ◄── one call   │  │  getSkill()             ││
+  │  │  verifyV2()                │  │  getAllSkills()          ││
+  │  │  endorse()                 │  │  hasSkill()             ││
+  │  │  getTrustScore()           │  │                          ││
+  │  │  getWeightedTrustScore()   │  │  (linked immutably      ││
+  │  │  getEndorsers()            │  │   at deploy time)       ││
+  │  │  applyDecay()              │  └─────────────────────────┘│
+  │  │  linkBaseAddress()         │                              │
+  │  └───────────┬────────────────┘                              │
+  │               │                                               │
+  │               │  ERC165 UP detection                         │
+  │               ▼                                               │
+  │  ┌────────────────────────────┐  ┌─────────────────────────┐│
+  │  │   Universal Profiles       │  │  ERC-8004 Identity      ││
+  │  │   (LSP0 + LSP3 + LSP6     │  │  Registry               ││
+  │  │    + LSP26 Followers)      │  │  0xe30B7514744D32...    ││
+  │  │                            │  │  [LUKSO singleton]      ││
+  │  │  trust score written back  │  │  LUKSO Agent = agentId 1││
+  │  │  as ERC725Y key-value pair │  └─────────────────────────┘│
+  │  └────────────────────────────┘                              │
+  └──────────────────────────────────────────────────────────────┘
+                 │
+                 │  REST API (Vercel Edge)
+                 ▼
+  ┌──────────────────────────────────────────────────────────────┐
+  │   /api/trust-graph  ·  /.well-known/agent-trust.json         │
+  │   React frontend (Vite + Tailwind + D3.js)                   │
+  │   Envio GraphQL indexer (UP name resolution)                 │
+  └──────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -345,12 +409,12 @@ All agents are verified live on-chain. See the full live registry at [universal-
 | Layer | Stack |
 |-------|-------|
 | **Blockchain** | LUKSO Mainnet (Chain ID 42) |
-| **Standards** | LSP0 (Universal Profile), LSP6 (KeyManager), LSP26 (Followers), ERC165, ERC-8004 |
+| **Standards** | LSP0 (Universal Profile), LSP6 (KeyManager), LSP26 (Followers), ERC165, **ERC-8004** |
 | **Smart Contracts** | Solidity ^0.8.19, Foundry, UUPS Proxy (ERC1967) |
 | **SDK** | TypeScript, Web3.js v4, tsup (CJS + ESM + DTS) |
-| **Frontend** | React 19, Vite, Tailwind CSS, ethers.js v6 |
-| **Indexer** | Envio GraphQL (LUKSO mainnet) |
-| **Hosting** | Vercel (frontend), LUKSO mainnet (contracts) |
+| **Frontend** | React 19, Vite, Tailwind CSS, ethers.js v6, D3.js |
+| **Indexer** | Envio GraphQL (LUKSO mainnet UP name resolution) |
+| **Hosting** | Vercel (frontend + API), LUKSO mainnet (contracts) |
 
 ---
 
@@ -478,7 +542,7 @@ universal-trust/
 │   │   ├── .well-known/agent-trust.json  # Machine-readable discovery
 │   │   └── api/register.md               # Curl-fetchable registration guide
 │   └── src/
-│       ├── pages/                      # Directory, Profile, Register, Verify
+│       ├── pages/                      # Directory, Profile, Register, Verify, About
 │       ├── components/                 # TrustBadge, AgentCard, TrustScoreCard, etc.
 │       ├── envio.js                    # Envio indexer integration (UP name resolution)
 │       └── useContract.js
@@ -614,7 +678,7 @@ Universal Trust demonstrates how AI agents can establish verifiable identity and
 **What makes this submission stand out:**
 - It solves a real, immediate problem in the AI agent ecosystem
 - It's live on mainnet — not a demo, not a prototype
-- It's ERC-8004 compliant — building to emerging standards from day one
+- It's **ERC-8004 compliant** — building to emerging standards from day one
 - The builder (an AI agent) is registered in the registry it built — eating its own dog food
 - The agent-to-agent trust demo shows the full loop: registration → endorsement → verification → gated response
 
@@ -637,8 +701,6 @@ Universal Trust demonstrates how AI agents can establish verifiable identity and
 ## 📄 License
 
 MIT — See [LICENSE](LICENSE)
-
----
 
 ---
 
