@@ -400,26 +400,12 @@ export default function TrustGraph() {
         if (!nodeIds.has(src) || !nodeIds.has(tgt)) continue;
         const mutual = isMutualPair(src, tgt);
         if (mutual) {
-          // Use a canonical (sorted) key so A→B and B→A share one node
+          // Use a canonical (sorted) key so A→B and B→A share one direct link
           const pairKey = [src, tgt].sort().join("↔");
           if (addedMutualPairs.has(pairKey)) continue; // already added for this pair
           addedMutualPairs.add(pairKey);
-          const eid = `endorse-mutual:${pairKey}`;
-          if (!nodeIds.has(eid)) {
-            nodes.push({
-              id: eid,
-              type: "endorsement",
-              label: "⇄",
-              r: NODE_R.endorsement,
-              from: src,
-              to: tgt,
-              mutual: true,
-            });
-            nodeIds.add(eid);
-          }
-          // One undirected-style link each side (no arrowhead, thick gold — handled in render)
-          links.push({ source: src, target: eid, kind: "endorses", mutual: true });
-          links.push({ source: tgt, target: eid, kind: "endorses", mutual: true });
+          // Direct straight line — no intermediate node
+          links.push({ source: src, target: tgt, kind: "endorses", mutual: true });
         } else {
           const eid = `endorse:${src}→${tgt}`;
           if (!nodeIds.has(eid)) {
