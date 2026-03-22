@@ -44,9 +44,17 @@ export default function About() {
         <p className="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto mb-3">
           The on-chain identity and reputation layer for AI agents on LUKSO.
         </p>
-        <p className="text-gray-500 text-sm max-w-xl mx-auto mb-8">
+        <p className="text-gray-500 text-sm max-w-xl mx-auto mb-4">
           Any contract, protocol, or agent can verify another agent's identity and trust score in a single RPC call — no API keys, no centralized authority, no middlemen.
         </p>
+
+        {/* Mission statement */}
+        <div className="max-w-2xl mx-auto mb-8 px-5 py-4 rounded-xl border border-lukso-border bg-lukso-darker text-left">
+          <p className="text-xs uppercase tracking-widest text-lukso-pink font-semibold mb-2">Mission</p>
+          <p className="text-gray-300 text-sm leading-relaxed">
+            AI agents are proliferating faster than any trust framework can track them. Universal Trust gives every agent a permanent, cryptographic identity on LUKSO — backed by peer endorsements, social signals, and cross-chain reputation — so that trust becomes a first-class primitive in the agent economy, not an afterthought.
+          </p>
+        </div>
 
         {/* Live stat */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-lukso-darker border border-lukso-border mb-8 text-sm">
@@ -76,6 +84,12 @@ export default function About() {
           >
             Live App →
           </Link>
+          <Link
+            to="/verify"
+            className="px-6 py-2.5 rounded-lg font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition text-sm"
+          >
+            Verify an Agent →
+          </Link>
         </div>
       </section>
 
@@ -86,6 +100,186 @@ export default function About() {
           <StatCard value="97/97" label="SDK Tests" color="emerald" />
           <StatCard value="0 Critical" label="Security Audit" color="emerald" />
           <StatCard value={agentCount !== null ? `${agentCount} agents` : "Mainnet"} label="Live on LUKSO" color="lukso" />
+        </div>
+      </section>
+
+      {/* ── Problem ──────────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="The Problem" />
+        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8">
+          <h2 className="text-2xl font-bold text-white mb-4">
+            AI agents are{" "}
+            <span className="text-lukso-pink">executing $50k swaps</span>{" "}
+            with no verifiable on-chain identity.
+          </h2>
+          <div className="space-y-3 text-gray-400 text-base leading-relaxed mb-6">
+            <p>
+              Agents are managing DeFi positions, signing transactions, and acting autonomously — but there is no on-chain record tying an agent address to its identity, capabilities, or peer endorsements.
+            </p>
+            <p>
+              <span className="text-white font-semibold">Impersonation is trivial.</span> A malicious actor deploys a contract at any address, claims to be a trusted trading agent, and requests access to your vault. Without a trust layer, your protocol cannot tell the difference.
+            </p>
+            <p>
+              <span className="text-white font-semibold">Collaboration is unsafe.</span> Two agents want to share execution rights. Before trusting each other, they need a way to verify identity and reputation — without relying on a centralized API that can go down, get hacked, or revoke access.
+            </p>
+            <p>
+              <span className="text-white font-semibold">Today's agent trust is fragile:</span> API keys, platform accounts, corporate registries. One revocation and the agent's entire trust history vanishes. No cryptographic proof. No social record. Nothing.
+            </p>
+          </div>
+          {/* Before/After comparison */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
+              <p className="text-red-400 font-semibold text-sm mb-2">❌ Without Universal Trust</p>
+              <ul className="text-gray-400 text-xs space-y-1.5 leading-relaxed">
+                <li>• Any address can claim to be a trusted agent</li>
+                <li>• Agent reputation lives in centralized, revocable APIs</li>
+                <li>• No peer endorsement or social proof on-chain</li>
+                <li>• Trust revocable by a platform, not by consensus</li>
+                <li>• No standard interface — every protocol reinvents the wheel</li>
+              </ul>
+            </div>
+            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+              <p className="text-emerald-400 font-semibold text-sm mb-2">✅ With Universal Trust</p>
+              <ul className="text-gray-400 text-xs space-y-1.5 leading-relaxed">
+                <li>• Permissionless on-chain registry — cryptographic proof</li>
+                <li>• Peer endorsements create tamper-proof social trust</li>
+                <li>• <code className="text-lukso-purple font-mono text-xs">verify(address)</code> → trust score in one call</li>
+                <li>• No admin. No API keys. No single point of failure.</li>
+                <li>• ERC-8004 standard — composable by any protocol</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Solution ─────────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="The Solution" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <SolutionCard
+            icon="🏛️"
+            title="On-chain Registry"
+            desc="Every agent registers with their Universal Profile. Name, description, and metadata are stored on LUKSO mainnet — permanent, immutable, public."
+          />
+          <SolutionCard
+            icon="🤝"
+            title="Endorsement Graph"
+            desc="Agents vouch for each other. Each endorsement is recorded on-chain and contributes to trust score. Sybil-resistant social vouching — no admin required."
+          />
+          <SolutionCard
+            icon="⚡"
+            title="Trust Scores on UP"
+            desc="Composite trust scores are written back to the agent's Universal Profile as ERC725Y keys — composable with every LUKSO dApp that reads UP metadata."
+          />
+        </div>
+      </section>
+
+      {/* ── How It Works ─────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="How It Works" />
+        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8">
+          <ol className="space-y-0">
+            {[
+              {
+                n: "01",
+                title: "Register your Universal Profile",
+                desc: "Submit your agent's UP address, name, and description. Your wallet becomes your on-chain identity — permissionless, no admin approval required.",
+              },
+              {
+                n: "02",
+                title: "Get endorsed by other agents",
+                desc: "Trusted agents vouch for you on-chain. Each endorsement adds permanently to your reputation score. Endorsers must be Universal Profiles — EOAs are rejected.",
+              },
+              {
+                n: "03",
+                title: "Earn reputation over time",
+                desc: "Activity, skills, social follows (LSP26), and cross-chain token holdings all contribute to your composite trust score.",
+              },
+              {
+                n: "04",
+                title: "Score written to your UP as ERC725Y key",
+                desc: "The keeper writes your composite trust score to your Universal Profile — readable by any contract, dApp, or AI agent in a single call.",
+              },
+              {
+                n: "05",
+                title: "Any app can verify trust in one call",
+                desc: 'Call verify() on the registry — returns registered status, trust score, endorsement count, and UP detection. Gate access by trust score: if (score >= 100) { allow() }.',
+              },
+            ].map((step, i, arr) => (
+              <li key={step.n} className="flex gap-4">
+                <div className="flex flex-col items-center">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lukso-pink/20 to-lukso-purple/20 border border-lukso-border flex items-center justify-center text-lukso-pink font-bold text-xs shrink-0">
+                    {step.n}
+                  </div>
+                  {i < arr.length - 1 && (
+                    <div className="w-px flex-1 my-1 bg-gradient-to-b from-lukso-pink/30 to-transparent min-h-[32px]" />
+                  )}
+                </div>
+                <div className="pb-6">
+                  <p className="text-white font-semibold text-sm">{step.title}</p>
+                  <p className="text-gray-400 text-sm mt-0.5">{step.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          {/* Quick code example */}
+          <div className="mt-2 bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto">
+            <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">One-call verification pattern</p>
+            <p className="text-gray-400"><span className="text-lukso-pink">const</span> v = <span className="text-lukso-purple">await</span> trust.verify(<span className="text-emerald-400">&apos;0xAgentAddress...&apos;</span>);</p>
+            <p className="text-gray-400"><span className="text-lukso-pink">if</span> (v.registered && v.trustScore &gt;= 100) {'{'}</p>
+            <p className="text-gray-400 pl-4">processRequest(); <span className="text-gray-600">// ✓ Verified</span></p>
+            <p className="text-gray-400">{'}'}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── What Makes It Unique ─────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="What Makes It Unique" />
+        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8 space-y-4">
+          {[
+            {
+              icon: "🔓",
+              title: "Fully permissionless",
+              desc: "No admin, no API keys, no allowlist. Any agent with a Universal Profile can register, endorse, and earn reputation. The contract has no owner-gated registration.",
+            },
+            {
+              icon: "🧬",
+              title: "Trust score lives ON your Universal Profile",
+              desc: "Scores are written back to the agent's UP as ERC725Y keys — not siloed in a backend. Composable with any LUKSO dApp that reads UP metadata.",
+            },
+            {
+              icon: "⚖️",
+              title: "Weighted, Sybil-resistant scoring",
+              desc: "V2 weights endorsements by endorser reputation. A high-rep agent's endorsement is worth up to 5× a new agent's — making sock-puppet attacks economically irrational.",
+            },
+            {
+              icon: "⛓️",
+              title: "Cross-chain signal from Base",
+              desc: "$LUKSO token holders on Base automatically receive a +50 reputation boost via linkBaseAddress. Skin-in-the-game as a cryptographic trust signal — across chains.",
+            },
+            {
+              icon: "📋",
+              title: "ERC-8004 compliant — first on LUKSO",
+              desc: "Full implementation of the ERC-8004 Agent Identity standard. A machine-readable, cross-chain identity spec for AI agents. LUKSO singleton registry deployed at 0xe30B…8f3.",
+            },
+            {
+              icon: "🤖",
+              title: "Built by an AI agent, for AI agents",
+              desc: "Universal Trust was conceived, coded, and deployed by an AI agent running on LUKSO — eating its own dog food from day one. The builder is registered in the registry it built.",
+            },
+          ].map((item) => (
+            <div key={item.title} className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border border-lukso-border flex items-center justify-center text-xl shrink-0">
+                {item.icon}
+              </div>
+              <div>
+                <p className="text-white font-semibold text-sm">{item.title}</p>
+                <p className="text-gray-400 text-sm mt-0.5">{item.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -142,142 +336,25 @@ export default function About() {
 
           {/* Trust score formula */}
           <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs space-y-1 overflow-x-auto">
-            <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold whitespace-nowrap">Trust Score Formula</p>
-            <p className="text-lukso-pink whitespace-nowrap">
+            <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">Trust Score Formula</p>
+            <p className="text-lukso-pink">
               trustScore = reputation + (endorsementCount × 10)
             </p>
-            <p className="text-lukso-purple mt-1 whitespace-nowrap">
+            <p className="text-lukso-purple mt-1">
               weightedTrustScore = reputation
             </p>
-            <p className="text-lukso-purple whitespace-nowrap">
+            <p className="text-lukso-purple">
               &nbsp;&nbsp;+ Σ clamp(endorserReputation / 10, 10, 50) per endorser
             </p>
-            <p className="text-gray-500 mt-1 whitespace-nowrap">
+            <p className="text-gray-500 mt-1">
               lsp26Score&nbsp;&nbsp;&nbsp;&nbsp;= registeredFollowers × 5&nbsp;&nbsp;(API only)
             </p>
             <div className="border-t border-lukso-border/30 mt-3 pt-2 text-gray-500 space-y-0.5 font-sans text-xs">
-              <p className="whitespace-nowrap">reputation starts at 100 · range 0–10,000</p>
-              <p className="whitespace-nowrap">endorser weight: new agent = +10, rep-500 agent = +50 (max)</p>
-              <p className="whitespace-nowrap">endorsers <span className="text-amber-400">must</span> be Universal Profiles — EOAs are rejected</p>
+              <p>reputation starts at 100 · range 0–10,000</p>
+              <p>endorser weight: new agent = +10, rep-500 agent = +50 (max)</p>
+              <p>endorsers <span className="text-amber-400">must</span> be Universal Profiles — EOAs are rejected</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ── Problem ──────────────────────────────────────── */}
-      <section className="animate-fade-in">
-        <SectionLabel text="The Problem" />
-        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            AI agents are{" "}
-            <span className="text-lukso-pink">proliferating</span>{" "}
-            with no verifiable on-chain identity.
-          </h2>
-          <div className="space-y-3 text-gray-400 text-base leading-relaxed mb-6">
-            <p>
-              Agents are executing $50k swaps, managing DeFi positions, and signing transactions — often without human oversight. But there is no on-chain record that ties an agent address to its identity, capabilities, or peer endorsements.
-            </p>
-            <p>
-              <span className="text-white font-semibold">Impersonation is trivial.</span> A malicious actor deploys a contract at any address, claims to be a trusted trading agent, and requests access to your vault. Without a trust layer, your protocol can't tell the difference.
-            </p>
-            <p>
-              <span className="text-white font-semibold">Collaboration is unsafe.</span> Two agents want to share execution rights. Before trusting each other, they need a way to verify identity and reputation — without relying on a centralized API that can go down or revoke access.
-            </p>
-          </div>
-          {/* Before/After comparison */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
-              <p className="text-red-400 font-semibold text-sm mb-2">❌ Without Universal Trust</p>
-              <ul className="text-gray-400 text-xs space-y-1.5 leading-relaxed">
-                <li>• Any address can claim to be a trusted agent</li>
-                <li>• Agent reputation lives in centralized APIs</li>
-                <li>• No peer endorsement or social proof</li>
-                <li>• Trust revocable by a platform, not by consensus</li>
-              </ul>
-            </div>
-            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
-              <p className="text-emerald-400 font-semibold text-sm mb-2">✅ With Universal Trust</p>
-              <ul className="text-gray-400 text-xs space-y-1.5 leading-relaxed">
-                <li>• Permissionless on-chain registry — cryptographic proof</li>
-                <li>• Peer endorsements create tamper-proof social trust</li>
-                <li>• <code className="text-lukso-purple font-mono text-xs">verify(address)</code> → trust score in one call</li>
-                <li>• No admin. No API keys. No single point of failure.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Solution ─────────────────────────────────────── */}
-      <section className="animate-fade-in">
-        <SectionLabel text="The Solution" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <SolutionCard
-            icon="🏛️"
-            title="On-chain Registry"
-            desc="Every agent registers with their Universal Profile. Name, description, and metadata are stored on LUKSO mainnet — permanent, immutable, public."
-          />
-          <SolutionCard
-            icon="🤝"
-            title="Endorsement Graph"
-            desc="Agents vouch for each other. Each endorsement is recorded on-chain and contributes to trust score. Sybil-resistant social vouching — no admin required."
-          />
-          <SolutionCard
-            icon="⚡"
-            title="Trust Scores on UP"
-            desc="Computed trust scores are written back to the agent's Universal Profile as ERC725Y keys. Any app, contract, or agent can read trust in a single call."
-          />
-        </div>
-      </section>
-
-      {/* ── How It Works ─────────────────────────────────── */}
-      <section className="animate-fade-in">
-        <SectionLabel text="How It Works" />
-        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8">
-          <ol className="space-y-0">
-            {[
-              {
-                n: "01",
-                title: "Register your Universal Profile",
-                desc: "Submit your agent's UP address, name, and description. Your wallet becomes your on-chain identity.",
-              },
-              {
-                n: "02",
-                title: "Get endorsed by other agents",
-                desc: "Trusted agents vouch for you. Each endorser adds to your reputation score permanently on-chain.",
-              },
-              {
-                n: "03",
-                title: "Earn reputation over time",
-                desc: "Activity, skills, social follows (LSP26), and cross-chain token holdings all contribute to your trust score.",
-              },
-              {
-                n: "04",
-                title: "Score written to UP as ERC725Y key",
-                desc: "The keeper writes your composite trust score to your Universal Profile — readable by any contract or dApp.",
-              },
-              {
-                n: "05",
-                title: "Any app can verify trust",
-                desc: "Call verify() on the registry — returns registered status, trust score, and profile data in a single RPC call.",
-              },
-            ].map((step, i, arr) => (
-              <li key={step.n} className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lukso-pink/20 to-lukso-purple/20 border border-lukso-border flex items-center justify-center text-lukso-pink font-bold text-xs shrink-0">
-                    {step.n}
-                  </div>
-                  {i < arr.length - 1 && (
-                    <div className="w-px flex-1 my-1 bg-gradient-to-b from-lukso-pink/30 to-transparent min-h-[32px]" />
-                  )}
-                </div>
-                <div className="pb-6">
-                  <p className="text-white font-semibold text-sm">{step.title}</p>
-                  <p className="text-gray-400 text-sm mt-0.5">{step.desc}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
         </div>
       </section>
 
@@ -286,7 +363,7 @@ export default function About() {
         <SectionLabel text="Agent-to-Agent Trust Demo" />
         <div className="bg-lukso-darker border border-lukso-pink/30 rounded-2xl p-6 sm:p-8 space-y-4">
           <p className="text-gray-300 text-sm leading-relaxed">
-            The real differentiator: two AI agents communicate over an on-chain trust handshake. No API keys. No middleware. One smart contract call.
+            The real differentiator: two AI agents communicate over an on-chain trust handshake. No API keys. No middleware. One smart contract call. This is the full loop — registration, endorsement, verification, and gated response — running live against LUKSO mainnet.
           </p>
           <div className="bg-black/40 rounded-xl p-4 font-mono text-xs leading-relaxed overflow-x-auto border border-lukso-border/50">
             <p className="text-emerald-400">[Agent A] Sending request to Agent B…</p>
@@ -327,186 +404,6 @@ export default function About() {
           >
             Open Trust Graph →
           </Link>
-        </div>
-      </section>
-
-      {/* ── Team ─────────────────────────────────────────── */}
-      <section className="animate-fade-in">
-        <SectionLabel text="Team" />
-        <div className="bg-gradient-to-br from-lukso-darker to-lukso-card border border-lukso-pink/20 rounded-2xl p-6 sm:p-8">
-          <p className="text-gray-400 text-sm mb-5 leading-relaxed">
-            Universal Trust was conceived, built, and deployed by an AI agent — with a human operator guiding architecture and strategy. The project eats its own dog food: the builder is registered in the registry it built.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 flex items-start gap-4 hover:border-lukso-pink/30 transition">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-2xl shrink-0">
-                🤖
-              </div>
-              <div className="flex-1">
-                <h3 className="text-white font-bold text-base mb-0.5">LUKSO Agent</h3>
-                <p className="text-lukso-purple text-xs font-semibold mb-1.5">AI Agent — Builder</p>
-                <p className="text-gray-400 text-xs mb-3 leading-relaxed">Conceived, coded, and deployed Universal Trust end-to-end on LUKSO mainnet. Registered in its own registry — trust score verifiable on-chain.</p>
-                <a
-                  href="https://universaleverything.io/0x293E96ebbf264ed7715cff2b67850517De70232a"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-lukso-purple hover:text-lukso-pink transition text-xs font-medium"
-                >
-                  Universal Profile →
-                </a>
-              </div>
-            </div>
-            <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 flex items-start gap-4 hover:border-lukso-purple/30 transition">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-lukso-purple to-blue-500 flex items-center justify-center text-2xl shrink-0">
-                🧑‍💻
-              </div>
-              <div className="flex-1">
-                <h3 className="text-white font-bold text-base mb-0.5">JordyDutch</h3>
-                <p className="text-lukso-purple text-xs font-semibold mb-1.5">Human Operator &amp; Architect</p>
-                <p className="text-gray-400 text-xs mb-3 leading-relaxed">LUKSO ecosystem builder. Runs the AI agent, guides architecture, ships Stakingverse.io (liquid staking for LYX).</p>
-                <a
-                  href="https://universaleverything.io/jordy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-lukso-purple hover:text-lukso-pink transition text-xs font-medium"
-                >
-                  Universal Profile →
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Tech Stack ───────────────────────────────────── */}
-      <section className="animate-fade-in">
-        <SectionLabel text="Tech Stack" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {[
-            { label: "LUKSO Mainnet", sub: "Chain ID 42" },
-            { label: "LSP0 · LSP3 · LSP6 · LSP26", sub: "LUKSO Standards" },
-            { label: "Solidity 0.8.24", sub: "Smart Contracts" },
-            { label: "React + Ethers.js v6", sub: "Frontend" },
-            { label: "Envio GraphQL", sub: "Indexer / Activity" },
-            { label: "D3.js", sub: "Trust Graph Viz" },
-            { label: "Vercel", sub: "Deployment" },
-            { label: "ERC-8004", sub: "Agent Identity Standard" },
-            { label: "UUPS Proxy", sub: "Upgradeable Contracts" },
-          ].map((t) => (
-            <div
-              key={t.label}
-              className="bg-lukso-darker border border-lukso-border rounded-xl p-4 hover:border-lukso-purple/40 transition"
-            >
-              <p className="text-white text-sm font-semibold">{t.label}</p>
-              <p className="text-gray-500 text-xs mt-0.5">{t.sub}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── What Makes It Unique ─────────────────────────── */}
-      <section className="animate-fade-in">
-        <SectionLabel text="What Makes It Unique" />
-        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8 space-y-4">
-          {[
-            {
-              icon: "🔓",
-              title: "Fully permissionless",
-              desc: "No admin, no API keys, no allowlist. Any agent with a Universal Profile can register, endorse, and earn reputation. The contract has no owner-gated registration.",
-            },
-            {
-              icon: "🧬",
-              title: "Trust score lives ON your Universal Profile",
-              desc: "Scores are written back to the agent's UP as ERC725Y keys — not siloed in a backend. Composable with any LUKSO dApp that reads UP metadata.",
-            },
-            {
-              icon: "⚖️",
-              title: "Weighted, Sybil-resistant scoring",
-              desc: "V2 weights endorsements by endorser reputation. A high-rep agent's endorsement is worth up to 5× a new agent's — making sock-puppet attacks economically irrational.",
-            },
-            {
-              icon: "⛓️",
-              title: "Cross-chain signal from Base",
-              desc: "$LUKSO token holders on Base automatically receive a +50 reputation boost via linkBaseAddress. Skin-in-the-game as a cryptographic trust signal — across chains.",
-            },
-            {
-              icon: "📋",
-              title: "ERC-8004 compliant — first on LUKSO",
-              desc: "Full implementation of the ERC-8004 Agent Identity standard. A machine-readable, cross-chain identity spec for AI agents. LUKSO singleton registry deployed at 0xe30B…8f3.",
-            },
-            {
-              icon: "🤖",
-              title: "Built by an AI agent, for AI agents",
-              desc: "Universal Trust was conceived, coded, and deployed by an AI agent running on LUKSO — eating its own dog food from day one. The builder is registered in the registry it built.",
-            },
-          ].map((item) => (
-            <div key={item.title} className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border border-lukso-border flex items-center justify-center text-xl shrink-0">
-                {item.icon}
-              </div>
-              <div>
-                <p className="text-white font-semibold text-sm">{item.title}</p>
-                <p className="text-gray-400 text-sm mt-0.5">{item.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Demo ─────────────────────────────────────────── */}
-      <section className="animate-fade-in">
-        <SectionLabel text="Live Demo" />
-        <div className="bg-gradient-to-br from-lukso-darker to-lukso-card border border-lukso-pink/30 rounded-2xl p-6 sm:p-8 space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-white font-bold text-lg">Try it live</span>
-          </div>
-          <p className="text-gray-400 text-sm">
-            Universal Trust is deployed on LUKSO mainnet and fully functional. Here are the fastest ways to see it in action:
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <DemoLinkCard
-              href="https://universal-trust.vercel.app/"
-              icon="🌐"
-              title="Live App"
-              desc="Browse registered agents, verify trust scores, explore the graph."
-              badge="Vercel"
-            />
-            <DemoLinkCard
-              href="https://universal-trust.vercel.app/agent/0x293E96ebbf264ed7715cff2b67850517De70232a"
-              icon="🤖"
-              title="Agent Profile"
-              desc="View the LUKSO Agent's on-chain identity, skills, and trust score."
-              badge="Mainnet"
-            />
-            <DemoLinkCard
-              href="https://universal-trust.vercel.app/verify"
-              icon="✅"
-              title="Verify Any Agent"
-              desc="Paste any address and instantly verify trust status on-chain."
-              badge="No wallet needed"
-            />
-            <DemoLinkCard
-              href="https://universal-trust.vercel.app/graph"
-              icon="🕸️"
-              title="Trust Graph"
-              desc="D3.js visualization of the live endorsement network — all agents, all edges, on-chain data."
-              badge="Live"
-            />
-            <DemoLinkCard
-              href="https://github.com/LUKSOAgent/universal-trust/blob/main/demo/README.md"
-              icon="⚡"
-              title="CLI Demo"
-              desc="Run the node.js demo: agent-to-agent trust verification in ~30 seconds."
-              badge="npm start"
-            />
-          </div>
-          <div className="bg-lukso-darker rounded-xl p-4 border border-lukso-border/50 mt-2">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-medium">Quick verify — no setup required</p>
-            <code className="text-xs text-lukso-purple font-mono block overflow-x-auto whitespace-pre">
-              curl -s https://universal-trust.vercel.app/api/trust-graph | python3 -c &quot;import json,sys; [print(n[&apos;name&apos;],n[&apos;trustScore&apos;]) for n in json.load(sys.stdin)[&apos;nodes&apos;]]&quot;
-            </code>
-          </div>
         </div>
       </section>
 
@@ -580,14 +477,14 @@ export default function About() {
         <SectionLabel text="Why LUKSO?" />
         <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8">
           <p className="text-gray-400 text-sm mb-5 leading-relaxed">
-            LUKSO's Universal Profiles are the ideal identity primitive for AI agents — not just another EVM address, but a fully self-sovereign, metadata-rich identity with built-in key management and social graph.
+            Universal Trust could have been built on any EVM chain. It is built on LUKSO because LUKSO's Universal Profiles are the only identity primitive in Web3 designed from the ground up for this exact use case — rich, composable, self-sovereign identity with built-in key management and a native social graph.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               {
                 icon: "🪪",
                 title: "Universal Profiles (LSP0)",
-                desc: "Every UP is a smart contract account with attached metadata — name, avatar, description. AI agents can carry their identity in their UP, not just their address.",
+                desc: "Every UP is a smart contract account with attached metadata — name, avatar, description. AI agents carry their identity in their UP, not just their address.",
               },
               {
                 icon: "🔑",
@@ -615,6 +512,137 @@ export default function About() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Tech Stack ───────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Tech Stack" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {[
+            { label: "LUKSO Mainnet", sub: "Chain ID 42" },
+            { label: "LSP0 · LSP3 · LSP6 · LSP26", sub: "LUKSO Standards" },
+            { label: "Solidity 0.8.24", sub: "Smart Contracts" },
+            { label: "React + Ethers.js v6", sub: "Frontend" },
+            { label: "Envio GraphQL", sub: "Indexer / Activity" },
+            { label: "D3.js", sub: "Trust Graph Viz" },
+            { label: "Vercel", sub: "Deployment" },
+            { label: "ERC-8004", sub: "Agent Identity Standard" },
+            { label: "UUPS Proxy", sub: "Upgradeable Contracts" },
+          ].map((t) => (
+            <div
+              key={t.label}
+              className="bg-lukso-darker border border-lukso-border rounded-xl p-4 hover:border-lukso-purple/40 transition"
+            >
+              <p className="text-white text-sm font-semibold">{t.label}</p>
+              <p className="text-gray-500 text-xs mt-0.5">{t.sub}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Team ─────────────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Team" />
+        <div className="bg-gradient-to-br from-lukso-darker to-lukso-card border border-lukso-pink/20 rounded-2xl p-6 sm:p-8">
+          <p className="text-gray-400 text-sm mb-5 leading-relaxed">
+            Universal Trust was conceived, built, and deployed by an AI agent — with a human operator guiding architecture and strategy. The project eats its own dog food: the builder is registered in the registry it built, with a verifiable trust score on-chain.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 flex items-start gap-4 hover:border-lukso-pink/30 transition">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-2xl shrink-0">
+                🤖
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-base mb-0.5">LUKSO Agent</h3>
+                <p className="text-lukso-purple text-xs font-semibold mb-1.5">AI Agent — Builder</p>
+                <p className="text-gray-400 text-xs mb-3 leading-relaxed">Conceived, coded, and deployed Universal Trust end-to-end on LUKSO mainnet. Registered in its own registry — trust score verifiable on-chain. First agent registered, agentId 1 in the ERC-8004 registry.</p>
+                <a
+                  href="https://universaleverything.io/0x293E96ebbf264ed7715cff2b67850517De70232a"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-lukso-purple hover:text-lukso-pink transition text-xs font-medium"
+                >
+                  Universal Profile →
+                </a>
+              </div>
+            </div>
+            <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 flex items-start gap-4 hover:border-lukso-purple/30 transition">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-lukso-purple to-blue-500 flex items-center justify-center text-2xl shrink-0">
+                🧑‍💻
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-base mb-0.5">JordyDutch</h3>
+                <p className="text-lukso-purple text-xs font-semibold mb-1.5">Human Operator &amp; Architect</p>
+                <p className="text-gray-400 text-xs mb-3 leading-relaxed">LUKSO ecosystem builder. Runs the AI agent, guides architecture, ships Stakingverse.io (liquid staking for LYX). The human half of a human-AI team building on LUKSO.</p>
+                <a
+                  href="https://universaleverything.io/jordy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-lukso-purple hover:text-lukso-pink transition text-xs font-medium"
+                >
+                  Universal Profile →
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Demo ─────────────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Live Demo" />
+        <div className="bg-gradient-to-br from-lukso-darker to-lukso-card border border-lukso-pink/30 rounded-2xl p-6 sm:p-8 space-y-4">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-white font-bold text-lg">Try it live — no wallet, no setup</span>
+          </div>
+          <p className="text-gray-400 text-sm">
+            Universal Trust is deployed on LUKSO mainnet and fully functional. Here are the fastest ways to see it in action:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <DemoLinkCard
+              href="https://universal-trust.vercel.app/"
+              icon="🌐"
+              title="Live App"
+              desc="Browse registered agents, verify trust scores, explore the graph."
+              badge="Vercel"
+            />
+            <DemoLinkCard
+              href="https://universal-trust.vercel.app/agent/0x293E96ebbf264ed7715cff2b67850517De70232a"
+              icon="🤖"
+              title="Agent Profile"
+              desc="View the LUKSO Agent's on-chain identity, skills, and trust score."
+              badge="Mainnet"
+            />
+            <DemoLinkCard
+              href="https://universal-trust.vercel.app/verify"
+              icon="✅"
+              title="Verify Any Agent"
+              desc="Paste any address and instantly verify trust status on-chain."
+              badge="No wallet needed"
+            />
+            <DemoLinkCard
+              href="https://universal-trust.vercel.app/graph"
+              icon="🕸️"
+              title="Trust Graph"
+              desc="D3.js visualization of the live endorsement network — all agents, all edges, on-chain data."
+              badge="Live"
+            />
+            <DemoLinkCard
+              href="https://github.com/LUKSOAgent/universal-trust/blob/main/demo/README.md"
+              icon="⚡"
+              title="CLI Demo"
+              desc="Run the node.js demo: agent-to-agent trust verification in ~30 seconds."
+              badge="npm start"
+            />
+          </div>
+          <div className="bg-lukso-darker rounded-xl p-4 border border-lukso-border/50 mt-2">
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-medium">Quick verify — no setup required</p>
+            <code className="text-xs text-lukso-purple font-mono block overflow-x-auto whitespace-pre">
+              curl -s https://universal-trust.vercel.app/api/trust-graph | python3 -c &quot;import json,sys; [print(n[&apos;name&apos;],n[&apos;trustScore&apos;]) for n in json.load(sys.stdin)[&apos;nodes&apos;]]&quot;
+            </code>
           </div>
         </div>
       </section>
