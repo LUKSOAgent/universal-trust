@@ -706,11 +706,12 @@ function HeroCurlCopy() {
   return (
     <div className="w-full max-w-xl">
       <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide font-medium">Quick start — give this to your agent</p>
-      <div className="flex items-center gap-2 bg-lukso-card border border-lukso-purple/40 rounded-xl px-4 py-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-lukso-card border border-lukso-purple/40 rounded-xl px-4 py-3">
         <code className="text-sm text-lukso-purple font-mono flex-1 overflow-x-auto whitespace-nowrap block select-all">{CURL_CMD}</code>
         <button
           onClick={handleCopy}
-          className="shrink-0 inline-flex min-h-[44px] items-center px-3 py-2 sm:min-h-0 sm:py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium gap-1.5"
+          aria-label="Copy curl command"
+          className="shrink-0 inline-flex min-h-[44px] sm:min-h-0 items-center justify-center px-3 py-2 sm:py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium gap-1.5"
         >
           {copied ? (
             <><svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>Copied!</>

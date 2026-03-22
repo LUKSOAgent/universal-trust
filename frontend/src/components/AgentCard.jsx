@@ -293,10 +293,15 @@ function AgentCardInner({ agent, upProfile, rank, totalAgents }) {
           {/* Score with tooltip on hover */}
           <div
             className="relative cursor-help"
+            role="button"
+            tabIndex={0}
+            aria-label={`Trust score breakdown: ${compositeScore}`}
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
-            onTouchStart={() => setShowTooltip((v) => !v)}
-            onTouchEnd={(e) => e.preventDefault()}
+            onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); setShowTooltip((v) => !v); }}
+            onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowTooltip((v) => !v); } }}
+            onBlur={() => setShowTooltip(false)}
           >
             <ScoreTooltip
               trustScore={trustScore}

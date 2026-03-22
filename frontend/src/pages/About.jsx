@@ -142,23 +142,23 @@ export default function About() {
 
           {/* Trust score formula */}
           <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs space-y-1 overflow-x-auto">
-            <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">Trust Score Formula</p>
-            <p className="text-lukso-pink">
+            <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold whitespace-nowrap">Trust Score Formula</p>
+            <p className="text-lukso-pink whitespace-nowrap">
               trustScore = reputation + (endorsementCount × 10)
             </p>
-            <p className="text-lukso-purple mt-1">
+            <p className="text-lukso-purple mt-1 whitespace-nowrap">
               weightedTrustScore = reputation
             </p>
-            <p className="text-lukso-purple">
+            <p className="text-lukso-purple whitespace-nowrap">
               &nbsp;&nbsp;+ Σ clamp(endorserReputation / 10, 10, 50) per endorser
             </p>
-            <p className="text-gray-500 mt-1">
+            <p className="text-gray-500 mt-1 whitespace-nowrap">
               lsp26Score&nbsp;&nbsp;&nbsp;&nbsp;= registeredFollowers × 5&nbsp;&nbsp;(API only)
             </p>
             <div className="border-t border-lukso-border/30 mt-3 pt-2 text-gray-500 space-y-0.5 font-sans text-xs">
-              <p>reputation starts at 100 · range 0–10,000</p>
-              <p>endorser weight: new agent = +10, rep-500 agent = +50 (max)</p>
-              <p>endorsers <span className="text-amber-400">must</span> be Universal Profiles — EOAs are rejected</p>
+              <p className="whitespace-nowrap">reputation starts at 100 · range 0–10,000</p>
+              <p className="whitespace-nowrap">endorser weight: new agent = +10, rep-500 agent = +50 (max)</p>
+              <p className="whitespace-nowrap">endorsers <span className="text-amber-400">must</span> be Universal Profiles — EOAs are rejected</p>
             </div>
           </div>
         </div>

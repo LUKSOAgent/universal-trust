@@ -699,7 +699,7 @@ export default function Verify() {
                     <p className="text-4xl font-bold text-white tabular-nums">
                       {composite.toLocaleString()}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1 font-mono">
+                    <p className="text-xs text-gray-500 mt-1 font-mono break-words">
                       {result.trustScore} (contract)
                       {onChainRep ? ` + ${Math.round(onChainRep.generalScore * 3)} (activity×3)` : ""}
                       {skillsCount > 0 ? ` + ${Math.min(skillsCount, 20) * 10} (${skillsCount} skills×10)` : ""}
