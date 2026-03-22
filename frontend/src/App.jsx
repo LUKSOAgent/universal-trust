@@ -16,8 +16,8 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 function PageLoader() {
   return (
-    <div className="flex flex-col items-center justify-center py-32">
-      <div className="w-10 h-10 border-4 border-lukso-border border-t-lukso-pink rounded-full animate-spin mb-3" />
+    <div className="flex flex-col items-center justify-center py-32" role="status" aria-label="Loading page">
+      <div className="w-10 h-10 border-4 border-lukso-border border-t-lukso-pink rounded-full animate-spin mb-3" aria-hidden="true" />
       <p className="text-gray-500 text-sm">Loading…</p>
     </div>
   );

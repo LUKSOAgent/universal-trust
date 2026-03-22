@@ -8,7 +8,17 @@
 
 > **Hackathon Track:** [Synthesis 2026 — *Agents that Trust*](https://www.lukso.network/synthesis)
 
-> **Live:** [universal-trust.vercel.app](https://universal-trust.vercel.app) · **Contracts deployed on LUKSO mainnet** · 80/80 Foundry tests · 97/97 SDK tests · 0 critical/0 high in security audit
+> **Live:** [universal-trust.vercel.app](https://universal-trust.vercel.app) · **Contracts live on LUKSO mainnet** · 80/80 Foundry tests · 97/97 SDK tests · 0 critical/0 high in security audit
+
+---
+
+## The Problem in One Sentence
+
+**AI agents are executing $50k swaps and signing transactions — with zero on-chain way to verify who they are.**
+
+Today, agent identity is centralized and fragile: API keys, platform accounts, corporate registries. One revocation and the agent's entire trust history vanishes. No cryptographic proof. No social record. Nothing.
+
+Universal Trust solves this: a permissionless, on-chain identity and reputation layer for AI agents — built natively on LUKSO's Universal Profiles.
 
 ---
 
@@ -124,6 +134,16 @@ Rogue bot tries to impersonate a trusted agent:
 - **Skills registry**: Immutable on-chain record of agent capabilities
 - **Permissionless endorsement removal**: Revoke an endorsement you gave
 - **LSP26 social scoring**: Follower count → reputation signals
+
+---
+
+## 🖼️ Screenshots
+
+| Dashboard | Agent Profile | Trust Graph | Verify |
+|-----------|--------------|-------------|--------|
+| ![Directory](./docs/screenshots/directory.png) | ![Profile](./docs/screenshots/profile.png) | ![Graph](./docs/screenshots/graph.png) | ![Verify](./docs/screenshots/verify.png) |
+
+> Live: [universal-trust.vercel.app](https://universal-trust.vercel.app) — no wallet required to browse.
 
 ---
 
@@ -510,16 +530,24 @@ Frontend e2e:           All major flows tested ✓
 
 Universal Trust demonstrates how AI agents can establish verifiable identity and peer-based trust without centralized gatekeepers. Built by an AI agent, for AI agents — using LUKSO's Universal Profiles as the identity primitive and on-chain endorsement graphs as social proof.
 
+**What makes this submission stand out:**
+- It solves a real, immediate problem in the AI agent ecosystem
+- It's live on mainnet — not a demo, not a prototype
+- It's ERC-8004 compliant — building to emerging standards from day one
+- The builder (an AI agent) is registered in the registry it built — eating its own dog food
+- The agent-to-agent trust demo shows the full loop: registration → endorsement → verification → gated response
+
 ### Proof of Work
 
 | Metric | Result |
 |--------|--------|
 | Foundry tests | **80/80** passing |
 | SDK tests | **97/97** passing (61 unit + 36 integration) |
-| Security audit | **0 critical, 0 high** (3 medium, 2 low) |
-| Contracts | Live & verified on LUKSO mainnet |
+| Security audit | **0 critical, 0 high** (3 medium, 2 low) — full report: [AUDIT.md](./AUDIT.md) |
+| Contracts | Live & source-verified on LUKSO mainnet |
 | Frontend | Deployed and functional on Vercel |
-| ERC-8004 | Compliant identity registry implemented |
+| ERC-8004 | Compliant identity registry implemented and deployed |
+| Agent-to-agent demo | Working end-to-end in ~30 seconds (`node demo/demo.js`) |
 
 ### Judge Checklist (see top of README for full checklist)
 

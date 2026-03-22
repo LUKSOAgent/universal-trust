@@ -41,8 +41,11 @@ export default function About() {
           </span>
         </h1>
 
-        <p className="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto mb-8">
+        <p className="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto mb-3">
           The on-chain identity and reputation layer for AI agents on LUKSO.
+        </p>
+        <p className="text-gray-500 text-sm max-w-xl mx-auto mb-8">
+          Any contract, protocol, or agent can verify another agent's identity and trust score in a single RPC call — no API keys, no centralized authority, no middlemen.
         </p>
 
         {/* Live stat */}
@@ -167,23 +170,40 @@ export default function About() {
         <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8">
           <h2 className="text-2xl font-bold text-white mb-4">
             AI agents are{" "}
-            <span className="text-lukso-pink">proliferating</span> with no verifiable identity.
+            <span className="text-lukso-pink">proliferating</span>{" "}
+            with no verifiable on-chain identity.
           </h2>
-          <div className="space-y-3 text-gray-400 text-base leading-relaxed">
+          <div className="space-y-3 text-gray-400 text-base leading-relaxed mb-6">
             <p>
-              Anyone can deploy an agent and claim to be legitimate — there is no on-chain record
-              that ties an agent address to its identity, capabilities, or track record.
+              Agents are executing $50k swaps, managing DeFi positions, and signing transactions — often without human oversight. But there is no on-chain record that ties an agent address to its identity, capabilities, or peer endorsements.
             </p>
             <p>
-              Impersonation is trivial. A malicious actor deploys a contract at any address, claims
-              to be a trusted trading agent, and requests a $50k token swap from your wallet.
-              How do you know it's not a drain attack?
+              <span className="text-white font-semibold">Impersonation is trivial.</span> A malicious actor deploys a contract at any address, claims to be a trusted trading agent, and requests access to your vault. Without a trust layer, your protocol can't tell the difference.
             </p>
             <p>
-              Without a verifiable trust layer, agent-to-agent collaboration is unsafe — there is
-              no way to know if another agent is legitimate, peer-endorsed, or competent before
-              sharing data, funds, or execution rights.
+              <span className="text-white font-semibold">Collaboration is unsafe.</span> Two agents want to share execution rights. Before trusting each other, they need a way to verify identity and reputation — without relying on a centralized API that can go down or revoke access.
             </p>
+          </div>
+          {/* Before/After comparison */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
+              <p className="text-red-400 font-semibold text-sm mb-2">❌ Without Universal Trust</p>
+              <ul className="text-gray-400 text-xs space-y-1.5 leading-relaxed">
+                <li>• Any address can claim to be a trusted agent</li>
+                <li>• Agent reputation lives in centralized APIs</li>
+                <li>• No peer endorsement or social proof</li>
+                <li>• Trust revocable by a platform, not by consensus</li>
+              </ul>
+            </div>
+            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+              <p className="text-emerald-400 font-semibold text-sm mb-2">✅ With Universal Trust</p>
+              <ul className="text-gray-400 text-xs space-y-1.5 leading-relaxed">
+                <li>• Permissionless on-chain registry — cryptographic proof</li>
+                <li>• Peer endorsements create tamper-proof social trust</li>
+                <li>• <code className="text-lukso-purple font-mono text-xs">verify(address)</code> → trust score in one call</li>
+                <li>• No admin. No API keys. No single point of failure.</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -462,6 +482,115 @@ export default function About() {
         </div>
       </section>
 
+      {/* ── Deployed Contracts ───────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Deployed Contracts — LUKSO Mainnet" />
+        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8 space-y-3">
+          <p className="text-gray-400 text-sm mb-4">
+            All contracts are live and source-verified on LUKSO mainnet (Chain ID 42). The proxy address is permanent — it will not change on upgrades.
+          </p>
+          {[
+            {
+              name: "AgentIdentityRegistry",
+              address: "0x16505FeC789F4553Ea88d812711A0E913D926ADD",
+              note: "ERC1967 UUPS proxy — permanent address. Core identity + trust contract.",
+              tag: "UUPS Proxy",
+              tagColor: "lukso-pink",
+            },
+            {
+              name: "AgentIdentityRegistry (impl)",
+              address: "0x80a6e250fA06D8619C7d4DDC0D50efB03Ca29277",
+              note: "Current logic contract. Upgradeable by owner without changing proxy address.",
+              tag: "Implementation",
+              tagColor: "lukso-purple",
+            },
+            {
+              name: "AgentSkillsRegistry",
+              address: "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6",
+              note: "On-chain skills registry — immutably linked to the identity registry at deploy.",
+              tag: "Verified ✓",
+              tagColor: "emerald-400",
+            },
+            {
+              name: "ERC-8004 Identity Registry",
+              address: "0xe30B7514744D324e8bD93157E4c82230d6e6e8f3",
+              note: "LUKSO singleton. Full ERC-8004 compliance — LUKSO Agent is agentId 1.",
+              tag: "ERC-8004",
+              tagColor: "lukso-purple",
+            },
+          ].map((c) => (
+            <div key={c.address} className="bg-black/30 border border-lukso-border/50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <p className="text-white font-semibold text-sm">{c.name}</p>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full border font-mono ${
+                    c.tagColor === "lukso-pink"
+                      ? "text-lukso-pink border-lukso-pink/30 bg-lukso-pink/10"
+                      : c.tagColor === "lukso-purple"
+                      ? "text-lukso-purple border-lukso-purple/30 bg-lukso-purple/10"
+                      : "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
+                  }`}>{c.tag}</span>
+                </div>
+                <p className="text-gray-500 text-xs font-mono break-all">{c.address}</p>
+                <p className="text-gray-500 text-xs mt-1">{c.note}</p>
+              </div>
+              <a
+                href={`https://explorer.execution.mainnet.lukso.network/address/${c.address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center gap-1 text-xs text-lukso-purple hover:text-lukso-pink transition font-medium"
+              >
+                Explorer →
+              </a>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Why LUKSO ─────────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Why LUKSO?" />
+        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8">
+          <p className="text-gray-400 text-sm mb-5 leading-relaxed">
+            LUKSO's Universal Profiles are the ideal identity primitive for AI agents — not just another EVM address, but a fully self-sovereign, metadata-rich identity with built-in key management and social graph.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              {
+                icon: "🪪",
+                title: "Universal Profiles (LSP0)",
+                desc: "Every UP is a smart contract account with attached metadata — name, avatar, description. AI agents can carry their identity in their UP, not just their address.",
+              },
+              {
+                icon: "🔑",
+                title: "KeyManager (LSP6)",
+                desc: "Fine-grained permission system. Combine with trust scores: only allow agents with trustScore ≥ 200 to execute on behalf of a user. Permission + reputation together.",
+              },
+              {
+                icon: "👥",
+                title: "Followers Graph (LSP26)",
+                desc: "LUKSO has a native social graph. Universal Trust queries LSP26 to compute a social reputation signal from registered follower counts — real social proof on-chain.",
+              },
+              {
+                icon: "🔗",
+                title: "ERC725Y Data Store",
+                desc: "Trust scores are written back to the agent's UP as ERC725Y key-value pairs — composable with every LUKSO dApp that reads Universal Profile metadata.",
+              },
+            ].map((f) => (
+              <div key={f.title} className="bg-lukso-card border border-lukso-border rounded-xl p-4 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-lukso-pink/10 to-lukso-purple/10 border border-lukso-border flex items-center justify-center text-lg shrink-0">
+                  {f.icon}
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm mb-0.5">{f.title}</p>
+                  <p className="text-gray-400 text-xs leading-relaxed">{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Links ────────────────────────────────────────── */}
       <section className="animate-fade-in">
         <SectionLabel text="Links" />
@@ -557,9 +686,9 @@ function StatCard({ value, label, color }) {
   };
   const styles = colorMap[color] || colorMap.emerald;
   return (
-    <div className={`border rounded-2xl p-4 text-center ${styles}`}>
-      <p className="text-xl sm:text-2xl font-extrabold mb-1">{value}</p>
-      <p className="text-gray-400 text-xs font-medium">{label}</p>
+    <div className={`border rounded-2xl p-4 text-center min-w-0 ${styles}`}>
+      <p className="text-xl sm:text-2xl font-extrabold mb-1 truncate">{value}</p>
+      <p className="text-gray-400 text-xs font-medium truncate">{label}</p>
     </div>
   );
 }

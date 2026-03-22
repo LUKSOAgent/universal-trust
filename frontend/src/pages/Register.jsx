@@ -184,7 +184,7 @@ function RegisterCurlCopy() {
         <code className="text-sm text-lukso-purple font-mono flex-1 overflow-x-auto whitespace-nowrap block">{CURL_CMD}</code>
         <button
           onClick={handleCopy}
-          className="shrink-0 px-3 py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium flex items-center gap-1.5"
+          className="shrink-0 inline-flex min-h-[44px] items-center px-3 py-2 sm:min-h-0 sm:py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium gap-1.5"
         >
           {copied ? (
             <><svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>Copied!</>
@@ -275,7 +275,7 @@ curl -s -X POST https://rpc.mainnet.lukso.network \\
               </pre>
               <button
                 onClick={() => copySnippet(i, snippet.code)}
-                className="absolute top-2.5 right-2.5 px-2 py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition flex items-center gap-1"
+                className="absolute top-3 right-3 inline-flex min-h-[44px] items-center px-3 py-2 sm:min-h-0 sm:px-2 sm:py-1 rounded bg-lukso-card border border-lukso-border text-xs text-gray-400 hover:text-white hover:border-lukso-purple transition gap-1"
               >
                 {copiedIdx === i ? (
                   <><svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Copied</>
@@ -325,7 +325,7 @@ function TrustStep({ step, title, desc, icon, active, delay }) {
       style={{ animationDelay: `${delay}s` }}
     >
       {step > 1 && (
-        <div className="hidden sm:block absolute left-0 top-1/2 -translate-x-full w-3 h-px bg-gradient-to-r from-lukso-border to-lukso-pink/30" />
+        <div className="hidden sm:block absolute left-0 top-1/2 -translate-x-full w-4 h-px bg-gradient-to-r from-lukso-border to-lukso-pink/30" />
       )}
       <div className={`w-9 h-9 mx-auto mb-2 rounded-full flex items-center justify-center ${
         active
@@ -466,7 +466,7 @@ function OnboardingChecklistItem({
                   href={actionLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 px-3 py-2 sm:min-h-0 sm:py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium"
                 >
                   {actionText}
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -476,7 +476,7 @@ function OnboardingChecklistItem({
               ) : (
                 <Link
                   to={actionLink}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 px-3 py-2 sm:min-h-0 sm:py-1.5 rounded-lg bg-lukso-purple/20 border border-lukso-purple/40 text-xs text-lukso-purple hover:bg-lukso-purple/30 hover:text-white transition font-medium"
                 >
                   {actionText}
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

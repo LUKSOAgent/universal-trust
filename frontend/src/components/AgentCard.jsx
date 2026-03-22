@@ -17,7 +17,7 @@ function ScoreTooltip({ trustScore, onChainScore, skillCount, lsp26Score, compos
     <div className="absolute bottom-full right-0 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 mb-2 z-50 pointer-events-none animate-fade-in">
       <div className="bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 shadow-xl max-w-[calc(100vw-2rem)] sm:max-w-none">
         <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-semibold">Score Breakdown</p>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:flex-nowrap">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:flex sm:flex-nowrap sm:items-center sm:gap-x-2 sm:gap-y-0">
           <span className="text-lukso-purple">Contract: <span className="text-white font-semibold">{trustScore}</span></span>
           <span className="hidden sm:inline text-gray-600">|</span>
           <span className="text-blue-400">Activity: <span className="text-white font-semibold">{activityPts !== null ? activityPts : "…"}</span></span>

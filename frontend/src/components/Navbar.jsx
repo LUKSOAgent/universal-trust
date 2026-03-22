@@ -9,12 +9,12 @@ export default function Navbar() {
   
   return (
     <nav className="bg-lukso-darker/90 backdrop-blur-md border-b border-lukso-border sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition" onClick={() => setOpen(false)}>
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <Link to="/" className="flex min-h-[44px] items-center gap-3 hover:opacity-80 transition" onClick={() => setOpen(false)}>
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-lukso-pink to-lukso-purple flex items-center justify-center text-white font-bold text-sm">
             UT
           </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-lukso-pink to-lukso-purple bg-clip-text text-transparent">
+          <span className="text-base sm:text-xl font-bold bg-gradient-to-r from-lukso-pink to-lukso-purple bg-clip-text text-transparent">
             Universal Trust
           </span>
         </Link>
@@ -33,7 +33,7 @@ export default function Navbar() {
         {/* Mobile hamburger */}
         <button
           onClick={() => setOpen(!open)}
-          className="sm:hidden p-2 text-gray-400 hover:text-white transition"
+          className="sm:hidden p-2.5 text-gray-400 hover:text-white transition"
           aria-label="Toggle navigation menu"
           aria-expanded={open}
         >
@@ -67,7 +67,7 @@ function NavLink({ to, active, highlight, children }) {
   return (
     <Link
       to={to}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+      className={`inline-flex min-h-[44px] items-center px-4 py-2 rounded-lg text-sm font-medium transition ${
         active
           ? "bg-lukso-card text-lukso-pink border border-lukso-pink/30"
           : highlight
@@ -85,7 +85,7 @@ function MobileNavLink({ to, active, children, onClick }) {
     <Link
       to={to}
       onClick={onClick}
-      className={`block px-4 py-3 rounded-lg text-sm font-medium transition ${
+      className={`block min-h-[44px] px-4 py-3 rounded-lg text-sm font-medium transition ${
         active
           ? "bg-lukso-card text-lukso-pink border border-lukso-pink/30"
           : "text-gray-400 hover:text-white hover:bg-lukso-card/50"

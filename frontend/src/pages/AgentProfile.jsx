@@ -371,13 +371,13 @@ export default function AgentProfile() {
             </p>
             
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 text-sm">Address:</span>
+              <div className="flex items-start gap-2 min-w-0">
+                <span className="text-gray-500 text-sm shrink-0">Address:</span>
                 <a
                   href={`${EXPLORER_URL}/address/${address}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-sm text-lukso-purple hover:text-lukso-pink transition break-all"
+                  className="font-mono text-sm text-lukso-purple hover:text-lukso-pink transition break-all min-w-0"
                 >
                   {address}
                 </a>
@@ -413,7 +413,7 @@ export default function AgentProfile() {
             <div className="flex flex-wrap items-center gap-3 mt-3">
               <Link
                 to={`/endorse?address=${address}`}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition shrink-0"
+                className="px-3 py-2.5 sm:py-1.5 rounded-lg text-sm sm:text-xs font-medium text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition shrink-0 min-h-[44px] sm:min-h-0 inline-flex items-center"
               >
                 + Endorse
               </Link>
@@ -423,7 +423,7 @@ export default function AgentProfile() {
                     href={`https://universaleverything.io/${address}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
+                    className="px-3 py-2.5 sm:py-1.5 rounded-lg text-sm sm:text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition min-h-[44px] sm:min-h-0 inline-flex items-center"
                   >
                     View on Universal Everything ↗
                   </a>
@@ -431,7 +431,7 @@ export default function AgentProfile() {
                     href={`https://universalprofile.cloud/${address}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
+                    className="px-3 py-2.5 sm:py-1.5 rounded-lg text-sm sm:text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition min-h-[44px] sm:min-h-0 inline-flex items-center"
                   >
                     UP Cloud ↗
                   </a>
@@ -439,7 +439,7 @@ export default function AgentProfile() {
               )}
               <Link
                 to={`/verify?address=${address}`}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition"
+                className="px-3 py-2.5 sm:py-1.5 rounded-lg text-sm sm:text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition min-h-[44px] sm:min-h-0 inline-flex items-center"
               >
                 Quick Verify
               </Link>
@@ -450,8 +450,8 @@ export default function AgentProfile() {
                 score={computeCompositeScore(verification.trustScore, onChainRep?.generalScore ?? null, skills.length, lsp26Data.count * 5)}
               />
               <Link
-                to="/trust-graph"
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition"
+                to="/graph"
+                className="px-3 py-2.5 sm:py-1.5 rounded-lg text-sm sm:text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-purple/50 hover:text-white transition min-h-[44px] sm:min-h-0 inline-flex items-center"
               >
                 Trust Graph ↗
               </Link>
@@ -871,7 +871,7 @@ function CopyProfileLinkButton({ address }) {
   return (
     <button
       onClick={handleCopy}
-      className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition flex items-center gap-1.5"
+      className="px-3 py-2.5 sm:py-1.5 rounded-lg text-sm sm:text-xs font-medium text-gray-300 border border-lukso-border hover:border-lukso-pink/50 hover:text-white transition inline-flex min-h-[44px] sm:min-h-0 items-center gap-1.5"
       title="Copy profile link"
     >
       {copied ? (
@@ -904,7 +904,7 @@ function ShareOnXButton({ address, name, score }) {
   return (
     <button
       onClick={handleShareX}
-      className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-lukso-border hover:border-blue-400/50 hover:text-white transition flex items-center gap-1.5"
+      className="px-3 py-2.5 sm:py-1.5 rounded-lg text-sm sm:text-xs font-medium text-gray-300 border border-lukso-border hover:border-blue-400/50 hover:text-white transition inline-flex min-h-[44px] sm:min-h-0 items-center gap-1.5"
       title="Share on X (Twitter)"
     >
       {/* X logo SVG */}
@@ -930,7 +930,7 @@ function CopyButton({ text }) {
   return (
     <button
       onClick={handleCopy}
-      className="text-gray-500 hover:text-white transition p-1"
+      className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-gray-500 hover:text-white transition p-2.5 sm:min-h-0 sm:min-w-0 sm:p-1.5"
       title="Copy address"
     >
       {copied ? (
