@@ -9,10 +9,10 @@ import { AgentTrust, AgentTrustError, AgentTrustErrorCode } from '../index';
 
 // Deployed contract on LUKSO mainnet (v4 UUPS proxy)
 const REGISTRY_ADDRESS = '0x1581BA9Fb480b72df3e54f51f851a644483c6ec7';
-// LUKSO Agent Universal Profile — registered as "LUKSO Agent"
+// Contract owner (EOA) — registered as "LUKSO Agent", isReputationUpdater=true
+const OWNER_ADDRESS = '0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b';
+// LUKSO Agent Universal Profile — registered as "LUKSO Agent", endorsed by OWNER
 const DEPLOYER_ADDRESS = '0x293E96ebbf264ed7715cff2b67850517De70232a';
-// Emmet — registered agent, endorsed by LUKSO Agent
-const UP_ADDRESS = '0x1089E1c613Db8Cb91db72be4818632153E62557a';
 
 // Increase timeout for RPC calls
 const TEST_TIMEOUT = 30_000;
@@ -29,9 +29,9 @@ describe('AgentTrust SDK', () => {
 
   describe('verify()', () => {
     it(
-      'should return registered=true for the deployer',
+      'should return registered=true for the owner',
       async () => {
-        const result = await trust.verify(DEPLOYER_ADDRESS);
+        const result = await trust.verify(OWNER_ADDRESS);
         expect(result.registered).toBe(true);
         expect(result.active).toBe(true);
         expect(result.reputation).toBeGreaterThanOrEqual(100);
@@ -42,12 +42,12 @@ describe('AgentTrust SDK', () => {
     );
 
     it(
-      'should return registered=true for the UP agent',
+      'should return registered=true for the DEPLOYER (UP agent with endorsement)',
       async () => {
-        const result = await trust.verify(UP_ADDRESS);
+        const result = await trust.verify(DEPLOYER_ADDRESS);
         expect(result.registered).toBe(true);
         expect(result.active).toBe(true);
-        expect(result.name).toBe('Emmet');
+        expect(result.name).toBe('LUKSO Agent');
         expect(result.endorsements).toBeGreaterThanOrEqual(1);
         expect(result.trustScore).toBeGreaterThanOrEqual(110);
       },
@@ -83,18 +83,18 @@ describe('AgentTrust SDK', () => {
 
   describe('isRegistered()', () => {
     it(
-      'should return true for the deployer',
+      'should return true for the owner',
       async () => {
-        const result = await trust.isRegistered(DEPLOYER_ADDRESS);
+        const result = await trust.isRegistered(OWNER_ADDRESS);
         expect(result).toBe(true);
       },
       TEST_TIMEOUT,
     );
 
     it(
-      'should return true for the UP agent',
+      'should return true for the deployer (UP agent)',
       async () => {
-        const result = await trust.isRegistered(UP_ADDRESS);
+        const result = await trust.isRegistered(DEPLOYER_ADDRESS);
         expect(result).toBe(true);
       },
       TEST_TIMEOUT,
@@ -132,8 +132,8 @@ describe('AgentTrust SDK', () => {
       async () => {
         const agents = await trust.getAgentsByPage(0, 10);
         expect(agents.length).toBeGreaterThanOrEqual(2);
-        // First agent should be the deployer
-        expect(agents[0].toLowerCase()).toBe(DEPLOYER_ADDRESS.toLowerCase());
+        // First agent should be the owner (registered first)
+        expect(agents[0].toLowerCase()).toBe(OWNER_ADDRESS.toLowerCase());
       },
       TEST_TIMEOUT,
     );
@@ -159,19 +159,19 @@ describe('AgentTrust SDK', () => {
       'should verify multiple addresses at once',
       async () => {
         const results = await trust.verifyBatch([
+          OWNER_ADDRESS,
           DEPLOYER_ADDRESS,
-          UP_ADDRESS,
           '0x0000000000000000000000000000000000000001',
         ]);
 
         expect(results.size).toBe(3);
 
+        const owner = results.get(OWNER_ADDRESS);
+        expect(owner?.registered).toBe(true);
+        expect(owner?.name).toBe('LUKSO Agent');
+
         const deployer = results.get(DEPLOYER_ADDRESS);
         expect(deployer?.registered).toBe(true);
-        expect(deployer?.name).toBe('LUKSO Agent');
-
-        const up = results.get(UP_ADDRESS);
-        expect(up?.registered).toBe(true);
 
         const random = results.get('0x0000000000000000000000000000000000000001');
         expect(random?.registered).toBe(false);
@@ -192,9 +192,9 @@ describe('AgentTrust SDK', () => {
 
   describe('hasEndorsed()', () => {
     it(
-      'should return true for deployer → UP endorsement',
+      'should return true for owner → deployer endorsement',
       async () => {
-        const result = await trust.hasEndorsed(DEPLOYER_ADDRESS, UP_ADDRESS);
+        const result = await trust.hasEndorsed(OWNER_ADDRESS, DEPLOYER_ADDRESS);
         expect(result).toBe(true);
       },
       TEST_TIMEOUT,
@@ -217,12 +217,12 @@ describe('AgentTrust SDK', () => {
 
   describe('getEndorsers()', () => {
     it(
-      'should return the deployer as endorser of UP',
+      'should return the owner as endorser of deployer',
       async () => {
-        const endorsers = await trust.getEndorsers(UP_ADDRESS);
+        const endorsers = await trust.getEndorsers(DEPLOYER_ADDRESS);
         expect(endorsers.length).toBeGreaterThanOrEqual(1);
         expect(endorsers.map((e: string) => e.toLowerCase())).toContain(
-          DEPLOYER_ADDRESS.toLowerCase(),
+          OWNER_ADDRESS.toLowerCase(),
         );
       },
       TEST_TIMEOUT,
@@ -233,12 +233,12 @@ describe('AgentTrust SDK', () => {
 
   describe('getEndorsement()', () => {
     it(
-      'should return endorsement details for deployer → UP',
+      'should return endorsement details for owner → deployer',
       async () => {
-        const result = await trust.getEndorsement(DEPLOYER_ADDRESS, UP_ADDRESS);
+        const result = await trust.getEndorsement(OWNER_ADDRESS, DEPLOYER_ADDRESS);
         expect(result.exists).toBe(true);
-        expect(result.endorser.toLowerCase()).toBe(DEPLOYER_ADDRESS.toLowerCase());
-        expect(result.endorsed.toLowerCase()).toBe(UP_ADDRESS.toLowerCase());
+        expect(result.endorser.toLowerCase()).toBe(OWNER_ADDRESS.toLowerCase());
+        expect(result.endorsed.toLowerCase()).toBe(DEPLOYER_ADDRESS.toLowerCase());
         expect(result.timestamp).toBeGreaterThan(0);
         expect(typeof result.reason).toBe('string');
       },
@@ -246,12 +246,11 @@ describe('AgentTrust SDK', () => {
     );
 
     it(
-      'should return exists=true for Emmet → LUKSO Agent endorsement',
+      'should return exists=false for non-existent reverse endorsement',
       async () => {
-        const result = await trust.getEndorsement(UP_ADDRESS, DEPLOYER_ADDRESS);
-        // Emmet has endorsed LUKSO Agent
-        expect(result.exists).toBe(true);
-        expect(result.timestamp).toBeGreaterThan(0);
+        const result = await trust.getEndorsement(DEPLOYER_ADDRESS, OWNER_ADDRESS);
+        // Deployer has NOT endorsed Owner
+        expect(result.exists).toBe(false);
       },
       TEST_TIMEOUT,
     );
@@ -273,9 +272,9 @@ describe('AgentTrust SDK', () => {
 
   describe('getEndorsementCount()', () => {
     it(
-      'should return at least 1 for UP (endorsed by deployer)',
+      'should return at least 1 for deployer (endorsed by owner)',
       async () => {
-        const count = await trust.getEndorsementCount(UP_ADDRESS);
+        const count = await trust.getEndorsementCount(DEPLOYER_ADDRESS);
         expect(count).toBeGreaterThanOrEqual(1);
         expect(typeof count).toBe('number');
       },
@@ -296,9 +295,9 @@ describe('AgentTrust SDK', () => {
 
   describe('isReputationUpdater()', () => {
     it(
-      'should return true for the deployer (owner is auto-authorized)',
+      'should return true for the owner (owner is auto-authorized)',
       async () => {
-        const result = await trust.isReputationUpdater(DEPLOYER_ADDRESS);
+        const result = await trust.isReputationUpdater(OWNER_ADDRESS);
         expect(result).toBe(true);
       },
       TEST_TIMEOUT,
@@ -543,17 +542,17 @@ describe('AgentTrust SDK', () => {
         const unregistered2 = '0x0000000000000000000000000000000000000003';
 
         const results = await trust.verifyBatch([
-          DEPLOYER_ADDRESS,
+          OWNER_ADDRESS,
           unregistered1,
-          UP_ADDRESS,
+          DEPLOYER_ADDRESS,
           unregistered2,
         ]);
 
         expect(results.size).toBe(4);
 
         // Registered agents
+        expect(results.get(OWNER_ADDRESS)?.registered).toBe(true);
         expect(results.get(DEPLOYER_ADDRESS)?.registered).toBe(true);
-        expect(results.get(UP_ADDRESS)?.registered).toBe(true);
 
         // Unregistered agents
         expect(results.get(unregistered1)?.registered).toBe(false);
@@ -597,17 +596,17 @@ describe('AgentTrust SDK', () => {
     );
 
     it(
-      'should return full profile for UP agent with endorsements',
+      'should return full profile for deployer (UP agent with endorsements)',
       async () => {
-        const profile = await trust.getProfile(UP_ADDRESS);
-        expect(profile.name).toBe('Emmet');
+        const profile = await trust.getProfile(DEPLOYER_ADDRESS);
+        expect(profile.name).toBe('LUKSO Agent');
         expect(profile.isActive).toBe(true);
         expect(profile.endorsementCount).toBeGreaterThanOrEqual(1);
         expect(profile.endorsers.length).toBeGreaterThanOrEqual(1);
         expect(profile.registeredAt).toBeGreaterThan(0);
         expect(profile.lastActiveAt).toBeGreaterThan(0);
         // Address should be normalized
-        expect(profile.address).toBe(UP_ADDRESS);
+        expect(profile.address).toBe(DEPLOYER_ADDRESS);
       },
       TEST_TIMEOUT,
     );
@@ -625,7 +624,7 @@ describe('AgentTrust SDK', () => {
     it('should return unregistered defaults for all addresses when RPC is unreachable (verifyBatch uses allSettled)', async () => {
       // verifyBatch uses Promise.allSettled internally, so it doesn't reject —
       // instead it returns default unregistered results for failed lookups
-      const results = await badTrust.verifyBatch([DEPLOYER_ADDRESS, UP_ADDRESS]);
+      const results = await badTrust.verifyBatch([OWNER_ADDRESS, DEPLOYER_ADDRESS]);
       expect(results.size).toBe(2);
       for (const [, result] of results) {
         expect(result.registered).toBe(false);
@@ -653,7 +652,7 @@ describe('AgentTrust SDK', () => {
 
     it('should throw RPC_ERROR for unreachable RPC on hasEndorsed', async () => {
       await expect(
-        badTrust.hasEndorsed(DEPLOYER_ADDRESS, UP_ADDRESS),
+        badTrust.hasEndorsed(OWNER_ADDRESS, DEPLOYER_ADDRESS),
       ).rejects.toMatchObject({
         code: AgentTrustErrorCode.RPC_ERROR,
       });
@@ -661,7 +660,7 @@ describe('AgentTrust SDK', () => {
 
     it('should throw RPC_ERROR for unreachable RPC on getEndorsers', async () => {
       await expect(
-        badTrust.getEndorsers(UP_ADDRESS),
+        badTrust.getEndorsers(DEPLOYER_ADDRESS),
       ).rejects.toMatchObject({
         code: AgentTrustErrorCode.RPC_ERROR,
       });
