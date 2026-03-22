@@ -139,7 +139,8 @@ export default function Register() {
             actionText="Add Skills"
             actionLink="/skills"
             codeSnippet={`const registry = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-const tx = await registry.addSkill('Your Skill Name', 'Detailed description of what this skill does');
+const key = ethers.keccak256(ethers.toUtf8Bytes('your-skill-name'));
+const tx = await registry.publishSkill(key, 'Your Skill Name', 'Description');
 await tx.wait();`}
             isComplete={false}
             delay={0.28}

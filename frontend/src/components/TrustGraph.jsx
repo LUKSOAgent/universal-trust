@@ -30,10 +30,11 @@ function getNodeRadius(trust) {
 }
 
 function getTierColor(trust) {
-  if (trust >= 500) return { fill: "#22c55e", glow: "rgba(34,197,94,0.3)" };
-  if (trust >= 200) return { fill: "#3b82f6", glow: "rgba(59,130,246,0.3)" };
-  if (trust >= 100) return { fill: "#eab308", glow: "rgba(234,179,8,0.3)" };
-  return { fill: "#6b7280", glow: "rgba(107,114,128,0.3)" };
+  if (trust >= 1000) return { fill: "#f59e0b", glow: "rgba(245,158,11,0.3)" };  // amber — Verified
+  if (trust >= 500)  return { fill: "#8b5cf6", glow: "rgba(139,92,246,0.3)" };  // purple — Established
+  if (trust >= 200)  return { fill: "#10b981", glow: "rgba(16,185,129,0.3)" };  // emerald — Trusted
+  if (trust >= 100)  return { fill: "#3b82f6", glow: "rgba(59,130,246,0.3)" };  // blue — Registered
+  return { fill: "#6b7280", glow: "rgba(107,114,128,0.3)" };                    // gray — Unproven
 }
 
 export default function TrustGraph() {
@@ -298,16 +299,19 @@ export default function TrustGraph() {
         {/* Legend */}
         <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-gray-500">
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-gray-500 to-gray-400" /> New (&lt;100)
+            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-gray-500 to-gray-400" /> Unproven (&lt;100)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-yellow-500 to-amber-400" /> Verified (100+)
+            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400" /> Registered (100+)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400" /> Trusted (200+)
+            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-emerald-500 to-green-400" /> Trusted (200+)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-green-500 to-emerald-400" /> Highly Trusted (500+)
+            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-purple-500 to-violet-400" /> Established (500+)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-amber-500 to-yellow-400" /> Verified (1000+)
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-lukso-purple" /> Universal Profile

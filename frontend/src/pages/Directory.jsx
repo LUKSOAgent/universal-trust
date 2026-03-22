@@ -522,7 +522,7 @@ function TryVerify({ agents = [], upProfiles = {} }) {
             </button>
           </div>
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-lukso-card border border-lukso-border rounded-lg shadow-xl z-[200] overflow-hidden">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-lukso-card border border-lukso-border rounded-lg shadow-xl z-[200] overflow-y-auto max-h-52">
               {suggestions.map((s) => (
                 <button
                   key={s.address}

@@ -1195,9 +1195,9 @@ export default function TrustGraph() {
           <div className={`
             ${sidebarOpen ? "flex" : "hidden"} sm:flex
             w-48 shrink-0 flex-col gap-2 overflow-y-auto
-            absolute sm:relative z-20 sm:z-auto
+            fixed sm:relative z-20 sm:z-auto
             bg-lukso-darker sm:bg-transparent
-            inset-y-0 left-0 sm:inset-auto
+            top-[57px] bottom-0 left-0 sm:inset-auto
             p-3 sm:p-0 shadow-xl sm:shadow-none
             rounded-r-2xl sm:rounded-none
             border-r border-lukso-border sm:border-0

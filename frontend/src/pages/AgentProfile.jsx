@@ -328,20 +328,20 @@ export default function AgentProfile() {
         })()}
         <div className="p-4 sm:p-8">
           <div className="flex flex-col md:flex-row items-start gap-6">
-          <TrustBadge score={computeCompositeScore(verification.trustScore, onChainRep?.generalScore ?? null, skills.length, lsp26Data.count * 5)} size="lg" />
+          {/* Trust badge + UP avatar stacked */}
+          <div className="flex flex-row md:flex-col items-center gap-3 shrink-0">
+            <TrustBadge score={computeCompositeScore(verification.trustScore, onChainRep?.generalScore ?? null, skills.length, lsp26Data.count * 5)} size="lg" />
+            {upProfile?.profileImage && (
+              <img
+                src={upProfile.profileImage}
+                alt={upProfile.name || verification.name}
+                className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover border-2 border-lukso-purple/50 shrink-0"
+                onError={(e) => { e.target.style.display = "none"; }}
+              />
+            )}
+          </div>
           
           <div className="flex-1 min-w-0">
-            {/* UP avatar from Envio */}
-            {upProfile?.profileImage && (
-              <div className="mb-3">
-                <img
-                  src={upProfile.profileImage}
-                  alt={upProfile.name || verification.name}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-lukso-purple/50"
-                  onError={(e) => { e.target.style.display = "none"; }}
-                />
-              </div>
-            )}
             <div className="flex flex-wrap items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold text-white">
                 {upProfile?.name || verification.name}

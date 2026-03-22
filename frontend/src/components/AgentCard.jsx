@@ -355,7 +355,7 @@ function AgentCardInner({ agent, upProfile, rank, totalAgents }) {
           <Link
             to={`/endorse?address=${agent.address}`}
             onClick={(e) => e.stopPropagation()}
-            className="text-[10px] px-2.5 py-1 sm:py-1 min-h-[44px] sm:min-h-0 inline-flex items-center justify-center rounded-md border border-lukso-pink/20 text-lukso-pink hover:bg-lukso-pink/10 transition"
+            className="text-[10px] px-2.5 py-1.5 inline-flex items-center justify-center rounded-md border border-lukso-pink/20 text-lukso-pink hover:bg-lukso-pink/10 transition"
           >
             + Endorse
           </Link>

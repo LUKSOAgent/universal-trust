@@ -344,7 +344,7 @@ export default function Verify() {
 
             {/* Autocomplete dropdown */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-lukso-card border border-lukso-border rounded-xl overflow-hidden shadow-xl z-[200]">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-lukso-card border border-lukso-border rounded-xl overflow-y-auto shadow-xl z-[200] max-h-64">
                 {suggestions.map((s) => (
                   <button
                     key={s.address}
