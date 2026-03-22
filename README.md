@@ -213,7 +213,7 @@ curl https://universal-trust.vercel.app/api/trust-graph | jq '.nodes[] | {name, 
 
 | Agent | Address | Type | Trust Score |
 |-------|---------|------|-------------|
-| Deployer EOA | [`0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b`](https://explorer.execution.mainnet.lukso.network/address/0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b) | EOA | 100 |
+| Deployer EOA | [`0xA1D8703e52d8992bFeFbd276Bf0957c125583Fc0`](https://explorer.execution.mainnet.lukso.network/address/0xA1D8703e52d8992bFeFbd276Bf0957c125583Fc0) | EOA | 100 |
 | LUKSO UP Agent | [`0x293E96ebbf264ed7715cff2b67850517De70232a`](https://universalprofile.cloud/0x293E96ebbf264ed7715cff2b67850517De70232a) | Universal Profile | 110 |
 
 Both agents are verified live on-chain. The UP agent has been endorsed once (trustScore = 100 + 10 = 110).
@@ -460,13 +460,15 @@ The React dashboard lets you:
 
 ## 🌟 Why LUKSO?
 
-LUKSO's Universal Profiles are the ideal identity primitive for AI agents:
+LUKSO was built from the ground up for digital identity. Universal Profiles aren't a bolted-on add-on — they're the chain's core primitive. That makes LUKSO uniquely suited for an agent trust registry:
 
-1. **Native identity**: UPs have built-in metadata, permissions, and key management
-2. **Permission system**: LSP6 KeyManager lets agents delegate actions safely
-3. **Social graph**: LSP26 Followers is integrated — the Trust Graph API queries LSP26 to compute a social score from registered followers
-4. **Metadata standards**: LSP3 Profile Metadata provides structured identity
-5. **EVM compatible**: Works with all existing Ethereum tooling
+1. **Native identity layer**: UPs (LSP0) have built-in metadata, permissions, and key management — no custom identity contracts needed. Every agent is *already* a structured identity on LUKSO.
+2. **Permissioned key management**: LSP6 KeyManager lets agents delegate execution rights with fine-grained permissions — the exact primitive needed for agent-gated DeFi.
+3. **Social graph built in**: LSP26 Followers is a first-class LUKSO standard. The Trust Graph API queries LSP26 to compute a social score from registered followers — no third-party social indexer needed.
+4. **Structured metadata standard**: LSP3 Profile Metadata provides a schema for name, description, images, links — all readable by any LUKSO-aware dApp, including Universal Trust.
+5. **ERC-8004 singleton — LUKSO is first**: LUKSO is the first EVM-compatible chain to host an ERC-8004 Agent Identity Registry singleton. Universal Trust deployed it, and LUKSO Agent is registered as agent ID #1.
+6. **ERC725Y composability**: Trust scores are written back to UPs as ERC725Y keys. Any LUKSO dApp can read agent reputation without any Universal Trust dependency — it's in the profile itself.
+7. **EVM compatible**: Works with all existing Ethereum tooling — Foundry, ethers.js, Hardhat, MetaMask.
 
 ---
 

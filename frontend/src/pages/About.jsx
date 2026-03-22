@@ -38,16 +38,32 @@ export default function About() {
         <p className="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto mb-4">
           The on-chain identity and reputation layer for AI agents on LUKSO.
         </p>
-        <p className="text-gray-500 text-sm max-w-xl mx-auto mb-8">
+        <p className="text-gray-500 text-sm max-w-xl mx-auto mb-4">
           One call. No API keys. No centralized authority.{" "}
           <code className="text-lukso-purple font-mono text-xs bg-lukso-darker border border-lukso-border px-1.5 py-0.5 rounded">
             trust.verify(agentAddress)
           </code>{" "}
           — returns registered status, trust score, and peer endorsements from LUKSO mainnet.
         </p>
+        {/* AI-built callout */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-lukso-purple/40 bg-lukso-purple/5 mb-8 text-sm">
+          <span className="text-xl">🤖</span>
+          <span className="text-gray-300 text-xs">
+            <span className="text-white font-semibold">Built end-to-end by an AI agent</span> — conceived, coded, audited, and deployed by{" "}
+            <a
+              href="https://universalprofile.cloud/0x293E96ebbf264ed7715cff2b67850517De70232a"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-lukso-purple hover:text-lukso-pink transition font-medium"
+            >
+              LUKSO Agent
+            </a>
+            . Agent ID #1 on the ERC-8004 singleton registry.
+          </span>
+        </div>
 
         {/* Live stat */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-lukso-darker border border-lukso-border mb-8 text-sm">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-lukso-darker border border-lukso-border mb-6 text-sm">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           {agentCount === null ? (
             <span className="text-gray-500">Loading stats…</span>
@@ -83,7 +99,7 @@ export default function About() {
           <StatCard value="80/80" label="Foundry Tests" color="emerald" />
           <StatCard value="97/97" label="SDK Tests" color="emerald" />
           <StatCard value="0 Critical" label="Security Audit" color="emerald" />
-          <StatCard value="Mainnet" label="Live on LUKSO" color="lukso" />
+          <StatCard value="ERC-8004 #1" label="First EVM Singleton" color="lukso" />
         </div>
       </section>
 
@@ -418,6 +434,93 @@ if (result.registered && result.trustScore >= 100) {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── Why LUKSO ────────────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Why LUKSO?" />
+        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8 space-y-4">
+          <p className="text-gray-300 text-sm leading-relaxed">
+            LUKSO was built from the ground up for digital identity. Universal Profiles aren't bolted on — they're the chain's core primitive. That makes LUKSO uniquely suited for an agent trust registry.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              {
+                icon: "🪪",
+                title: "Native identity — LSP0 Universal Profiles",
+                desc: "Every agent is already a structured identity on LUKSO. No custom identity contracts needed — UPs have built-in metadata, permissions, and key management.",
+              },
+              {
+                icon: "🔑",
+                title: "Fine-grained permissions — LSP6 KeyManager",
+                desc: "Agents can delegate execution rights with scoped permissions. The exact primitive needed for agent-gated DeFi and smart account control.",
+              },
+              {
+                icon: "👥",
+                title: "Social graph built-in — LSP26 Followers",
+                desc: "LSP26 is a first-class LUKSO standard. The Trust Graph API queries it directly to compute a social score — no third-party indexer required.",
+              },
+              {
+                icon: "📋",
+                title: "ERC-8004 singleton — LUKSO is first",
+                desc: "LUKSO is the first EVM chain to host an ERC-8004 Agent Identity Registry singleton. LUKSO Agent is agent ID #1 on the global registry.",
+              },
+              {
+                icon: "🧬",
+                title: "ERC725Y composability",
+                desc: "Trust scores are written to UPs as ERC725Y keys. Any LUKSO dApp can read agent reputation without any Universal Trust dependency — it's in the profile.",
+              },
+              {
+                icon: "🏗️",
+                title: "Built for builders — LSP3 metadata standard",
+                desc: "LSP3 Profile Metadata provides a schema for name, description, images, and links — all readable by every LUKSO-aware dApp out of the box.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="flex items-start gap-3 bg-black/20 rounded-xl p-4 border border-lukso-border/40">
+                <span className="text-xl shrink-0 mt-0.5">{item.icon}</span>
+                <div>
+                  <p className="text-white font-semibold text-sm">{item.title}</p>
+                  <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Trust Score Formula ──────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Trust Score Formula" />
+        <div className="bg-lukso-darker border border-lukso-border rounded-2xl p-6 sm:p-8 space-y-4">
+          <p className="text-gray-400 text-sm leading-relaxed">
+            Trust scores are computed on-chain, transparently, with no admin control. Every component is verifiable.
+          </p>
+          <div className="bg-black/40 rounded-xl p-4 border border-lukso-border/50 overflow-x-auto">
+            <pre className="text-xs font-mono leading-loose text-gray-300 whitespace-pre">{`trustScore         = reputation + (endorsementCount × 10)
+
+weightedTrustScore = reputation
+                   + Σ clamp(endorserReputation / 10, 10, 50) per endorser
+                   (capped at 10,000)
+
+lsp26Score         = registeredFollowersCount × 5  (API only)
+
+reputation:    starts at 100, range 0–10,000
+endorsements:  each UP endorsement adds +10 (flat)
+               or up to +50 (weighted, based on endorser rep)
+               endorsers MUST be Universal Profiles — EOAs are rejected`}</pre>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-black/20 rounded-xl p-4 border border-lukso-border/40">
+              <p className="text-lukso-pink font-semibold text-xs mb-1">Example — flat score</p>
+              <p className="text-gray-300 text-sm font-mono">reputation=200 + 8 endorsements × 10 = <span className="text-white font-bold">280</span></p>
+            </div>
+            <div className="bg-black/20 rounded-xl p-4 border border-lukso-border/40">
+              <p className="text-lukso-purple font-semibold text-xs mb-1">Example — weighted score (V2)</p>
+              <p className="text-gray-300 text-sm font-mono">200 + (2×50) + (6×10) = <span className="text-white font-bold">360</span></p>
+              <p className="text-gray-500 text-xs mt-1">2 high-rep (500 rep) + 6 new agents (100 rep)</p>
+            </div>
+          </div>
         </div>
       </section>
 
