@@ -1231,7 +1231,10 @@ contract AgentIdentityRegistryTest is Test {
         assertEq(registry.getEndorsers(agentD).length, 0);
     }
 
-    // ─── Reputation update on deactivated agent (should succeed) ─────────
+    // ─── Reputation update on deactivated agent (should revert) ─────────
+    // NOTE: updateReputation() gained onlyActive(agent) guard in c515302 (2026-03-22).
+    // Prior behaviour (updates allowed on deactivated agents) was intentionally reversed.
+    // Deactivated agents must reactivate before receiving reputation updates.
 
     function test_updateReputation_deactivatedAgent() public {
         vm.prank(agentA);
@@ -1240,13 +1243,10 @@ contract AgentIdentityRegistryTest is Test {
         vm.prank(agentA);
         registry.deactivate();
 
-        // Owner can still update reputation of deactivated agent
+        // updateReputation now reverts for deactivated agents (onlyActive guard)
         vm.prank(deployer);
+        vm.expectRevert(abi.encodeWithSelector(AgentIdentityRegistry.AgentNotActive.selector, agentA));
         registry.updateReputation(agentA, 50, "offline bonus");
-
-        AgentIdentityRegistry.AgentIdentity memory agent = registry.getAgent(agentA);
-        assertEq(agent.reputation, 150);
-        assertFalse(agent.isActive);
     }
 
     // ─── Ownership transfer preserves reputation updaters ────────────────
