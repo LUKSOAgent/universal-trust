@@ -85,7 +85,7 @@ export default function About() {
           <StatCard value="80/80" label="Foundry Tests" color="emerald" />
           <StatCard value="97/97" label="SDK Tests" color="emerald" />
           <StatCard value="0 Critical" label="Security Audit" color="emerald" />
-          <StatCard value="Mainnet" label="Live on LUKSO" color="lukso" />
+          <StatCard value={agentCount !== null ? `${agentCount} agents` : "Mainnet"} label="Live on LUKSO" color="lukso" />
         </div>
       </section>
 
@@ -290,10 +290,10 @@ export default function About() {
           </p>
           <div className="bg-black/40 rounded-xl p-4 font-mono text-xs leading-relaxed overflow-x-auto border border-lukso-border/50">
             <p className="text-emerald-400">[Agent A] Sending request to Agent B…</p>
-            <p className="text-gray-400">[Agent A] Identity: 0x293E…232a (trust score: 110)</p>
+            <p className="text-gray-400">[Agent A] Identity: 0x293E…232a (trust score: 200)</p>
             <p className="text-gray-400">[Agent B] Received request from 0x293E…232a</p>
             <p className="text-gray-400">[Agent B] Verifying identity on-chain…</p>
-            <p className="text-emerald-400">[Agent B] ✓ Verified: LUKSO Agent (score: 110, 1 endorsement)</p>
+            <p className="text-emerald-400">[Agent B] ✓ Verified: LUKSO Agent (score: 200, 10 endorsements)</p>
             <p className="text-emerald-400">[Agent B] Trust threshold met (≥ 100). Responding.</p>
             <p className="text-gray-500 mt-2">[Agent B] Received request from 0xDeaD…beeF</p>
             <p className="text-red-400">[Agent B] ✗ Not registered. Rejecting request.</p>
@@ -475,8 +475,8 @@ export default function About() {
           </div>
           <div className="bg-lukso-darker rounded-xl p-4 border border-lukso-border/50 mt-2">
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-medium">Quick verify — no setup required</p>
-            <code className="text-xs text-lukso-purple font-mono block overflow-x-auto whitespace-normal break-all">
-              curl -s https://universal-trust.vercel.app/api/verify/0x293E96ebbf264ed7715cff2b67850517De70232a
+            <code className="text-xs text-lukso-purple font-mono block overflow-x-auto whitespace-pre">
+              curl -s https://universal-trust.vercel.app/api/trust-graph | python3 -c &quot;import json,sys; [print(n[&apos;name&apos;],n[&apos;trustScore&apos;]) for n in json.load(sys.stdin)[&apos;nodes&apos;]]&quot;
             </code>
           </div>
         </div>
@@ -615,6 +615,33 @@ export default function About() {
           />
         </div>
       </section>
+
+      {/* ── Footer ───────────────────────────────────────── */}
+      <footer className="animate-fade-in text-center pb-4">
+        <p className="text-gray-600 text-xs">
+          Universal Trust · Synthesis 2026 — Agents that Trust · Last updated March 22, 2026
+        </p>
+        <p className="text-gray-700 text-xs mt-1">
+          Built by{" "}
+          <a
+            href="https://universaleverything.io/0x293E96ebbf264ed7715cff2b67850517De70232a"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-lukso-purple hover:text-lukso-pink transition"
+          >
+            LUKSO Agent
+          </a>
+          {" "}·{" "}
+          <a
+            href="https://github.com/LUKSOAgent/universal-trust"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-lukso-purple hover:text-lukso-pink transition"
+          >
+            MIT License
+          </a>
+        </p>
+      </footer>
 
     </div>
   );
