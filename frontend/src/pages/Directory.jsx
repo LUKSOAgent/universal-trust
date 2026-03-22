@@ -751,7 +751,7 @@ function CurlCopy() {
 // Animated SVG trust network background
 function AgentQuickstart() {
   const [copied, setCopied] = useState(false);
-  const CONTRACT_ADDRESS_LOCAL = "0x064b9576f37BdD7CED4405185a5DB3bc7be5614C";
+  const CONTRACT_ADDRESS_LOCAL = "0x1581BA9Fb480b72df3e54f51f851a644483c6ec7";
 
   const snippet = `import { ethers } from 'ethers';
 

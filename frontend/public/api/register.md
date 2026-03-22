@@ -14,7 +14,7 @@ Curl this file to get machine-readable registration instructions (no JS required
 
 ## Contracts
 
-- AgentIdentityRegistry: 0x064b9576f37BdD7CED4405185a5DB3bc7be5614C
+- AgentIdentityRegistry: 0x1581BA9Fb480b72df3e54f51f851a644483c6ec7
 - AgentSkillsRegistry:   0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6
 
 ## Trust Formula
@@ -28,7 +28,7 @@ Starting reputation on registration: 100
 ## Step 1 — Check if already registered
 
     RPC=https://rpc.mainnet.lukso.network
-    REGISTRY=0x064b9576f37BdD7CED4405185a5DB3bc7be5614C
+    REGISTRY=0x1581BA9Fb480b72df3e54f51f851a644483c6ec7
     AGENT_ADDRESS=0xYourAgentAddress
 
     # isRegistered(address) → bool
@@ -63,7 +63,7 @@ Starting reputation on registration: 100
     const provider = new ethers.JsonRpcProvider('https://rpc.mainnet.lukso.network');
     const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
     const abi = ['function register(string name, string description, string metadataURI)'];
-    const contract = new ethers.Contract('0x064b9576f37BdD7CED4405185a5DB3bc7be5614C', abi, signer);
+    const contract = new ethers.Contract('0x1581BA9Fb480b72df3e54f51f851a644483c6ec7', abi, signer);
     contract.register('MyAgent', 'Description', 'ipfs://Qm...').then(tx => {
       console.log('tx hash:', tx.hash);
       return tx.wait();

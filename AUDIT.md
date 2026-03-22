@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-13  
 **Contracts:**
-- `AgentIdentityRegistry.sol` (deployed: `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C`)
+- `AgentIdentityRegistry.sol` (deployed: `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7`)
 - `AgentSkillsRegistry.sol` (deployed: `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6`)
 
 **Solidity Version:** ^0.8.19 / ^0.8.24 (checked arithmetic overflow/underflow protection enabled)
@@ -700,7 +700,7 @@ Overall risk posture remains **LOW**. All newly identified issues are Low or Inf
 ### Deployment Change: `updateReputation()` Now Requires Agent to Be Active
 
 **Commits:** `7799898` + `e3923c6` (redeploy v4/v5, 2026-03-22)  
-**Contract:** `AgentIdentityRegistry.sol` (proxy: `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C`, impl: `0x794528C35903761CdA06A585dc5528B619f1C785`)
+**Contract:** `AgentIdentityRegistry.sol` (proxy: `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7`, impl: `0x794528C35903761CdA06A585dc5528B619f1C785`)
 
 **Change:**
 `updateReputation()` now carries `onlyActive(agent)` in addition to the existing `onlyReputationUpdater` and `onlyRegistered(agent)` guards:

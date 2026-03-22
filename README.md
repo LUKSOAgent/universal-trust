@@ -1,7 +1,7 @@
 # Universal Trust
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![LUKSO Mainnet](https://img.shields.io/badge/Network-LUKSO%20Mainnet-FF2975.svg)](https://explorer.execution.mainnet.lukso.network/address/0x064b9576f37BdD7CED4405185a5DB3bc7be5614C)
+[![LUKSO Mainnet](https://img.shields.io/badge/Network-LUKSO%20Mainnet-FF2975.svg)](https://explorer.execution.mainnet.lukso.network/address/0x1581BA9Fb480b72df3e54f51f851a644483c6ec7)
 [![Frontend](https://img.shields.io/badge/Frontend-Live-green.svg)](https://universal-trust.vercel.app)
 [![CI](https://github.com/LUKSOAgent/universal-trust/workflows/CI/badge.svg)](https://github.com/LUKSOAgent/universal-trust/actions)
 [![Audited](https://img.shields.io/badge/Security-Audited-blue.svg)](./AUDIT.md)
@@ -34,7 +34,7 @@ No API keys. No centralized authority. No middleman. Just on-chain cryptographic
 |---|---|
 | 🌐 **Live app** | [universal-trust.vercel.app](https://universal-trust.vercel.app) |
 | ⚡ **2-minute demo** | `node demo/demo.js` — no wallet, no setup |
-| 🔍 **Verified contracts** | [AgentIdentityRegistry on LUKSO Explorer](https://explorer.execution.mainnet.lukso.network/address/0x064b9576f37BdD7CED4405185a5DB3bc7be5614C#code) |
+| 🔍 **Verified contracts** | [AgentIdentityRegistry on LUKSO Explorer](https://explorer.execution.mainnet.lukso.network/address/0x1581BA9Fb480b72df3e54f51f851a644483c6ec7#code) |
 | 📊 **Trust graph API** | `curl https://universal-trust.vercel.app/api/trust-graph` |
 | 🔐 **Security audit** | 0 critical · 0 high · [AUDIT.md](./AUDIT.md) |
 
@@ -50,7 +50,7 @@ No API keys. No centralized authority. No middleman. Just on-chain cryptographic
 
 | Contract | Address |
 |----------|---------|
-| AgentIdentityRegistry (proxy) | `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C` |
+| AgentIdentityRegistry (proxy) | `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7` |
 | AgentSkillsRegistry | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` |
 | ERC-8004 Identity Registry | `0xe30B7514744D324e8bD93157E4c82230d6e6e8f3` |
 
@@ -186,7 +186,7 @@ Rogue bot tries to impersonate a trusted agent:
 
 | Contract | Address | Explorer Link |
 |----------|---------|---------------|
-| **AgentIdentityRegistry** (proxy) | `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C` | [View ✓ Verified](https://explorer.execution.mainnet.lukso.network/address/0x064b9576f37BdD7CED4405185a5DB3bc7be5614C#code) |
+| **AgentIdentityRegistry** (proxy) | `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7` | [View ✓ Verified](https://explorer.execution.mainnet.lukso.network/address/0x1581BA9Fb480b72df3e54f51f851a644483c6ec7#code) |
 | AgentIdentityRegistry (impl) | `0x794528C35903761CdA06A585dc5528B619f1C785` | [View](https://explorer.execution.mainnet.lukso.network/address/0x794528C35903761CdA06A585dc5528B619f1C785) |
 | **AgentSkillsRegistry** | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` | [View ✓ Verified](https://explorer.execution.mainnet.lukso.network/address/0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6#code) |
 | ERC-8004 Identity Registry | `0xe30B7514744D324e8bD93157E4c82230d6e6e8f3` | [View](https://explorer.execution.mainnet.lukso.network/address/0xe30B7514744D324e8bD93157E4c82230d6e6e8f3) |
@@ -506,7 +506,7 @@ Universal Trust demonstrates how AI agents can establish verifiable identity and
 - ✅ **30 seconds:** `node demo/demo.js` — agent-to-agent trust demo, live on mainnet
 - ✅ **30 seconds:** `curl https://universal-trust.vercel.app/api/trust-graph | jq .` — see the live trust graph
 - ✅ **1 minute:** [universal-trust.vercel.app](https://universal-trust.vercel.app) — browse, verify, explore
-- ✅ **1 minute:** [Inspect verified contract](https://explorer.execution.mainnet.lukso.network/address/0x064b9576f37BdD7CED4405185a5DB3bc7be5614C#code) — fully verified source on LUKSO explorer
+- ✅ **1 minute:** [Inspect verified contract](https://explorer.execution.mainnet.lukso.network/address/0x1581BA9Fb480b72df3e54f51f851a644483c6ec7#code) — fully verified source on LUKSO explorer
 - ✅ **2 minutes:** Read [AUDIT.md](./AUDIT.md) — 0 critical, 0 high findings
 - ✅ **2 minutes:** `npm install @universal-trust/sdk` and call `trust.verify()` yourself
 

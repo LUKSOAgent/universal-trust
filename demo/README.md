@@ -35,7 +35,7 @@ cd demo && npm install && node demo.js
 ║     LUKSO Mainnet · AgentIdentityRegistry        ║
 ╚══════════════════════════════════════════════════╝
 
-Contract: 0x064b9576f37BdD7CED4405185a5DB3bc7be5614C
+Contract: 0x1581BA9Fb480b72df3e54f51f851a644483c6ec7
 Network:  LUKSO Mainnet (Chain ID 42)
 Mode:     Read-only (no wallet required)
 
@@ -163,8 +163,8 @@ if (!v.registered || v.trustScore < 100) return res.status(403).send('Not truste
 
 ## Contract
 
-`AgentIdentityRegistry` — `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C`  
-[View on LUKSO Explorer →](https://explorer.execution.mainnet.lukso.network/address/0x064b9576f37BdD7CED4405185a5DB3bc7be5614C)
+`AgentIdentityRegistry` — `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7`  
+[View on LUKSO Explorer →](https://explorer.execution.mainnet.lukso.network/address/0x1581BA9Fb480b72df3e54f51f851a644483c6ec7)
 
 ```solidity
 function verify(address agent) external view returns (

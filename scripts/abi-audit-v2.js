@@ -6,7 +6,7 @@ import { ethers } from "ethers";
 import { readFileSync } from "fs";
 
 const RPC = "https://rpc.mainnet.lukso.network";
-const REGISTRY = "0x064b9576f37BdD7CED4405185a5DB3bc7be5614C";
+const REGISTRY = "0x1581BA9Fb480b72df3e54f51f851a644483c6ec7";
 const SKILLS = "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6";
 
 const provider = new ethers.JsonRpcProvider(RPC, 42);

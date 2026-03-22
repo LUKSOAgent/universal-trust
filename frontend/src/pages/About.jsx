@@ -158,7 +158,7 @@ export default function About() {
               {[
                 {
                   label: "AgentIdentityRegistry (proxy)",
-                  addr: "0x064b9576f37BdD7CED4405185a5DB3bc7be5614C",
+                  addr: "0x1581BA9Fb480b72df3e54f51f851a644483c6ec7",
                   verified: true,
                 },
                 {

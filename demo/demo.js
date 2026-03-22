@@ -79,7 +79,7 @@ async function main() {
   console.log('║     LUKSO Mainnet · AgentIdentityRegistry        ║');
   console.log('╚══════════════════════════════════════════════════╝\n');
 
-  console.log(`Contract: 0x064b9576f37BdD7CED4405185a5DB3bc7be5614C`);
+  console.log(`Contract: 0x1581BA9Fb480b72df3e54f51f851a644483c6ec7`);
   console.log(`Network:  LUKSO Mainnet (Chain ID 42)`);
   console.log(`Mode:     Read-only (no wallet required)\n`);
 

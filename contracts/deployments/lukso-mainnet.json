@@ -4,7 +4,7 @@
   "deployedAt": "2026-03-22",
   "contracts": {
     "AgentIdentityRegistry": {
-      "proxy": "0x064b9576f37BdD7CED4405185a5DB3bc7be5614C",
+      "proxy": "0x1581BA9Fb480b72df3e54f51f851a644483c6ec7",
       "implementation": "0x794528c35903761cda06a585dc5528b619f1c785",
       "deployTxProxy": "0x313d50b8b5e5501ffea38c3b4e6724c865ce6de75f4907a3296b474b8966bee4",
       "deployTxImpl": "0xb8dcc2e1472c7d01f770f914c53a9d0218c3a45c2c1c603488078b79e8e4f872",

@@ -3,7 +3,7 @@
 Shows how to use on-chain agent trust verification in a real HTTP context.
 
 Agent B runs as an Express server. Every incoming request is verified against the
-[AgentIdentityRegistry](https://explorer.execution.mainnet.lukso.network/address/0x064b9576f37BdD7CED4405185a5DB3bc7be5614C)
+[AgentIdentityRegistry](https://explorer.execution.mainnet.lukso.network/address/0x1581BA9Fb480b72df3e54f51f851a644483c6ec7)
 on LUKSO mainnet before the server responds.
 
 ## Quick Start
@@ -44,7 +44,7 @@ Returns:
   "trustScore": 110,
   "name": "LUKSO Agent",
   "endorsers": ["0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b"],
-  "contract": "0x064b9576f37BdD7CED4405185a5DB3bc7be5614C",
+  "contract": "0x1581BA9Fb480b72df3e54f51f851a644483c6ec7",
   "network": "LUKSO Mainnet",
   "chainId": 42
 }

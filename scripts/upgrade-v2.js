@@ -3,7 +3,7 @@ const { ethers } = require("ethers");
 const LUKSO_RPC = "https://rpc.mainnet.lukso.network";
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const UP_ADDRESS = "0x293E96ebbf264ed7715cff2b67850517De70232a";
-const PROXY_ADDRESS = "0x064b9576f37BdD7CED4405185a5DB3bc7be5614C";
+const PROXY_ADDRESS = "0x1581BA9Fb480b72df3e54f51f851a644483c6ec7";
 const NEW_IMPL = process.env.NEW_IMPL; // pass as env var
 
 const UP_ABI = [
