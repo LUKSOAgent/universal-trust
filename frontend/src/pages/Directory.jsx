@@ -793,7 +793,7 @@ console.log('Registered:', signer.address);`;
             href="https://universal-trust.vercel.app/api/register.md"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-lukso-purple hover:text-lukso-pink transition"
+            className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center px-2 py-1 rounded"
           >
             register.md ↗
           </a>

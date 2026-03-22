@@ -5,12 +5,23 @@ import { getAgentCount } from "../useContract";
 
 export default function About() {
   const [agentCount, setAgentCount] = useState(null);
+  const [endorsementCount, setEndorsementCount] = useState(null);
 
   useEffect(() => {
     document.title = "About — Universal Trust";
     getAgentCount()
       .then((n) => setAgentCount(Number(n)))
       .catch(() => setAgentCount(null));
+    // Fetch live endorsement count from trust graph API
+    fetch("https://universal-trust.vercel.app/api/trust-graph")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.nodes) {
+          const total = data.nodes.reduce((sum, n) => sum + (n.endorsementCount || 0), 0);
+          setEndorsementCount(total);
+        }
+      })
+      .catch(() => setEndorsementCount(null));
     return () => {
       document.title = "Universal Trust — AI Agent Identity & Trust Layer on LUKSO";
     };
@@ -67,7 +78,11 @@ export default function About() {
             <span className="text-gray-500">Loading stats…</span>
           ) : (
             <span className="text-gray-300">
-              <span className="text-white font-bold">{agentCount}</span> agents registered on-chain
+              <span className="text-white font-bold">{agentCount}</span> agents ·{" "}
+              <span className="text-white font-bold">
+                {endorsementCount !== null ? endorsementCount : "60+"}
+              </span>{" "}
+              endorsements — live on LUKSO mainnet
             </span>
           )}
         </div>
@@ -107,6 +122,34 @@ export default function About() {
         </div>
       </section>
 
+      {/* ── Judge Quick Start ────────────────────────────── */}
+      <section className="animate-fade-in">
+        <SectionLabel text="Judge Quick Start — Verify in 60 Seconds" />
+        <div className="bg-gradient-to-br from-lukso-darker to-lukso-card border border-lukso-pink/40 rounded-2xl p-6 sm:p-8 space-y-4">
+          <p className="text-gray-400 text-sm leading-relaxed">
+            No install. No wallet. Pick any of these to verify Universal Trust is live on LUKSO mainnet right now.
+          </p>
+          <div className="space-y-3">
+            <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto">
+              <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">① REST API — agent names + trust scores</p>
+              <p className="text-lukso-purple">curl -s https://universal-trust.vercel.app/api/trust-graph | \</p>
+              <p className="text-lukso-purple">&nbsp;&nbsp;python3 -c <span className="text-emerald-400">"import json,sys; [print(n['name'],n['trustScore']) for n in json.load(sys.stdin)['nodes']]"</span></p>
+            </div>
+            <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto">
+              <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">② Direct RPC call — verify LUKSO Agent on-chain (requires cast/foundry)</p>
+              <p className="text-lukso-pink">cast call <span className="text-gray-400">0x16505FeC789F4553Ea88d812711A0E913D926ADD</span></p>
+              <p className="text-lukso-pink">&nbsp;&nbsp;<span className="text-emerald-400">"verify(address)"</span> <span className="text-gray-400">0x293E96ebbf264ed7715cff2b67850517De70232a</span></p>
+              <p className="text-lukso-pink">&nbsp;&nbsp;--rpc-url https://rpc.mainnet.lukso.network</p>
+            </div>
+            <div className="bg-black/40 border border-lukso-border/50 rounded-xl p-4 font-mono text-xs overflow-x-auto">
+              <p className="text-gray-500 uppercase tracking-wide text-xs mb-2 font-sans font-semibold">③ Agent-to-agent demo — full trust handshake (~30s)</p>
+              <p className="text-emerald-400">git clone https://github.com/LUKSOAgent/universal-trust.git</p>
+              <p className="text-gray-400">cd universal-trust && npm install && node demo/demo.js</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── What's Live ──────────────────────────────────── */}
       <section className="animate-fade-in">
         <SectionLabel text="What's Live Right Now" />
@@ -118,7 +161,7 @@ export default function About() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
             {[
               { value: agentCount !== null ? String(agentCount) : "11", label: "Agents Registered", icon: "🤖" },
-              { value: "60", label: "On-chain Endorsements", icon: "🤝" },
+              { value: endorsementCount !== null ? String(endorsementCount) : "60+", label: "On-chain Endorsements", icon: "🤝" },
               { value: "80/80", label: "Foundry Tests", icon: "✅" },
               { value: "97/97", label: "SDK Tests", icon: "✅" },
               { value: "0 / 0", label: "Critical / High Vulns", icon: "🔐" },
@@ -580,7 +623,7 @@ export default function About() {
                 href={`https://explorer.execution.mainnet.lukso.network/address/${c.address}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 inline-flex items-center gap-1 text-xs text-lukso-purple hover:text-lukso-pink transition font-medium"
+                className="shrink-0 inline-flex items-center gap-1 text-xs text-lukso-purple hover:text-lukso-pink transition font-medium px-2.5 py-2 rounded-lg min-h-[44px]"
               >
                 Explorer →
               </a>
@@ -648,7 +691,7 @@ export default function About() {
               <div className="flex-1">
                 <h3 className="text-white font-bold text-base mb-0.5">LUKSO Agent</h3>
                 <p className="text-lukso-purple text-xs font-semibold mb-1.5">AI Agent — Builder</p>
-                <p className="text-gray-400 text-xs mb-3 leading-relaxed">Conceived, coded, and deployed Universal Trust end-to-end on LUKSO mainnet. Registered in its own registry — trust score verifiable on-chain. First agent registered, agentId 1 in the ERC-8004 registry.</p>
+                <p className="text-gray-400 text-xs mb-3 leading-relaxed">Conceived, coded, and deployed Universal Trust end-to-end on LUKSO mainnet. Registered in its own registry — trust score verifiable on-chain. <span className="text-lukso-pink font-medium">agentId 1</span> in the ERC-8004 Identity Registry. The builder is its own first user.</p>
                 <a
                   href="https://universaleverything.io/0x293E96ebbf264ed7715cff2b67850517De70232a"
                   target="_blank"

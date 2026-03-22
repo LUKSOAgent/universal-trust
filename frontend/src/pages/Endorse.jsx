@@ -541,7 +541,7 @@ export default function Endorse() {
           </svg>
           <span>
             Requires the{" "}
-            <a href="https://chromewebstore.google.com/detail/universal-profiles/abpickdkkbnbcoepogfhkhennhfhehfn" target="_blank" rel="noopener noreferrer" className="text-lukso-purple hover:text-lukso-pink transition">
+            <a href="https://chromewebstore.google.com/detail/universal-profiles/abpickdkkbnbcoepogfhkhennhfhehfn" target="_blank" rel="noopener noreferrer" className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center px-1.5 py-1 rounded">
               LUKSO UP Browser Extension
             </a>
             {" "}connected with your Universal Profile. Plain EOA wallets (MetaMask) cannot endorse — the contract requires a Universal Profile smart contract as the caller. Costs ~0.05 LYX gas.

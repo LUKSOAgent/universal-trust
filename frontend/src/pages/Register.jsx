@@ -91,16 +91,16 @@ export default function Register() {
           </div>
         </div>
 
-        <div className="mt-4 bg-lukso-card border border-lukso-border rounded-xl p-4 flex flex-wrap gap-4 text-sm">
-          <Link to="/" className="text-lukso-purple hover:text-lukso-pink transition flex items-center gap-1">
+        <div className="mt-4 bg-lukso-card border border-lukso-border rounded-xl p-4 flex flex-wrap gap-3 text-sm">
+          <Link to="/" className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center gap-1 px-3 py-2 rounded-lg min-h-[44px]">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             Browse Directory
           </Link>
-          <Link to="/endorse" className="text-lukso-purple hover:text-lukso-pink transition flex items-center gap-1">
+          <Link to="/endorse" className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center gap-1 px-3 py-2 rounded-lg min-h-[44px]">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
             Endorse an Agent
           </Link>
-          <Link to="/about" className="text-lukso-purple hover:text-lukso-pink transition flex items-center gap-1">
+          <Link to="/about" className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center gap-1 px-3 py-2 rounded-lg min-h-[44px]">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             How It Works
           </Link>
@@ -293,7 +293,7 @@ curl -s -X POST https://rpc.mainnet.lukso.network \\
           href="https://github.com/LUKSOAgent/universal-trust/blob/main/CURL_SKILL.md"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-lukso-purple hover:text-lukso-pink transition flex items-center gap-1"
+          className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center gap-1 px-3 py-2 rounded-lg min-h-[44px]"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />

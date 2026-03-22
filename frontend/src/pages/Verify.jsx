@@ -865,7 +865,7 @@ export default function Verify() {
             href="https://github.com/LUKSOAgent/universal-trust"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-lukso-purple hover:text-lukso-pink transition"
+            className="text-lukso-purple hover:text-lukso-pink transition inline-flex items-center px-2 py-1 rounded"
           >
             GitHub →
           </a>
