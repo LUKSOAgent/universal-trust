@@ -327,7 +327,7 @@ export default function AgentProfile() {
           );
         })()}
         <div className="p-4 sm:p-8">
-        <div className="flex flex-col md:flex-row items-start gap-6">
+          <div className="flex flex-col md:flex-row items-start gap-6">
           <TrustBadge score={computeCompositeScore(verification.trustScore, onChainRep?.generalScore ?? null, skills.length, lsp26Data.count * 5)} size="lg" />
           
           <div className="flex-1 min-w-0">
@@ -457,7 +457,7 @@ export default function AgentProfile() {
               </Link>
             </div>
           </div>
-        </div>
+          </div>
         </div>
       </div>
 
