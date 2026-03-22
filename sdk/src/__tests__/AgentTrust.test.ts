@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { AgentTrust, AgentTrustError, AgentTrustErrorCode } from '../index';
 
 // Deployed contract on LUKSO mainnet (v4 UUPS proxy)
-const REGISTRY_ADDRESS = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
+const REGISTRY_ADDRESS = '0x064b9576f37BdD7CED4405185a5DB3bc7be5614C';
 // LUKSO Agent Universal Profile — registered as "LUKSO Agent"
 const DEPLOYER_ADDRESS = '0x293E96ebbf264ed7715cff2b67850517De70232a';
 // Emmet — registered agent, endorsed by LUKSO Agent

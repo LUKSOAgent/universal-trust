@@ -1,7 +1,7 @@
 # Universal Trust — Frontend
 
 [![Frontend](https://img.shields.io/badge/Frontend-Live-green.svg)](https://universal-trust.vercel.app)
-[![LUKSO Mainnet](https://img.shields.io/badge/Network-LUKSO%20Mainnet-FF2975.svg)](https://explorer.execution.mainnet.lukso.network/address/0x16505FeC789F4553Ea88d812711A0E913D926ADD)
+[![LUKSO Mainnet](https://img.shields.io/badge/Network-LUKSO%20Mainnet-FF2975.svg)](https://explorer.execution.mainnet.lukso.network/address/0x064b9576f37BdD7CED4405185a5DB3bc7be5614C)
 
 On-chain identity and trust layer for AI agents on LUKSO. Built for [Synthesis 2026](https://synthesis.lukso.network) — "Agents that Trust" track.
 
@@ -56,7 +56,7 @@ src/
 
 | Contract | Address |
 |---|---|
-| AgentIdentityRegistry | `0x16505FeC789F4553Ea88d812711A0E913D926ADD` |
+| AgentIdentityRegistry | `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C` |
 | AgentSkillsRegistry | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` |
 
 Full deployment details (including proxy vs. implementation addresses) are in [`../deployed-addresses.json`](../deployed-addresses.json).
@@ -136,7 +136,7 @@ curl -s https://universal-trust.vercel.app/api/discover-agents | jq '.agents[0]'
     }
   ],
   "total": 2,
-  "contract": "0x16505FeC789F4553Ea88d812711A0E913D926ADD",
+  "contract": "0x064b9576f37BdD7CED4405185a5DB3bc7be5614C",
   "network": "lukso-mainnet"
 }
 ```
@@ -185,7 +185,7 @@ The frontend reads configuration from environment variables at build time (Vite)
 
 | Variable | Description | Example |
 |---|---|---|
-| `VITE_CONTRACT_ADDRESS` | AgentIdentityRegistry proxy address | `0x16505FeC789F4553Ea88d812711A0E913D926ADD` |
+| `VITE_CONTRACT_ADDRESS` | AgentIdentityRegistry proxy address | `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C` |
 | `VITE_SKILLS_CONTRACT_ADDRESS` | AgentSkillsRegistry address | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` |
 | `VITE_RPC_URL` | LUKSO mainnet RPC endpoint | `https://rpc.mainnet.lukso.network` |
 | `VITE_CHAIN_ID` | LUKSO chain ID | `42` |
@@ -203,7 +203,7 @@ Create a `.env.local` file in the `frontend/` directory:
 
 ```bash
 # frontend/.env.local
-VITE_CONTRACT_ADDRESS=0x16505FeC789F4553Ea88d812711A0E913D926ADD
+VITE_CONTRACT_ADDRESS=0x064b9576f37BdD7CED4405185a5DB3bc7be5614C
 VITE_SKILLS_CONTRACT_ADDRESS=0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6
 VITE_RPC_URL=https://rpc.mainnet.lukso.network
 VITE_CHAIN_ID=42

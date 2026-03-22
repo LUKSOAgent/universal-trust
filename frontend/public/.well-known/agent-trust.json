@@ -7,7 +7,7 @@
   "rpc": "https://rpc.mainnet.lukso.network",
   "explorer": "https://explorer.execution.mainnet.lukso.network",
   "contracts": {
-    "AgentIdentityRegistry": "0x16505FeC789F4553Ea88d812711A0E913D926ADD",
+    "AgentIdentityRegistry": "0x064b9576f37BdD7CED4405185a5DB3bc7be5614C",
     "AgentSkillsRegistry": "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6"
   },
   "trustFormula": "trustScore = reputation + (endorsements × 10), capped at 10000",

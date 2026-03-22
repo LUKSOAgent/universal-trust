@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CONTRACT_ADDRESS = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
+const CONTRACT_ADDRESS = '0x064b9576f37BdD7CED4405185a5DB3bc7be5614C';
 const RPC_URL          = 'https://rpc.mainnet.lukso.network';
 const TRUST_THRESHOLD  = 100;
 

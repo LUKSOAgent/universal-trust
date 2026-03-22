@@ -1,7 +1,7 @@
 # Universal Trust
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![LUKSO Mainnet](https://img.shields.io/badge/Network-LUKSO%20Mainnet-FF2975.svg)](https://explorer.execution.mainnet.lukso.network/address/0x16505FeC789F4553Ea88d812711A0E913D926ADD)
+[![LUKSO Mainnet](https://img.shields.io/badge/Network-LUKSO%20Mainnet-FF2975.svg)](https://explorer.execution.mainnet.lukso.network/address/0x064b9576f37BdD7CED4405185a5DB3bc7be5614C)
 [![Frontend](https://img.shields.io/badge/Frontend-Live-green.svg)](https://universal-trust.vercel.app)
 [![CI](https://github.com/LUKSOAgent/universal-trust/workflows/CI/badge.svg)](https://github.com/LUKSOAgent/universal-trust/actions)
 [![Audited](https://img.shields.io/badge/Security-Audited-blue.svg)](./AUDIT.md)
@@ -94,7 +94,7 @@ Rogue bot tries to impersonate a trusted agent:
   │                                                                    │
   │  ┌─────────────────────────────┐  ┌──────────────────────────┐  │
   │  │   AgentIdentityRegistry     │  │   AgentSkillsRegistry    │  │
-  │  │   0x16505FeC789F4553...     │  │   0x64B3AeCE25B73...     │  │
+  │  │   0x064b9576f37BdD7C...     │  │   0x64B3AeCE25B73...     │  │
   │  │                             │  │                           │  │
   │  │  register()                 │  │  publishSkill()          │  │
   │  │  verify()  ←── one call    │  │  getSkill()              │  │
@@ -150,8 +150,8 @@ Rogue bot tries to impersonate a trusted agent:
 
 | Contract | Address | Explorer Link |
 |----------|---------|---------------|
-| **AgentIdentityRegistry** (proxy) | `0x16505FeC789F4553Ea88d812711A0E913D926ADD` | [View ✓ Verified](https://explorer.execution.mainnet.lukso.network/address/0x16505FeC789F4553Ea88d812711A0E913D926ADD#code) |
-| AgentIdentityRegistry (impl) | `0x80a6e250fA06D8619C7d4DDC0D50efB03Ca29277` | [View](https://explorer.execution.mainnet.lukso.network/address/0x80a6e250fA06D8619C7d4DDC0D50efB03Ca29277) |
+| **AgentIdentityRegistry** (proxy) | `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C` | [View ✓ Verified](https://explorer.execution.mainnet.lukso.network/address/0x064b9576f37BdD7CED4405185a5DB3bc7be5614C#code) |
+| AgentIdentityRegistry (impl) | `0x794528C35903761CdA06A585dc5528B619f1C785` | [View](https://explorer.execution.mainnet.lukso.network/address/0x794528C35903761CdA06A585dc5528B619f1C785) |
 | **AgentSkillsRegistry** | `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6` | [View ✓ Verified](https://explorer.execution.mainnet.lukso.network/address/0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6#code) |
 | ERC-8004 Identity Registry | `0xe30B7514744D324e8bD93157E4c82230d6e6e8f3` | [View](https://explorer.execution.mainnet.lukso.network/address/0xe30B7514744D324e8bD93157E4c82230d6e6e8f3) |
 

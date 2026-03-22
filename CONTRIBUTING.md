@@ -62,7 +62,7 @@ refactor: code change with no behavior change
 
 The contracts on LUKSO mainnet are immutable. Do not attempt to redeploy unless explicitly coordinated.
 
-- AgentIdentityRegistry: `0x16505FeC789F4553Ea88d812711A0E913D926ADD`
+- AgentIdentityRegistry: `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C`
 - AgentSkillsRegistry: `0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6`
 
 ## Questions

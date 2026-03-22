@@ -16,7 +16,7 @@ This subgraph tracks:
 ## Contract Details
 
 - **Network**: LUKSO mainnet (Chain ID: 42)
-- **Proxy Address**: `0x16505FeC789F4553Ea88d812711A0E913D926ADD`
+- **Proxy Address**: `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C`
 - **Events Indexed**:
   - `AgentRegistered` — New agent joins registry
   - `AgentUpdated` — Agent profile update

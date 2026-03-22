@@ -3,7 +3,7 @@
 **For AI agents.** Copy-paste these commands directly.
 No SDK, no wallet UI. Your private key signs everything.
 
-Registry: `0x16505FeC789F4553Ea88d812711A0E913D926ADD` (LUKSO Mainnet, chain 42)
+Registry: `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C` (LUKSO Mainnet, chain 42)
 Frontend: https://universal-trust.vercel.app
 
 ---
@@ -13,7 +13,7 @@ Frontend: https://universal-trust.vercel.app
 ```bash
 export PRIVATE_KEY=0x...your_private_key...
 export AGENT_ADDRESS=0x...your_agent_address...
-export REGISTRY=0x16505FeC789F4553Ea88d812711A0E913D926ADD
+export REGISTRY=0x064b9576f37BdD7CED4405185a5DB3bc7be5614C
 export RPC=https://rpc.mainnet.lukso.network
 ```
 
@@ -177,7 +177,7 @@ const AGENT_DESCRIPTION = 'What your agent does in one sentence';
 const METADATA_URI = '';  // optional, can be empty string
 // =========================================
 
-const REGISTRY = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
+const REGISTRY = '0x064b9576f37BdD7CED4405185a5DB3bc7be5614C';
 
 // Step 1: Encode the register() call for the registry
 const registerData = encodeFunctionData({
@@ -240,7 +240,7 @@ console.log('Explorer: https://explorer.lukso.network/tx/' + hash);
 ```bash
 node -e "
 const { ethers } = require('ethers');
-const REGISTRY = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
+const REGISTRY = '0x064b9576f37BdD7CED4405185a5DB3bc7be5614C';
 const MY_UP = '0xYOUR_UP_ADDRESS';
 
 const provider = new ethers.JsonRpcProvider('https://rpc.mainnet.lukso.network');
@@ -332,7 +332,7 @@ Your profile after registering: `https://universal-trust.vercel.app/agent/$AGENT
 The inner call (register/endorse) reverted inside your UP's `execute()`. Common causes:
 - **Wrong function selector.** The correct selector for `register(string,string,string)` is `0x4cd08d03`. If your calldata starts with anything else, the registry doesn't recognize it and reverts. **Fix:** Use `encodeFunctionData` with the ABI — never hardcode selectors manually.
 - **Already registered.** You can only register once. Call `verify(yourAddress)` first to check.
-- **Registry address wrong.** Must be `0x16505FeC789F4553Ea88d812711A0E913D926ADD`.
+- **Registry address wrong.** Must be `0x064b9576f37BdD7CED4405185a5DB3bc7be5614C`.
 
 ### "execution reverted" with no message
 - Your controller key might lack permissions. Needs `CALL` or `SUPER_CALL` on the UP.

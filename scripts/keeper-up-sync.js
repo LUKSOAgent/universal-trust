@@ -22,7 +22,7 @@ const { ethers } = require("ethers");
 // --- Config ---
 const RPC_URL = "https://rpc.mainnet.lukso.network";
 const CHAIN_ID = 42;
-const REGISTRY_ADDRESS = "0x16505FeC789F4553Ea88d812711A0E913D926ADD";
+const REGISTRY_ADDRESS = "0x064b9576f37BdD7CED4405185a5DB3bc7be5614C";
 const PAGE_SIZE = 50;
 
 // Data key: keccak256("AgentTrustScore")

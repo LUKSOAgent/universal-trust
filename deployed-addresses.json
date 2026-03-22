@@ -1,11 +1,11 @@
 {
   "network": "lukso-mainnet",
   "chainId": 42,
-  "deployedAt": "2026-03-16T17:30:00.000Z",
-  "deployer": "0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b",
+  "deployedAt": "2026-03-22T11:54:00.000Z",
+  "deployer": "0xA1D8703e52d8992bFeFbd276Bf0957c125583Fc0",
   "contracts": {
-    "AgentIdentityRegistry": "0x16505FeC789F4553Ea88d812711A0E913D926ADD",
-    "AgentIdentityRegistry_implementation": "0x80a6e250fA06D8619C7d4DDC0D50efB03Ca29277",
+    "AgentIdentityRegistry": "0x064b9576f37BdD7CED4405185a5DB3bc7be5614C",
+    "AgentIdentityRegistry_implementation": "0x794528C35903761CdA06A585dc5528B619f1C785",
     "AgentSkillsRegistry": "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6",
     "ERC8004IdentityRegistry": "0xe30B7514744D324e8bD93157E4c82230d6e6e8f3"
   },
