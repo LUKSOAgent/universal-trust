@@ -435,3 +435,24 @@ New tests added:
 
 **Second-Pass Audit Date:** 2026-03-14  
 **Status:** ✅ APPROVED — No new vulnerabilities found. Test coverage significantly improved.
+
+---
+
+## Known Comment Inaccuracy — 2026-03-22
+
+**Location:** `contracts/src/AgentIdentityRegistry.sol`, around line 423
+**Severity:** COSMETIC / INFORMATIONAL — no functional impact
+
+**Finding:**
+The NatSpec comment in `isUniversalProfile()` reads:
+```
+2. ERC725Account interface ID 0x629aa694
+```
+
+However, `0x629aa694` is the **ERC725Y** interface ID, not the ERC725Account (LSP0) interface ID.
+- ERC725Y interface ID: `0x629aa694` ✅ (what the code actually uses)
+- ERC725Account / LSP0 interface ID: `0x24871b3a` (checked on line 1 of the same function)
+
+**Impact:** None. The code is correct — it checks the right interface IDs in the right order. Only the comment label is wrong; the actual hex value used in the `supportsInterface()` call is accurate.
+
+**Status:** NOTED — contracts are already deployed and immutable. No fix required. This is a documentation-only inaccuracy with zero functional impact.
