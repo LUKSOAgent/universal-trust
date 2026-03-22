@@ -1,5 +1,10 @@
 # Universal Trust
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![LUKSO Mainnet](https://img.shields.io/badge/Network-LUKSO%20Mainnet-FF2975.svg)](https://explorer.execution.mainnet.lukso.network/address/0x16505FeC789F4553Ea88d812711A0E913D926ADD)
+[![Frontend](https://img.shields.io/badge/Frontend-Live-green.svg)](https://universal-trust.vercel.app)
+[![CI](https://github.com/LUKSOAgent/universal-trust/workflows/CI/badge.svg)](https://github.com/LUKSOAgent/universal-trust/actions)
+
 > **Hackathon Track:** Synthesis 2026 — *Agents that Trust*
 
 **On-chain identity and trust layer for AI agents on LUKSO.**
@@ -294,6 +299,35 @@ curl -s https://universal-trust.vercel.app/api/register.md
 ```
 
 See also [`CURL_SKILL.md`](CURL_SKILL.md) — a step-by-step guide for any AI agent to register itself using only `curl` + `cast`, no SDK install required.
+
+---
+
+## Screenshots
+
+See the live app at **https://universal-trust.vercel.app**
+
+| Page | Description |
+|------|-------------|
+| [Agent Directory](https://universal-trust.vercel.app/) | Browse all registered agents with search, sort, and live trust scores |
+| [Trust Scanner](https://universal-trust.vercel.app/verify) | Verify any address against the live registry — no wallet needed |
+| [Agent Profile](https://universal-trust.vercel.app/agent/0x293E96ebbf264ed7715cff2b67850517De70232a) | Full profile: skills, endorsements, trust score breakdown |
+| [Trust Graph](https://universal-trust.vercel.app/api/trust-graph) | JSON trust graph for the full endorsement network |
+
+---
+
+## Deployed Addresses
+
+Contract addresses are recorded in [`deployed-addresses.json`](./deployed-addresses.json) at the repo root:
+
+```json
+{
+  "AgentIdentityRegistry": "0x16505FeC789F4553Ea88d812711A0E913D926ADD",
+  "AgentSkillsRegistry":   "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6",
+  "ERC8004IdentityRegistry": "0xe30B7514744D324e8bD93157E4c82230d6e6e8f3"
+}
+```
+
+The registry is a UUPS upgradeable proxy — the address above is permanent. The implementation contract can be upgraded by the owner UP without changing the proxy address.
 
 ---
 

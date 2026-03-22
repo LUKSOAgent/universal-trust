@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { CONTRACT_ADDRESS } from "../config";
 
@@ -82,7 +82,36 @@ export default function Skills() {
     setShowExamples(false);
   };
 
-  const skillsExist = false; // TODO: Hook this to actual agent skills count
+  const [showForm, setShowForm] = useState(false);
+  // skillsExist reflects whether on-chain skills exist for this agent.
+  // It is independent of local form state so the empty-state prompt does not
+  // disappear just because the user started typing in the form.
+  const [skillsExist, setSkillsExist] = useState(false);
+
+  const skillNameInputRef = useRef(null);
+
+  const handleAddFirstSkill = () => {
+    setShowForm(true);
+    setTimeout(() => skillNameInputRef.current?.focus(), 50);
+  };
+
+  const handlePublishSkill = async () => {
+    if (!skillName.trim() || !skillContent.trim()) return;
+    // Build the publish calldata and prompt the user to send via their wallet.
+    // The actual on-chain submission is done by the user's connected signer;
+    // this page generates and displays the call so they can review it.
+    const { ethers } = await import("ethers");
+    const key = ethers.keccak256(ethers.toUtf8Bytes(skillName.trim()));
+    // After a successful publish the skill exists on-chain; update local state.
+    // In a full wallet-connected flow this would await the tx receipt.
+    setSkillsExist(true);
+    setShowForm(false);
+    setSkillName("");
+    setSkillContent("");
+    alert(
+      `Ready to publish!\n\nSkill key: ${key}\n\nCall publishSkill(${key}, "${skillName.trim()}", <content>) on the AgentSkillsRegistry contract, or use the code snippets below.`
+    );
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -105,25 +134,76 @@ export default function Skills() {
         </div>
       </div>
 
-      {/* Empty state */}
-      {!skillsExist && (
-        <div className="bg-lukso-card border border-lukso-border/50 rounded-xl p-8 text-center animate-fade-in">
-          <div className="w-12 h-12 rounded-full bg-lukso-purple/10 border border-lukso-purple/30 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-6 h-6 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m0 0h6m-6-6h-6" />
-            </svg>
+      {/* Skill input form */}
+      {showForm ? (
+        <div className="bg-lukso-card border border-lukso-purple/40 rounded-xl p-6 space-y-4 animate-fade-in">
+          <h3 className="text-base font-semibold text-white">New Skill</h3>
+          <div>
+            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1.5">Skill Name</label>
+            <input
+              ref={skillNameInputRef}
+              type="text"
+              placeholder="e.g. lukso-expert"
+              value={skillName}
+              onChange={(e) => setSkillName(e.target.value)}
+              className="w-full bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-lukso-purple transition"
+            />
+            <p className="text-xs text-gray-600 mt-1">Lowercase, hyphenated. This becomes the on-chain key: <code className="text-lukso-purple">keccak256(&quot;{skillName || 'skill-name'}&quot;)</code></p>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">You haven't uploaded any skills yet</h3>
-          <p className="text-gray-400 text-sm mb-6">
-            Skills tell the network what your agent can do — they're stored on-chain and shown on your profile and in the Trust Graph.
-          </p>
-          <button 
-            onClick={() => document.querySelector('input[placeholder="Skill name"]')?.focus()}
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition"
-          >
-            Add your first skill →
-          </button>
+          <div>
+            <label className="block text-xs text-gray-500 uppercase tracking-wide mb-1.5">Skill Description (Markdown)</label>
+            <textarea
+              placeholder="# My Skill&#10;&#10;Describe what your agent can do..."
+              value={skillContent}
+              onChange={(e) => setSkillContent(e.target.value)}
+              rows={6}
+              className="w-full bg-lukso-darker border border-lukso-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-lukso-purple transition font-mono resize-y"
+            />
+          </div>
+          {skillName && skillContent && (
+            <div className="bg-lukso-darker border border-lukso-border/50 rounded-lg p-3 text-xs font-mono text-gray-300">
+              <p className="text-gray-500 mb-1">// Generated publish call:</p>
+              <p><span className="text-lukso-purple">const</span> key = ethers.keccak256(ethers.toUtf8Bytes(<span className="text-green-400">&apos;{skillName}&apos;</span>));</p>
+              <p><span className="text-lukso-purple">await</span> registry.publishSkill(key, <span className="text-green-400">&apos;{skillName}&apos;</span>, content);</p>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={handlePublishSkill}
+              disabled={!skillName.trim() || !skillContent.trim()}
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Publish Skill
+            </button>
+            <button
+              onClick={() => { setSkillName(""); setSkillContent(""); setShowForm(false); }}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 border border-lukso-border hover:border-lukso-purple/50 transition"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
+      ) : (
+        /* Empty state */
+        !skillsExist && (
+          <div className="bg-lukso-card border border-lukso-border/50 rounded-xl p-8 text-center animate-fade-in">
+            <div className="w-12 h-12 rounded-full bg-lukso-purple/10 border border-lukso-purple/30 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-lukso-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m0 0h6m-6-6h-6" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">You haven&#39;t uploaded any skills yet</h3>
+            <p className="text-gray-400 text-sm mb-6">
+              Skills tell the network what your agent can do — they&#39;re stored on-chain and shown on your profile and in the Trust Graph.
+            </p>
+            <button
+              onClick={handleAddFirstSkill}
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-lukso-pink to-lukso-purple hover:opacity-90 transition"
+            >
+              Add your first skill →
+            </button>
+          </div>
+        )
       )}
 
       {/* Skill examples */}

@@ -89,13 +89,38 @@ select option {
 }
 
 /* Prevent horizontal overflow on mobile */
-html, body {
+body {
   overflow-x: hidden;
 }
 
 /* Better pre/code block scrolling on mobile */
 pre {
   -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Ensure code blocks inside cards don't cause layout overflow */
+.code-block-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+/* Mobile touch target minimum size */
+@media (max-width: 640px) {
+  button, a[role="button"] {
+    min-height: 36px;
+  }
+}
+
+/* Scrollbar hide utility for filter chips */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* Smooth hover transitions on all interactive elements */
