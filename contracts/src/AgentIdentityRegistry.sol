@@ -512,8 +512,9 @@ contract AgentIdentityRegistry is Initializable, UUPSUpgradeable {
     function getAgentsByPage(uint256 offset, uint256 limit) external view returns (address[] memory) {
         if (offset >= _agentList.length) return new address[](0);
 
-        uint256 end = offset + limit;
-        if (end > _agentList.length) end = _agentList.length;
+        uint256 remaining = _agentList.length - offset;
+        uint256 count = limit < remaining ? limit : remaining;
+        uint256 end = offset + count;
 
         address[] memory result = new address[](end - offset);
         for (uint256 i = offset; i < end; i++) {
