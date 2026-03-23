@@ -18,7 +18,7 @@
 
 ## 1. ABI Audit Results
 
-### Contract: AgentIdentityRegistry (0x1581BA9Fb480b72df3e54f51f851a644483c6ec7)
+### Contract: AgentIdentityRegistry (0x16505FeC789F4553Ea88d812711A0E913D926ADD)
 
 **Total Tests:** 28  
 **Passed:** 26 ✅  

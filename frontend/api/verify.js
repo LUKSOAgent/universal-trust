@@ -23,7 +23,7 @@
 import { ethers } from "ethers";
 
 const RPC = "https://rpc.mainnet.lukso.network";
-const CONTRACT = "0x1581BA9Fb480b72df3e54f51f851a644483c6ec7";
+const CONTRACT = "0x16505FeC789F4553Ea88d812711A0E913D926ADD";
 
 const ABI = [
   "function verify(address agent) view returns (bool registered, bool active, bool isUP, uint256 reputation, uint256 endorsements, uint256 trustScore, string name)",

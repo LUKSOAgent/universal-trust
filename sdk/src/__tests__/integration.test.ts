@@ -13,7 +13,7 @@ import { AgentTrust, AgentTrustError, AgentTrustErrorCode } from '../index';
 
 // ─── Constants (live LUKSO mainnet) ─────────────────────────────────────────
 
-const REGISTRY_ADDRESS = '0x1581BA9Fb480b72df3e54f51f851a644483c6ec7'; // v4 UUPS proxy
+const REGISTRY_ADDRESS = '0x16505FeC789F4553Ea88d812711A0E913D926ADD'; // v4 UUPS proxy
 const SKILLS_REGISTRY_ADDRESS = '0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6';
 const RPC_URL = 'https://rpc.mainnet.lukso.network';
 

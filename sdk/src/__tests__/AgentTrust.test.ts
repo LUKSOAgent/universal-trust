@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { AgentTrust, AgentTrustError, AgentTrustErrorCode } from '../index';
 
 // Deployed contract on LUKSO mainnet (v4 UUPS proxy)
-const REGISTRY_ADDRESS = '0x1581BA9Fb480b72df3e54f51f851a644483c6ec7';
+const REGISTRY_ADDRESS = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
 // Contract owner (EOA) — registered as "LUKSO Agent", isReputationUpdater=true
 const OWNER_ADDRESS = '0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b';
 // LUKSO Agent Universal Profile — registered as "LUKSO Agent", endorsed by OWNER

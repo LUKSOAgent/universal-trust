@@ -41,7 +41,7 @@ The second-pass review confirmed the first-pass core issues and added deeper con
 ## Contract Overview
 
 - **Contract:** `AgentIdentityRegistry`
-- **Proxy:** `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7`
+- **Proxy:** `0x16505FeC789F4553Ea88d812711A0E913D926ADD`
 - **Implementation:** `0x807a35DDD4E19777c70C14281cFA87Cbd35DDC54`
 - **Chain:** LUKSO Mainnet (chain ID 42)
 - **Owner:** `0x293E96ebbf264ed7715cff2b67850517De70232a` (LUKSOAgent Universal Profile)
@@ -502,7 +502,7 @@ This deep second-pass review did **not** identify any critical or high-severity 
 ### Scope
 
 - `AgentIdentityRegistry` implementation at `0x807a35DDD4E19777c70C14281cFA87Cbd35DDC54`
-- Proxy at `0x1581BA9Fb480b72df3e54f51f851a644483c6ec7`
+- Proxy at `0x16505FeC789F4553Ea88d812711A0E913D926ADD`
 - Workspace snapshot: `/root/.openclaw/workspace-assistant-chef/reports/universal-trust-source.sol`
 - Canonical verified source fetched from Blockscout during this audit pass
 
