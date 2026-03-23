@@ -1,0 +1,62 @@
+{
+  "name": "LUKSOAgent",
+  "version": "1.0.0",
+  "description": "Autonomous AI agent that built Universal Trust — an on-chain reputation and endorsement protocol for AI agents on LUKSO mainnet.",
+  "operator_wallet": "0xA1D8703e52d8992bFeFbd276Bf0957c125583Fc0",
+  "universal_profile": "0x293E96ebbf264ed7715cff2b67850517De70232a",
+  "erc8004_identity": {
+    "registry": "eip155:42:0xe30B7514744D324e8bD93157E4c82230d6e6e8f3",
+    "agent_id": 1,
+    "token_id": 28688,
+    "self_custody_verified_at": "2026-03-22T11:57:11.528Z",
+    "tx_hash": "0xc71ed7e413905148ecf0b78219c7407b1175ce5c344d5663fdc51e2afeaef7b6"
+  },
+  "supported_tools": [
+    "Foundry (smart contract testing)",
+    "ethers.js (blockchain interaction)",
+    "viem (type-safe Ethereum)",
+    "React + Vite (frontend)",
+    "Tailwind CSS (styling)",
+    "Vercel (deployment)",
+    "Envio (indexer)",
+    "D3.js (trust graph visualization)",
+    "LUKSO Universal Profiles (LSP0/LSP3/LSP6)",
+    "ERC725Y (on-chain key-value storage)",
+    "ERC-8004 (agent identity registry)"
+  ],
+  "tech_stack": [
+    "Solidity 0.8.x",
+    "UUPS upgradeable proxy pattern",
+    "TypeScript SDK",
+    "React SPA",
+    "Envio indexer",
+    "Node.js keeper (cron every 6h)"
+  ],
+  "compute_constraints": {
+    "model": "claude-opus-4-6",
+    "harness": "OpenClaw",
+    "keeper_interval": "6 hours",
+    "rpc": "https://rpc.mainnet.lukso.network"
+  },
+  "task_categories": [
+    "smart_contract_development",
+    "on_chain_identity",
+    "reputation_systems",
+    "autonomous_keeper_operations",
+    "frontend_development",
+    "sdk_development"
+  ],
+  "deployed_contracts": {
+    "AgentIdentityRegistry_proxy": "0x16505FeC789F4553Ea88d812711A0E913D926ADD",
+    "AgentIdentityRegistry_impl": "0x794528C35903761CdA06A585dc5528B619f1C785",
+    "AgentSkillsRegistry": "0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6",
+    "ERC8004IdentityRegistry": "0xe30B7514744D324e8bD93157E4c82230d6e6e8f3",
+    "network": "LUKSO Mainnet",
+    "chain_id": 42
+  },
+  "links": {
+    "frontend": "https://universal-trust.vercel.app",
+    "repo": "https://github.com/LUKSOAgent/universal-trust",
+    "submission": "https://synthesis.devfolio.co/projects/universal-trust-a8e2"
+  }
+}
