@@ -9,10 +9,10 @@ import { AgentTrust, AgentTrustError, AgentTrustErrorCode } from '../index';
 
 // Deployed contract on LUKSO mainnet (v4 UUPS proxy)
 const REGISTRY_ADDRESS = '0x16505FeC789F4553Ea88d812711A0E913D926ADD';
-// Contract owner (EOA) — registered as "LUKSO Agent", isReputationUpdater=true
-const OWNER_ADDRESS = '0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b';
-// LUKSO Agent Universal Profile — registered as "LUKSO Agent", endorsed by OWNER
-const DEPLOYER_ADDRESS = '0x293E96ebbf264ed7715cff2b67850517De70232a';
+// LUKSO Agent Universal Profile — registered as 'LUKSO Agent', isReputationUpdater=true
+const OWNER_ADDRESS = '0x293E96ebbf264ed7715cff2b67850517De70232a';
+// Emmet's Universal Profile — registered as 'Emmet', endorsed mutually
+const DEPLOYER_ADDRESS = '0x1089E1c613Db8Cb91db72be4818632153E62557a';
 
 // Increase timeout for RPC calls
 const TEST_TIMEOUT = 30_000;
@@ -47,7 +47,7 @@ describe('AgentTrust SDK', () => {
         const result = await trust.verify(DEPLOYER_ADDRESS);
         expect(result.registered).toBe(true);
         expect(result.active).toBe(true);
-        expect(result.name).toBe('LUKSO Agent');
+        expect(result.name).toBe('Emmet');
         expect(result.endorsements).toBeGreaterThanOrEqual(1);
         expect(result.trustScore).toBeGreaterThanOrEqual(110);
       },
@@ -246,11 +246,11 @@ describe('AgentTrust SDK', () => {
     );
 
     it(
-      'should return exists=false for non-existent reverse endorsement',
+      'should return exists=true for mutual endorsement (deployer endorsed owner)',
       async () => {
         const result = await trust.getEndorsement(DEPLOYER_ADDRESS, OWNER_ADDRESS);
-        // Deployer has NOT endorsed Owner
-        expect(result.exists).toBe(false);
+        // Deployer (Emmet) HAS endorsed Owner (LUKSO Agent) — mutual endorsement
+        expect(result.exists).toBe(true);
       },
       TEST_TIMEOUT,
     );
@@ -530,7 +530,7 @@ describe('AgentTrust SDK', () => {
         const deployer = results.get(DEPLOYER_ADDRESS);
         expect(deployer).toBeDefined();
         expect(deployer?.registered).toBe(true);
-        expect(deployer?.name).toBe('LUKSO Agent');
+        expect(deployer?.name).toBe('Emmet');
       },
       TEST_TIMEOUT,
     );
@@ -572,7 +572,7 @@ describe('AgentTrust SDK', () => {
       async () => {
         // The deployer is registered but has no skills in the AgentSkillsRegistry
         const profile = await trust.getProfile(DEPLOYER_ADDRESS);
-        expect(profile.name).toBe('LUKSO Agent');
+        expect(profile.name).toBe('Emmet');
         expect(profile.isActive).toBe(true);
         expect(profile.reputation).toBeGreaterThanOrEqual(100);
         // Deployer may or may not have skills — but the field should be an array
@@ -599,7 +599,7 @@ describe('AgentTrust SDK', () => {
       'should return full profile for deployer (UP agent with endorsements)',
       async () => {
         const profile = await trust.getProfile(DEPLOYER_ADDRESS);
-        expect(profile.name).toBe('LUKSO Agent');
+        expect(profile.name).toBe('Emmet');
         expect(profile.isActive).toBe(true);
         expect(profile.endorsementCount).toBeGreaterThanOrEqual(1);
         expect(profile.endorsers.length).toBeGreaterThanOrEqual(1);

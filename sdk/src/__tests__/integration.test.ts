@@ -17,11 +17,11 @@ const REGISTRY_ADDRESS = '0x16505FeC789F4553Ea88d812711A0E913D926ADD'; // v4 UUP
 const SKILLS_REGISTRY_ADDRESS = '0x64B3AeCE25B73ecF3b9d53dA84948a9dE987F4F6';
 const RPC_URL = 'https://rpc.mainnet.lukso.network';
 
-/** Contract owner (EOA) — registered as "LUKSO Agent", isReputationUpdater=true */
-const OWNER = '0x7315D3fab45468Ca552A3d3eeaF5b5b909987B7b';
+/** LUKSO Agent Universal Profile — registered as "LUKSO Agent", isReputationUpdater=true */
+const OWNER = '0x293E96ebbf264ed7715cff2b67850517De70232a';
 
-/** LUKSO Agent Universal Profile — registered as "LUKSO Agent", endorsed by OWNER */
-const DEPLOYER = '0x293E96ebbf264ed7715cff2b67850517De70232a';
+/** Second registered agent on LUKSO mainnet */
+const DEPLOYER = '0x1089E1c613Db8Cb91db72be4818632153E62557a';
 
 /** Definitely not registered */
 const UNREGISTERED = '0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF';
@@ -44,7 +44,7 @@ const trust = new AgentTrust({
 
 describe('E2E: Verify Registered Agent (Deployer)', () => {
   it('verify() returns registered, active, trust score ≥ 100', async () => {
-    const result = await trust.verify(DEPLOYER);
+    const result = await trust.verify(OWNER);
 
     expect(result.registered).toBe(true);
     expect(result.active).toBe(true);
@@ -55,13 +55,13 @@ describe('E2E: Verify Registered Agent (Deployer)', () => {
   }, TIMEOUT);
 
   it('isRegistered() returns true', async () => {
-    expect(await trust.isRegistered(DEPLOYER)).toBe(true);
+    expect(await trust.isRegistered(OWNER)).toBe(true);
   }, TIMEOUT);
 
   it('getTrustScore() matches verify().trustScore', async () => {
     const [score, verification] = await Promise.all([
-      trust.getTrustScore(DEPLOYER),
-      trust.verify(DEPLOYER),
+      trust.getTrustScore(OWNER),
+      trust.verify(OWNER),
     ]);
     expect(score).toBe(verification.trustScore);
   }, TIMEOUT);
@@ -73,7 +73,7 @@ describe('E2E: Verify Registered Agent (Deployer)', () => {
 
 describe('E2E: Verify Registered UP Agent (Deployer)', () => {
   it('verify() returns registered, active, isUniversalProfile=true', async () => {
-    const result = await trust.verify(DEPLOYER);
+    const result = await trust.verify(OWNER);
 
     expect(result.registered).toBe(true);
     expect(result.active).toBe(true);
@@ -85,9 +85,9 @@ describe('E2E: Verify Registered UP Agent (Deployer)', () => {
   }, TIMEOUT);
 
   it('getProfile() returns full profile with endorsers', async () => {
-    const profile = await trust.getProfile(DEPLOYER);
+    const profile = await trust.getProfile(OWNER);
 
-    expect(profile.address).toBe(DEPLOYER);
+    expect(profile.address).toBe(OWNER);
     expect(profile.name).toBe('LUKSO Agent');
     expect(profile.isActive).toBe(true);
     expect(profile.isUniversalProfile).toBe(true);
@@ -97,9 +97,9 @@ describe('E2E: Verify Registered UP Agent (Deployer)', () => {
     expect(profile.lastActiveAt).toBeGreaterThan(0);
     expect(Array.isArray(profile.skills)).toBe(true);
 
-    // Endorser should include OWNER
+    // Endorser should include DEPLOYER
     const endorserAddresses = profile.endorsers.map((e: string) => e.toLowerCase());
-    expect(endorserAddresses).toContain(OWNER.toLowerCase());
+    expect(endorserAddresses).toContain(DEPLOYER.toLowerCase());
   }, TIMEOUT);
 });
 
@@ -142,13 +142,13 @@ describe('E2E: Batch Verify', () => {
 
     expect(results.size).toBe(3);
 
-    // Owner: registered
+    // Owner (LUKSO Agent UP): registered
     const owner = results.get(OWNER)!;
     expect(owner.registered).toBe(true);
     expect(owner.active).toBe(true);
     expect(owner.name).toBe('LUKSO Agent');
 
-    // Deployer (UP Agent): registered with endorsements
+    // Deployer (Emmet): registered with endorsements
     const deployer = results.get(DEPLOYER)!;
     expect(deployer.registered).toBe(true);
     expect(deployer.endorsements).toBeGreaterThanOrEqual(1);
@@ -169,9 +169,8 @@ describe('E2E: Endorsement Queries', () => {
     expect(await trust.hasEndorsed(OWNER, DEPLOYER)).toBe(true);
   }, TIMEOUT);
 
-  it('hasEndorsed() returns false for reverse direction (deployer has not endorsed owner)', async () => {
-    // Deployer has NOT endorsed Owner
-    expect(await trust.hasEndorsed(DEPLOYER, OWNER)).toBe(false);
+  it('hasEndorsed() returns true for deployer → owner (mutual endorsement)', async () => {
+    expect(await trust.hasEndorsed(DEPLOYER, OWNER)).toBe(true);
   }, TIMEOUT);
 
   it('getEndorsers() includes owner for deployer', async () => {
@@ -190,8 +189,8 @@ describe('E2E: Endorsement Queries', () => {
     expect(typeof endorsement.reason).toBe('string');
   }, TIMEOUT);
 
-  it('getEndorsement() returns exists=false for deployer → owner (not endorsed)', async () => {
-    const endorsement = await trust.getEndorsement(DEPLOYER, OWNER);
+  it('getEndorsement() returns exists=false for unregistered address', async () => {
+    const endorsement = await trust.getEndorsement(UNREGISTERED, OWNER);
     expect(endorsement.exists).toBe(false);
   }, TIMEOUT);
 
@@ -217,8 +216,8 @@ describe('E2E: Agent Enumeration', () => {
     expect(agents.length).toBeGreaterThanOrEqual(2);
 
     const lowered = agents.map((a: string) => a.toLowerCase());
+    // OWNER (LUKSO Agent UP) is always in the registry
     expect(lowered).toContain(OWNER.toLowerCase());
-    expect(lowered).toContain(DEPLOYER.toLowerCase());
   }, TIMEOUT);
 
   it('getAgentsByPage() returns empty for out-of-range offset', async () => {
@@ -254,8 +253,8 @@ describe('E2E: Skills Registry Link', () => {
     // Skills may or may not exist, but the call should not throw
   }, TIMEOUT);
 
-  it('getSkills() for owner returns an array', async () => {
-    const skills = await trust.getSkills(OWNER);
+  it('getSkills() for deployer returns an array', async () => {
+    const skills = await trust.getSkills(DEPLOYER);
     expect(Array.isArray(skills)).toBe(true);
   }, TIMEOUT);
 });
@@ -265,7 +264,7 @@ describe('E2E: Skills Registry Link', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe('E2E: Reputation Updater', () => {
-  it('owner is a reputation updater', async () => {
+  it('LUKSO Agent UP is a reputation updater', async () => {
     expect(await trust.isReputationUpdater(OWNER)).toBe(true);
   }, TIMEOUT);
 
@@ -283,9 +282,9 @@ describe('E2E: Universal Profile Detection', () => {
     expect(await trust.isUniversalProfile(DEPLOYER)).toBe(true);
   }, TIMEOUT);
 
-  it('isUniversalProfile() returns false for owner (EOA)', async () => {
-    // Owner is an EOA, not a Universal Profile
-    expect(await trust.isUniversalProfile(OWNER)).toBe(false);
+  it('isUniversalProfile() returns true for owner (LUKSO Agent UP)', async () => {
+    // Owner is a Universal Profile
+    expect(await trust.isUniversalProfile(OWNER)).toBe(true);
   }, TIMEOUT);
 
   it('isUniversalProfile() returns false for unregistered EOA', async () => {
